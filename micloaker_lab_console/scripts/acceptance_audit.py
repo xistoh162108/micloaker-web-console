@@ -501,6 +501,7 @@ def main() -> int:
         "not applicable",
         "python scripts/console_control.py restart",
         "Default restart reuses the last saved host, port, and web-shutdown mode",
+        "CLI stop/restart refuses active recording/finalization by default",
     ]
     validation_sources = (
         (ROOT / "app" / "templates" / "ops.html").read_text(encoding="utf-8")
