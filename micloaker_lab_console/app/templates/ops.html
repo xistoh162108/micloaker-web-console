@@ -1,6 +1,16 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Console Ops</h1>
+<section class="command-hero">
+  <div>
+    <h1>Console Ops</h1>
+    <p>Check readiness, manage safe start/stop, and record physical validation evidence.</p>
+    <span class="badge {{ 'badge-error' if readiness.summary.fail else 'badge-warning' if readiness.summary.warn else 'badge-success' }}">{{ readiness.summary.pass }} pass / {{ readiness.summary.warn }} warn / {{ readiness.summary.fail }} fail</span>
+  </div>
+  <nav class="hero-actions">
+    <a class="btn btn-outline" href="/ops/readiness">Readiness JSON</a>
+    <a class="btn btn-outline" href="/logs">Logs</a>
+  </nav>
+</section>
 <section class="stats">
   <div class="stat"><span class="stat-value">{{ readiness.summary.pass }}</span><span class="stat-title">Pass</span></div>
   <div class="stat"><span class="stat-value">{{ readiness.summary.warn }}</span><span class="stat-title">Warn</span></div>
@@ -65,7 +75,7 @@ python scripts/console_control.py stop</pre>
     </tbody>
   </table>
   </div>
-  <form method="post" action="/ops/validation" class="grid-form">
+  <form method="post" action="/ops/validation" class="grid-form validation-form">
     <label>Gate
       <select name="gate" required>
         {% for key, label in validation_gates.items() %}
@@ -89,17 +99,19 @@ python scripts/console_control.py stop</pre>
     <div class="wide"><button class="btn btn-outline" type="button" id="validation-draft-button">Use checklist draft</button></div>
     <label class="wide">Evidence <textarea name="evidence" rows="3" placeholder="Use the gate-specific evidence hints above. Include paths, IDs, measured values, and unresolved warnings."></textarea></label>
     <label class="wide">Notes <textarea name="notes" rows="3" placeholder="What was physically checked, what remains uncertain, or why this is only a warning."></textarea></label>
-    <button class="btn btn-primary" type="submit">Save Validation Record</button>
+    <div class="form-actions"><button class="btn btn-primary" type="submit">Save Validation Record</button></div>
   </form>
-  <div class="button-row">
+  <div class="button-row validation-actions">
     <a class="btn btn-outline" href="/ops/validation">Validation JSON</a>
     <a class="btn btn-outline" href="/ops/validation/plan">Download Validation Plan</a>
     <a class="btn btn-outline" href="/ops/validation/files/hardware_validation.jsonl">Download JSONL</a>
     <a class="btn btn-outline" href="/ops/validation/files/hardware_validation_report.md">Download Report</a>
     <a class="btn btn-primary" href="/exports/ops-validation.zip">Ops Evidence ZIP</a>
   </div>
-  <p class="muted">Validation plan: <code>{{ validation.plan_path }}</code></p>
-  <p class="muted">Markdown report: <code>{{ validation.report_path }}</code></p>
+  <div class="validation-paths">
+    <p class="muted">Validation plan: <code>{{ validation.plan_path }}</code></p>
+    <p class="muted">Markdown report: <code>{{ validation.report_path }}</code></p>
+  </div>
   <h3>Gate Status</h3>
   <div class="table-scroll">
   <table class="data-table">

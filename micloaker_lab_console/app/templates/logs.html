@@ -1,6 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Logs</h1>
+<section class="command-hero">
+  <div>
+    <h1>Logs</h1>
+    <p>Inspect job status, run logs, tracebacks, and app event tails.</p>
+    <span class="badge">{{ job_rows|length }} jobs</span>
+  </div>
+  <nav class="hero-actions">
+    <a class="btn btn-outline" href="/ops">Ops</a>
+  </nav>
+</section>
 <section>
   <h2>Diagnostic Downloads</h2>
   <ul class="list">

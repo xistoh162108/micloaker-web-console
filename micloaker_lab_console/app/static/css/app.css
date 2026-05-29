@@ -465,7 +465,29 @@ button, .btn-primary, .button.primary, .actions a {
   border-top: 1px solid var(--border);
 }
 .mac-helper-run-panel .form-actions { min-height: 38px; }
-#hardware-validation form + .button-row { margin-top: 12px; }
+.validation-form { gap: 12px; }
+.validation-form .form-actions {
+  margin-top: 4px;
+}
+#hardware-validation form + .button-row { margin-top: 14px; }
+.validation-actions {
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.validation-paths {
+  display: grid;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--rounded-box);
+  background: var(--surface);
+}
+.validation-paths p {
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .grid-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .grid-form .wide { grid-column: span 2; }
 .grid-form .full, .form-actions { grid-column: 1 / -1; }
@@ -569,6 +591,12 @@ pre {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 130px), 1fr));
   gap: 8px;
 }
+.live-meter-panel .metric-readout-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.live-meter-panel .metric-readout-grid > div:last-child {
+  grid-column: 1 / -1;
+}
 .metric-readout-grid > div,
 .summary-grid > div {
   min-width: 0;
@@ -613,7 +641,7 @@ pre {
 .file-table th:nth-child(7),
 .file-table td:nth-child(7),
 .file-table th:nth-child(8),
-.file-table td:nth-child(8) { width: 92px; }
+.file-table td:nth-child(8) { width: 112px; }
 .file-table audio {
   width: 100%;
   min-width: 0;
@@ -624,6 +652,7 @@ pre {
   min-height: 32px;
   padding: 6px 8px;
   font-size: 0.86rem;
+  white-space: nowrap;
 }
 .plots { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
 .plots figure, .dashboard-artifacts figure {
@@ -745,4 +774,5 @@ canvas {
   .live-command-card .capture-actions { position: static; }
   .topbar { position: static; }
   .live-plot-panel canvas, .live-primary canvas { height: 200px; }
+  .live-meter-panel .metric-readout-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }

@@ -1,7 +1,15 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Files</h1>
-<p class="muted">Workspace file browser. Downloads use session-scoped safe file routes.</p>
+<section class="command-hero">
+  <div>
+    <h1>Files</h1>
+    <p>Workspace file browser for session artifacts, WAV previews, raw data, and report outputs.</p>
+    <span class="badge">{{ files|length }} files</span>
+  </div>
+  <nav class="hero-actions">
+    <a class="btn btn-outline" href="/sessions">Sessions</a>
+  </nav>
+</section>
 <div class="table-scroll"><table class="data-table file-table">
   <thead>
     <tr>

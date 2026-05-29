@@ -1,7 +1,16 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>New Run</h1>
-<p class="muted">Create a run in an existing session. Create new sessions from the Sessions page.</p>
+<section class="command-hero">
+  <div>
+    <h1>New Run</h1>
+    <p>Create a run in an existing session, then record, import, or finalize from saved data.</p>
+    <span class="badge">{{ "session selected" if selected_session_id else "session needed" }}</span>
+  </div>
+  <nav class="hero-actions">
+    <a class="btn btn-outline" href="/sessions">Sessions</a>
+    {% if selected_session_id %}<a class="btn btn-outline" href="/sessions/{{ selected_session_id }}">Session Detail</a>{% endif %}
+  </nav>
+</section>
 <section class="card">
   <div class="card-body">
     <div class="card-title">

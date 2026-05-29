@@ -1,6 +1,16 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Sessions</h1>
+<section class="command-hero">
+  <div>
+    <h1>Sessions</h1>
+    <p>Create, inspect, rebuild, and export experiment sessions.</p>
+    <span class="badge">{{ sessions|length }} sessions</span>
+  </div>
+  <nav class="hero-actions">
+    <a class="btn btn-primary" href="/runs/new">New Run</a>
+    <a class="btn btn-outline" href="/files">Files</a>
+  </nav>
+</section>
 <section class="card">
   <div class="card-body">
     <div class="card-title"><h2>Session Controls</h2></div>

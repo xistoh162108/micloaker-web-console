@@ -156,12 +156,20 @@ function metricReadoutHtml(data) {
   const peak = formatMetric(data.peak_v, " V");
   const rate = Number.isFinite(Number(data.sample_rate_hz)) ? `${Number(data.sample_rate_hz).toLocaleString()} Hz` : "n/a";
   const finalSource = data.final_metrics_source || ".bin";
+  const clipping = data.clipping ? "check" : "clear";
+  const waveformPoints = Number.isFinite(Number(data.waveform_point_count)) ? Number(data.waveform_point_count).toLocaleString() : "0";
+  const psdBins = Number.isFinite(Number(data.psd_bin_count)) ? Number(data.psd_bin_count).toLocaleString() : "0";
+  const spectrogramRows = Number.isFinite(Number(data.spectrogram_row_count)) ? Number(data.spectrogram_row_count).toLocaleString() : "0";
   return `
     <div class="metric-readout-grid">
       <div><span class="metric-label">RMS</span><strong>${rms}</strong></div>
       <div><span class="metric-label">Peak</span><strong>${peak}</strong></div>
       <div><span class="metric-label">Sample rate</span><strong>${rate}</strong></div>
       <div><span class="metric-label">Preview</span><strong>${escapeHtml(data.preview_source || "daq")}</strong></div>
+      <div><span class="metric-label">Clipping</span><strong>${clipping}</strong></div>
+      <div><span class="metric-label">Waveform pts</span><strong>${waveformPoints}</strong></div>
+      <div><span class="metric-label">PSD bins</span><strong>${psdBins}</strong></div>
+      <div><span class="metric-label">Spec rows</span><strong>${spectrogramRows}</strong></div>
       <div><span class="metric-label">Final source</span><strong>${escapeHtml(finalSource)}</strong></div>
     </div>
   `;
