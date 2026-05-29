@@ -182,6 +182,43 @@
             {% endif %}
           </div>
         </div>
+        {% if last_run and last_run_artifacts %}
+        <div class="panel">
+          <div class="card-title">
+            <h3>Latest Visual Artifacts</h3>
+            <span class="badge {{ 'badge-success' if last_run.analysis.status == 'finalized' else 'badge-warning' }}">{{ last_run.analysis.status }}</span>
+          </div>
+          <div class="dashboard-artifacts">
+            {% if last_run_artifacts.waveform_png %}
+            <figure>
+              <img src="/sessions/{{ last_run.session_id }}/files/{{ last_run_artifacts.waveform_png }}" alt="Latest finalized waveform">
+              <figcaption>Waveform</figcaption>
+            </figure>
+            {% endif %}
+            {% if last_run_artifacts.psd_png %}
+            <figure>
+              <img src="/sessions/{{ last_run.session_id }}/files/{{ last_run_artifacts.psd_png }}" alt="Latest finalized PSD">
+              <figcaption>PSD</figcaption>
+            </figure>
+            {% endif %}
+            {% if last_run_artifacts.spectrogram_png %}
+            <figure>
+              <img src="/sessions/{{ last_run.session_id }}/files/{{ last_run_artifacts.spectrogram_png }}" alt="Latest finalized spectrogram">
+              <figcaption>Spectrogram</figcaption>
+            </figure>
+            {% endif %}
+          </div>
+          <div class="button-row">
+            {% if last_run_artifacts.metrics_json %}<a class="btn btn-outline" href="/sessions/{{ last_run.session_id }}/files/{{ last_run_artifacts.metrics_json }}?download=1" download>Metrics JSON</a>{% endif %}
+            {% if last_run_artifacts.wav_peak %}<a class="btn btn-outline" href="/sessions/{{ last_run.session_id }}/files/{{ last_run_artifacts.wav_peak }}?download=1" download>Peak WAV Preview</a>{% endif %}
+            {% if last_run_artifacts.wav_range %}<a class="btn btn-outline" href="/sessions/{{ last_run.session_id }}/files/{{ last_run_artifacts.wav_range }}?download=1" download>Range WAV Cross-check</a>{% endif %}
+          </div>
+          {% if last_run_artifacts.wav_peak %}
+          <audio controls preload="none" src="/sessions/{{ last_run.session_id }}/files/{{ last_run_artifacts.wav_peak }}"></audio>
+          <p class="muted">Peak WAV is listening preview only. Report-grade values come from saved raw .bin.</p>
+          {% endif %}
+        </div>
+        {% endif %}
         <div class="button-row">
           {% if active_session %}<a class="btn btn-primary" href="/exports/sessions/{{ active_session.session_id }}.zip">Export active session ZIP</a>{% endif %}
           <a class="btn btn-outline" href="/sessions">Multi-Session Export</a>

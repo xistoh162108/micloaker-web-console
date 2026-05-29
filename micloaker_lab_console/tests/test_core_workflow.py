@@ -3772,6 +3772,11 @@ def test_dashboard_shows_lab_status_cards_and_shortcuts(tmp_path: Path, monkeypa
         "Latest Run",
         "Latest Comparison",
         "Results, Compare, Export",
+        "Latest Visual Artifacts",
+        "Waveform",
+        "PSD",
+        "Spectrogram",
+        "Peak WAV Preview",
         "preview only",
         "Export active session ZIP",
     ]:
@@ -3791,4 +3796,6 @@ def test_dashboard_shows_lab_status_cards_and_shortcuts(tmp_path: Path, monkeypa
     assert "active_recording" in js
     assert session["session_id"] in page.text
     assert final1["run_id"] in page.text
+    assert f'src="/sessions/{session["session_id"]}/files/{final1["files"]["waveform_png"]}"' in page.text
+    assert f'src="/sessions/{session["session_id"]}/files/{final1["files"]["wav_peak"]}"' in page.text
     assert "dB" in page.text

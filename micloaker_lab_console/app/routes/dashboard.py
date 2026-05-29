@@ -20,7 +20,8 @@ def dashboard(request: Request):
     sessions = load_sessions(workspace)
     active_session = sessions[0] if sessions else None
     all_runs = [run for session in sessions for run in load_runs(workspace, session["session_id"])]
-    last_run = max(all_runs, key=lambda run: run.get("created_at", ""), default=None)
+    last_run = max(all_runs, key=lambda run: (run.get("created_at", ""), run.get("run_id", "")), default=None)
+    last_run_artifacts = _dashboard_run_artifacts(workspace, last_run)
     last_comparison = _last_comparison(workspace, sessions)
     finalized_count = sum(1 for run in all_runs if run.get("analysis", {}).get("status") == "finalized")
     failed_count = sum(1 for run in all_runs if run.get("analysis", {}).get("status") == "failed")
@@ -36,6 +37,7 @@ def dashboard(request: Request):
             "sessions": sessions[:8],
             "active_session": active_session,
             "last_run": last_run,
+            "last_run_artifacts": last_run_artifacts,
             "last_comparison": last_comparison,
             "recent_runs": recent_runs,
             "stats": {
@@ -65,3 +67,12 @@ def _last_comparison(workspace: Path, sessions: list[dict[str, Any]]) -> dict[st
             if newest is None or str(stamp) > str(newest[0]):
                 newest = (str(stamp), data)
     return newest[1] if newest else None
+
+
+def _dashboard_run_artifacts(workspace: Path, run: dict[str, Any] | None) -> dict[str, str]:
+    if not run:
+        return {}
+    base = session_dir(workspace, run["session_id"])
+    files = run.get("files", {})
+    wanted = ["waveform_png", "psd_png", "spectrogram_png", "wav_peak", "wav_range", "metrics_json"]
+    return {key: rel for key in wanted if (rel := files.get(key)) and (base / rel).is_file()}

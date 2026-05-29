@@ -352,16 +352,32 @@ pre {
 .compact-pre { max-height: 180px; }
 .plots { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
 .plots img { width: 100%; border: 1px solid var(--border); background: white; border-radius: var(--rounded-btn); }
+.dashboard-artifacts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.dashboard-artifacts figure { margin: 0; min-width: 0; }
+.dashboard-artifacts img {
+  display: block;
+  width: 100%;
+  max-height: 230px;
+  object-fit: contain;
+  border: 1px solid var(--border);
+  border-radius: var(--rounded-btn);
+  background: #fff;
+}
+.dashboard-artifacts figcaption { color: var(--muted); font-size: 0.84rem; margin-top: 4px; }
 canvas { display: block; width: 100%; max-width: 100%; background: white; border: 1px solid var(--border); border-radius: var(--rounded-btn); }
 
 @media (max-width: 980px) {
   .topbar, .command-hero, .workflow-grid.two-strong, .grid.two, .command-console, .live-console-grid { grid-template-columns: 1fr; }
   .topbar nav { justify-content: flex-start; }
-  .metric-strip, .workflow-grid, .status-grid, .grid-form, .quick-capture-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metric-strip, .workflow-grid, .status-grid, .grid-form, .quick-capture-form, .dashboard-artifacts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 640px) {
   .page { padding: 10px; }
-  .metric-strip, .workflow-grid, .status-grid, .grid-form, .quick-capture-form { grid-template-columns: 1fr; }
+  .metric-strip, .workflow-grid, .status-grid, .grid-form, .quick-capture-form, .dashboard-artifacts { grid-template-columns: 1fr; }
   .grid-form .wide { grid-column: auto; }
   .hero-actions .button, .hero-actions .btn, .button-row .button, .button-row .btn, .capture-actions .btn, .capture-actions button, .quick-capture-form .btn, button { width: 100%; white-space: normal; }
   .tab-button { min-width: 92px; }
