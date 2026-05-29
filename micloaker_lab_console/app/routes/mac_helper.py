@@ -531,6 +531,6 @@ def _helper_connected_state(action: str, result: dict, helper: dict) -> bool:
     return True
 
 
-def _run_duration_s(run: dict) -> float:
+def _run_duration_s(run: dict) -> float | None:
     duration = float(run.get("recording", {}).get("duration_s", 0.0) or 0.0)
-    return duration if duration > 0 else 0.0
+    return duration if duration > 0 else None

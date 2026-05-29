@@ -67,6 +67,11 @@
         <div><span class="metric-label">DAQ</span><strong class="{{ 'ok-text' if daq_status.available else 'warn' }}">{{ "ready" if daq_status.available else "not connected" }}</strong></div>
         <div><span class="metric-label">Mac Helper</span><strong class="{{ 'ok-text' if mac_status.connected else 'warn' }}">{{ "connected" if mac_status.connected else "disconnected" }}</strong></div>
       </div>
+      <div class="helper-playback-status compact-helper-status" data-helper-playback-status data-helper-status-url="/mac-helper/status">
+        <span class="badge badge-warning" data-helper-playing-badge>Playback unknown</span>
+        <strong data-helper-playing-title>Checking playback status...</strong>
+        <span data-helper-playing-detail>Waiting for Helper status.</span>
+      </div>
       {% if not mac_status.connected %}
       <p class="muted">Mac Helper is disconnected. Use record-only or import a saved raw .bin; Mac playback can be connected later.</p>
       {% endif %}

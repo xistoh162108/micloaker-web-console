@@ -100,4 +100,11 @@ document.getElementById("helper-files")?.addEventListener("click", async () => {
 document.getElementById("helper-validate")?.addEventListener("click", () => helperPost("/mac-helper/validate-playback", "helper-playback-output", playbackFormData(false)));
 document.getElementById("helper-play")?.addEventListener("click", () => helperPost("/mac-helper/play", "helper-playback-output", playbackFormData(true)));
 document.getElementById("helper-status")?.addEventListener("click", () => helperGet("/mac-helper/status", "helper-status-output"));
-document.getElementById("helper-stop")?.addEventListener("click", () => helperPost("/mac-helper/stop", "helper-status-output"));
+document.getElementById("helper-stop")?.addEventListener("click", async () => {
+  await helperPost("/mac-helper/stop", "helper-status-output");
+  document.querySelectorAll("[data-helper-playback-status]").forEach((panel) => {
+    if (typeof renderHelperPlaybackStatus === "function") {
+      renderHelperPlaybackStatus(panel, { ok: true, playing: false });
+    }
+  });
+});

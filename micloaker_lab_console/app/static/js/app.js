@@ -256,6 +256,78 @@ document.querySelectorAll("[data-run-duration]").forEach((timer) => {
   setInterval(update, 1000);
 });
 
+function helperPlaybackText(data) {
+  const detail = data?.detail || data || {};
+  if (detail.connected === false || detail.error_code === "HELPER_DISCONNECTED") {
+    return {
+      ok: false,
+      playing: false,
+      title: "Mac Helper disconnected",
+      detail: detail.message || "Start Helper on the Mac or use Linux-only recording.",
+    };
+  }
+  const playing = detail.playing === true;
+  const file = detail.file || "no file";
+  const playId = detail.current_play_id || detail.play_id || "";
+  const elapsed = Number(detail.elapsed_s || 0);
+  const duration = Number(detail.expected_end_after_s || detail.duration_s || 0);
+  const remaining = playing && Number.isFinite(duration) && duration > 0 ? Math.max(0, duration - elapsed) : null;
+  if (playing) {
+    return {
+      ok: true,
+      playing: true,
+      title: `Playing: ${file}`,
+      detail: [
+        playId ? `play id ${playId}` : "",
+        Number.isFinite(elapsed) ? `${elapsed.toFixed(1)} s elapsed` : "",
+        remaining !== null ? `${remaining.toFixed(1)} s remaining` : "",
+        detail.sample_rate ? `${detail.sample_rate} Hz` : "",
+        detail.device_id !== undefined ? `device ${detail.device_id}` : "",
+      ].filter(Boolean).join(" / "),
+    };
+  }
+  return {
+    ok: true,
+    playing: false,
+    title: "Playback stopped",
+    detail: detail.last_error ? `${detail.last_error_code || "Helper error"}: ${detail.last_error}` : "No active Mac playback.",
+  };
+}
+
+function renderHelperPlaybackStatus(panel, data) {
+  const badge = panel.querySelector("[data-helper-playing-badge]");
+  const title = panel.querySelector("[data-helper-playing-title]");
+  const detail = panel.querySelector("[data-helper-playing-detail]");
+  const text = helperPlaybackText(data);
+  if (badge) {
+    badge.textContent = text.playing ? "Playing" : (text.ok ? "Stopped" : "Disconnected");
+    badge.classList.toggle("badge-success", text.playing);
+    badge.classList.toggle("badge-warning", !text.playing && text.ok);
+    badge.classList.toggle("badge-error", !text.ok);
+  }
+  if (title) title.textContent = text.title;
+  if (detail) detail.textContent = text.detail;
+}
+
+document.querySelectorAll("[data-helper-playback-status]").forEach((panel) => {
+  const url = panel.dataset.helperStatusUrl || "/mac-helper/status";
+  const update = async () => {
+    try {
+      const response = await fetch(url, { headers: { Accept: "application/json" } });
+      const data = await response.json();
+      renderHelperPlaybackStatus(panel, data);
+    } catch (error) {
+      renderHelperPlaybackStatus(panel, {
+        connected: false,
+        error_code: "HELPER_STATUS_FAILED",
+        message: error?.message || String(error),
+      });
+    }
+  };
+  update();
+  setInterval(update, 1000);
+});
+
 const plotDialog = document.createElement("div");
 plotDialog.className = "plot-modal";
 plotDialog.hidden = true;

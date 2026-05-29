@@ -25,6 +25,11 @@
   {% if status.connected and status.service %}
   <p class="muted">{{ status.service }}</p>
   {% endif %}
+  <div class="helper-playback-status" data-helper-playback-status data-helper-status-url="/mac-helper/status">
+    <span class="badge badge-warning" data-helper-playing-badge>Playback unknown</span>
+    <strong data-helper-playing-title>Checking playback status...</strong>
+    <span data-helper-playing-detail>Waiting for Helper status.</span>
+  </div>
 {% if not status.connected %}
 <p class="warn">Mac Helper disconnected. Manual Linux-only recording and analysis remain available.</p>
 {% endif %}
@@ -85,6 +90,11 @@
 <section class="card">
   <div class="card-body">
   <h2 class="card-title">Playback Status</h2>
+  <div class="helper-playback-status" data-helper-playback-status data-helper-status-url="/mac-helper/status">
+    <span class="badge badge-warning" data-helper-playing-badge>Playback unknown</span>
+    <strong data-helper-playing-title>Checking playback status...</strong>
+    <span data-helper-playing-detail>Waiting for Helper status.</span>
+  </div>
   <nav class="actions">
     <button id="helper-status" class="btn btn-outline" type="button">Refresh Status</button>
     <button id="helper-stop" class="btn btn-error" type="button">Stop Playback</button>

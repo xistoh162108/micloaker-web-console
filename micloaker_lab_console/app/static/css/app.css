@@ -748,6 +748,31 @@ pre {
   background: var(--surface);
 }
 .quality-flag-card p { margin: 0; }
+.helper-playback-status {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 10px;
+  align-items: center;
+  padding: 10px;
+  margin: 10px 0;
+  border: 1px solid var(--border);
+  border-radius: var(--rounded-box);
+  background: #eef4f2;
+}
+.helper-playback-status strong,
+.helper-playback-status span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.helper-playback-status [data-helper-playing-detail] {
+  grid-column: 2;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+.compact-helper-status {
+  margin: 8px 0;
+  padding: 8px;
+}
 .audio-preview {
   display: block;
   width: min(100%, 360px);

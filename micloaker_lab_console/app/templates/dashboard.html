@@ -68,6 +68,11 @@
             <p class="warn">Mac Helper disconnected - Linux-only recording and analysis are available.</p>
             {% endif %}
             <p>{{ mac_status.message or mac_status.hostname or "Helper reachable" }}</p>
+            <div class="helper-playback-status compact-helper-status" data-helper-playback-status data-helper-status-url="/mac-helper/status">
+              <span class="badge badge-warning" data-helper-playing-badge>Playback unknown</span>
+              <strong data-helper-playing-title>Checking playback status...</strong>
+              <span data-helper-playing-detail>Waiting for Helper status.</span>
+            </div>
             <div class="button-row">
               <a class="btn btn-outline" href="/mac-helper">Helper Setup</a>
               {% if active_session and last_run %}<a class="btn btn-outline" href="/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}#mac-helper">Run Playback Controls</a>{% endif %}
@@ -136,6 +141,11 @@
           <div class="card-title">
             <h3>Mac Playback + Run Capture</h3>
             <span class="badge {{ 'badge-success' if mac_status.connected else 'badge-warning' }}">{{ "helper connected" if mac_status.connected else "helper optional" }}</span>
+          </div>
+          <div class="helper-playback-status compact-helper-status" data-helper-playback-status data-helper-status-url="/mac-helper/status">
+            <span class="badge badge-warning" data-helper-playing-badge>Playback unknown</span>
+            <strong data-helper-playing-title>Checking playback status...</strong>
+            <span data-helper-playing-detail>Waiting for Helper status.</span>
           </div>
           <p class="small-text">Validate playback, test playback only, stop playback, or start synchronized Play & Record from this same console.</p>
           <form method="post" action="/mac-helper/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}/validate-playback" class="form grid-form run-helper-form" data-run-helper-form>
