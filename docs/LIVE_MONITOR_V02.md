@@ -69,6 +69,13 @@ Keep payload compact:
 - PSD: 128–256 bins
 - spectrogram: send one row at a time or a compact matrix
 
+Browser rendering should avoid unnecessary allocation during experiments:
+
+- draw charts through `requestAnimationFrame`
+- size canvas buffers to displayed dimensions
+- reuse spectrogram `ImageData` when row/bin dimensions do not change
+- avoid flattening spectrogram matrices on every frame
+
 ## 7. Acceptance criteria
 
 - Mock live monitor runs without DAQ.

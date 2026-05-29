@@ -20,6 +20,9 @@ let timer = null;
 let currentIntervalMs = null;
 let pendingChartFrame = false;
 let latestChartData = null;
+let cachedSpectrogramImage = null;
+let cachedSpectrogramCols = 0;
+let cachedSpectrogramBins = 0;
 
 async function post(url, data) {
   const options = { method: "POST" };
@@ -153,6 +156,7 @@ function drawLine(ctx, canvas, points, color, mode) {
   const width = resizeCanvasForDisplay(canvas);
   const height = canvas.height;
   ctx.clearRect(0, 0, width, height);
+  if (!points.length) return;
   ctx.strokeStyle = color;
   ctx.lineWidth = 2;
   ctx.beginPath();
@@ -174,9 +178,7 @@ function drawSpectrogram(rows) {
   const height = specCanvas.height;
   const cols = rows.length;
   const bins = rows[0].length;
-  spectrogramBufferCanvas.width = cols;
-  spectrogramBufferCanvas.height = bins;
-  const image = spectrogramBufferCtx.createImageData(cols, bins);
+  const image = spectrogramImage(cols, bins);
   const data = image.data;
   const bounds = nestedBounds(rows);
   const span = Math.max(1e-12, bounds.max - bounds.min);
@@ -198,6 +200,18 @@ function drawSpectrogram(rows) {
   specCtx.drawImage(spectrogramBufferCanvas, 0, 0, width, height);
 }
 
+function spectrogramImage(cols, bins) {
+  if (cachedSpectrogramImage && cachedSpectrogramCols === cols && cachedSpectrogramBins === bins) {
+    return cachedSpectrogramImage;
+  }
+  cachedSpectrogramCols = cols;
+  cachedSpectrogramBins = bins;
+  spectrogramBufferCanvas.width = cols;
+  spectrogramBufferCanvas.height = bins;
+  cachedSpectrogramImage = spectrogramBufferCtx.createImageData(cols, bins);
+  return cachedSpectrogramImage;
+}
+
 function resizeCanvasForDisplay(canvas) {
   const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
   const cssWidth = Math.max(1, Math.floor(canvas.clientWidth || canvas.width));
@@ -214,22 +228,25 @@ function resizeCanvasForDisplay(canvas) {
 function pointBounds(points) {
   let min = Infinity;
   let max = -Infinity;
-  points.forEach((v) => {
+  for (let i = 0; i < points.length; i += 1) {
+    const v = points[i];
     if (v < min) min = v;
     if (v > max) max = v;
-  });
+  }
   return { min, max };
 }
 
 function nestedBounds(rows) {
   let min = Infinity;
   let max = -Infinity;
-  rows.forEach((row) => {
-    row.forEach((v) => {
+  for (let r = 0; r < rows.length; r += 1) {
+    const row = rows[r];
+    for (let c = 0; c < row.length; c += 1) {
+      const v = row[c];
       if (v < min) min = v;
       if (v > max) max = v;
-    });
-  });
+    }
+  }
   return { min, max };
 }
 

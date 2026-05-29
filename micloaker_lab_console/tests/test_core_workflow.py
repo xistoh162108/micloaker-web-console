@@ -2400,6 +2400,8 @@ def test_live_snapshot_contains_preview_psd_and_spectrogram(tmp_path: Path, monk
     assert "requestAnimationFrame(renderCharts)" in live_js
     assert "function renderCharts()" in live_js
     assert "createImageData" in live_js
+    assert "cachedSpectrogramImage" in live_js
+    assert "spectrogramImage(cols, bins)" in live_js
     assert "drawImage(spectrogramBufferCanvas" in live_js
     assert "resizeCanvasForDisplay" in live_js
     assert "rows.flat()" not in live_js
