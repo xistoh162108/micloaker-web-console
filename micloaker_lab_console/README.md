@@ -365,6 +365,8 @@ The readiness check reports:
 - lab-only verification reminders
 - hardware validation gate status and next-action targets
 
+When combined with `--write-report`, CLI preflight findings such as server route and static asset health are included in the saved readiness JSON/Markdown evidence files.
+
 See [docs_alignment_report.md](docs_alignment_report.md) for the implementation-to-docs alignment map and [../docs/COMPLETION_AUDIT.md](../docs/COMPLETION_AUDIT.md) for the requirement-by-requirement evidence map and remaining lab verification items.
 
 Before using real hardware for report-grade experiments, follow the lab protocol in [../docs/HARDWARE_VALIDATION_PROTOCOL.md](../docs/HARDWARE_VALIDATION_PROTOCOL.md). It covers DAQ smoke capture, Mac Helper playback validation, short play-and-record trials, and attenuation pair checks.

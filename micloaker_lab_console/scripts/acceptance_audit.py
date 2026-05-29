@@ -561,6 +561,8 @@ def main() -> int:
         "Helper uses explicit `device_id` without changing system default output",
         "Hardware validation records with workflow navigation",
         "cached `ImageData` spectrogram buffers",
+        "CLI server/static asset smoke evidence",
+        "CLI Server Routes",
         "hardware_validation_plan.txt` is persisted under `.micloaker",
         "scripts/lab_readiness_check.py --record-gate",
         "readiness Markdown includes record commands",

@@ -80,7 +80,7 @@ def main() -> int:
 
     _print_report(findings, settings.workspace, settings.host, settings.port, server_url=server_url)
     if args.write_report:
-        paths = write_readiness_artifacts(settings)
+        paths = write_readiness_artifacts(settings, extra_checks=_readiness_checks_from_findings(findings))
         print(f"readiness reports written: {paths['json']} and {paths['report']}")
     return 1 if any(level == "FAIL" for level, _, _ in findings) else 0
 
@@ -296,6 +296,18 @@ def _structured_message(data: dict[str, Any]) -> str:
     if data.get("service"):
         return f"{data.get('service')} on {data.get('hostname', 'unknown host')}"
     return "ok" if data.get("ok") else str(data)
+
+
+def _readiness_checks_from_findings(findings: list[tuple[str, str, str]]) -> list[dict[str, str]]:
+    return [
+        {
+            "key": f"cli_{key}",
+            "label": "CLI " + key.replace("_", " ").title(),
+            "level": level,
+            "message": message,
+        }
+        for level, key, message in findings
+    ]
 
 
 def _print_report(findings: list[tuple[str, str, str]], workspace: Path, host: str, port: int, *, server_url: str | None) -> None:

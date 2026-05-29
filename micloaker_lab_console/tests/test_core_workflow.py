@@ -1475,8 +1475,9 @@ def test_lab_readiness_cli_reflects_validation_gate_status(tmp_path: Path):
     assert "--record-gate requires --record-status" in incomplete_record.stderr
 
 
-def test_lab_readiness_server_check_verifies_static_ui_assets(monkeypatch: pytest.MonkeyPatch):
+def test_lab_readiness_server_check_verifies_static_ui_assets(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     module = load_lab_readiness_module()
+    ensure_workspace(tmp_path)
 
     class FakeResponse:
         def __init__(self, status_code: int, text: str = "ok") -> None:
@@ -1504,6 +1505,12 @@ def test_lab_readiness_server_check_verifies_static_ui_assets(monkeypatch: pytes
     findings = []
     module._check_server_routes(findings, "http://127.0.0.1:8000")
     assert findings == [("PASS", "server_routes", "All smoke routes and UI assets returned expected content at http://127.0.0.1:8000.")]
+    paths = write_readiness_artifacts(Settings(workspace=tmp_path), extra_checks=module._readiness_checks_from_findings(findings))
+    readiness_json = read_json(paths["json"])
+    assert any(check["key"] == "cli_server_routes" for check in readiness_json["checks"])
+    readiness_report = paths["report"].read_text(encoding="utf-8")
+    assert "CLI Server Routes" in readiness_report
+    assert "All smoke routes and UI assets returned expected content" in readiness_report
 
     class MissingAssetTermClient(FakeClient):
         def get(self, url: str):

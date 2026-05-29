@@ -19,7 +19,7 @@ def readiness_paths(workspace: Path) -> dict[str, Path]:
     }
 
 
-def lab_readiness(settings: Settings) -> dict[str, Any]:
+def lab_readiness(settings: Settings, *, extra_checks: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     """Return operator-facing pre-experiment readiness checks.
 
     These checks are intentionally local and conservative. They do not prove
@@ -71,6 +71,8 @@ def lab_readiness(settings: Settings) -> dict[str, Any]:
             "details": validation,
         },
     ]
+    if extra_checks:
+        checks.extend(extra_checks)
     summary = _summary(checks)
     return {
         "generated_at": now_iso(),
@@ -91,9 +93,9 @@ def lab_readiness(settings: Settings) -> dict[str, Any]:
     }
 
 
-def write_readiness_artifacts(settings: Settings) -> dict[str, Path]:
+def write_readiness_artifacts(settings: Settings, *, extra_checks: list[dict[str, Any]] | None = None) -> dict[str, Path]:
     """Persist a point-in-time readiness snapshot for lab validation evidence."""
-    snapshot = lab_readiness(settings)
+    snapshot = lab_readiness(settings, extra_checks=extra_checks)
     paths = readiness_paths(settings.workspace)
     paths["json"].parent.mkdir(parents=True, exist_ok=True)
     atomic_write_json(paths["json"], snapshot)
