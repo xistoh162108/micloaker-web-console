@@ -104,8 +104,9 @@ workspace/
 
 ### A10. UI and logs
 
-- Dashboard cards.
-- Simple/Advanced run form.
+- Dashboard command center with always-visible Setup, Capture/Live Preview, Results/Compare/Export, Recent Runs, and Operations areas.
+- Core dashboard experiment controls must not be hidden behind tabs.
+- Quick capture controls on the Dashboard plus a detailed run form for advanced metadata.
 - Session detail and run detail pages.
 - Compare page.
 - Live Monitor page.

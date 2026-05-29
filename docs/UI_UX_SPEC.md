@@ -2,25 +2,37 @@
 
 ## 1. Design goal
 
-The UI should feel like a practical lab instrument: simple enough to use quickly, but flexible enough for real experiments. Avoid clutter by using Simple/Advanced sections.
+The UI should feel like a practical lab instrument: compact, stable, and easy to operate while a physical experiment is running. The operator must be able to see the active setup, capture controls, live preview, finalization state, latest results, and export/readiness shortcuts without switching through disconnected dashboard tabs.
+
+Detailed pages may still exist for advanced metadata, file browsing, logs, and per-run inspection. The Dashboard is the experiment command center.
 
 ## 2. Main navigation
 
 ```text
-Dashboard | Sessions | New Run | Compare | Live Monitor | Mac Helper | Files | Logs/Debug
+Dashboard | Sessions | New Run | Compare | Live Monitor | Mac Helper | Files | Logs/Debug | Ops
 ```
 
-## 3. Dashboard
+## 3. Dashboard Command Center
 
-Cards:
+The Dashboard must be organized by operating priority:
 
-- Current workspace
-- Active session
-- DAQ status
+1. Setup
+2. Capture And Live Preview
+3. Results, Compare, Export
+4. Recent Runs and Operations
+
+Always-visible state:
+
+- active session
+- DAQ/mock status
 - Mac Helper status
-- Last run
-- Last comparison result
-- Export shortcuts
+- recording/finalization status
+- latest run
+- latest comparison
+- latest finalized visual artifacts, when available
+- export and operations shortcuts
+
+Do not hide core experiment controls behind Dashboard tabs. The operator should be able to start live preview, create and record a run, watch live plots, see finalization status, and open the latest finalized artifacts from the same screen.
 
 Show warnings clearly:
 
@@ -133,6 +145,17 @@ Always show:
 Live preview is approximate. Final report values are recomputed from saved .bin.
 ```
 
+The Dashboard embeds the same operator-critical live signals:
+
+- waveform
+- RMS/peak
+- clipping
+- live PSD
+- scrolling spectrogram
+- finalization status and latest finalized run links
+
+The separate Live Monitor page is a larger inspection view, not the only place where live status is visible during operation.
+
 ## 9. Mac Helper panel
 
 Sections:
@@ -179,10 +202,13 @@ Mac Helper disconnected. Manual Linux-only recording and analysis remain availab
 - Traceback viewer
 - Copy-to-clipboard button
 
+Logs are secondary diagnostic material. The Dashboard and run detail pages should emphasize visual artifacts, experiment state, and final metrics first.
+
 ## 11. Visual style
 
 Use lightweight CSS:
 
+- DaisyUI component vocabulary implemented locally in vanilla CSS
 - clean cards
 - subtle borders
 - readable tables
@@ -190,6 +216,8 @@ Use lightweight CSS:
 - warning badges
 - responsive layout
 - no frontend build step
+- no overlapping controls at desktop, tablet, or mobile widths
+- controls wrap cleanly instead of shrinking into each other
 
 Plots should be report-friendly:
 

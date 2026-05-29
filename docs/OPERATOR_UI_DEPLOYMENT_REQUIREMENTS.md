@@ -10,10 +10,10 @@ This document records additional operator-facing requirements added during imple
 - Use DaisyUI-style component vocabulary and structure:
   - `btn`, `btn-primary`, `btn-outline`, `btn-error`
   - `card`, `card-body`, `card-title`
-  - `tabs`, `tab`, `tab-active`
   - `stats`, `stat`, `stat-value`, `stat-title`
   - `badge`, `badge-success`, `badge-warning`
   - `input`, `select`, `textarea`, `table`
+- `tabs`, `tab`, and `tab-active` may be used only for secondary detail views where switching context does not interrupt experiment operation.
 - Layout must prioritize experimental workflow over raw feature lists.
 
 ## 2. Experiment Command Center

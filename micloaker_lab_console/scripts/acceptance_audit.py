@@ -381,6 +381,10 @@ def main() -> int:
     operator_ui_doc = operator_ui_doc_path.read_text(encoding="utf-8") if operator_ui_doc_path.exists() else ""
     hardware_protocol_path = ROOT.parent / "docs" / "HARDWARE_VALIDATION_PROTOCOL.md"
     hardware_protocol = hardware_protocol_path.read_text(encoding="utf-8") if hardware_protocol_path.exists() else ""
+    ui_ux_path = ROOT.parent / "docs" / "UI_UX_SPEC.md"
+    ui_ux_doc = ui_ux_path.read_text(encoding="utf-8") if ui_ux_path.exists() else ""
+    legacy_alignment_path = ROOT.parent / "docs" / "LEGACY_NOTEBOOK_ALIGNMENT.md"
+    legacy_alignment_doc = legacy_alignment_path.read_text(encoding="utf-8") if legacy_alignment_path.exists() else ""
     checks.append(report("uvicorn app.main:app --host 127.0.0.1 --port 8000" in readme, "README documents localhost console run command"))
     checks.append(report("Ctrl+C" in readme and "rebuilds session/run lists from workspace text files" in readme, "README documents temporary lifecycle and restart recovery"))
     checks.append(report("Live Monitor" in readme and "Live preview is approximate" in readme and "saved `.bin`" in readme, "README documents live preview-only workflow"))
@@ -414,12 +418,42 @@ def main() -> int:
     daisy_terms = ["btn btn-primary", "btn btn-outline", "btn btn-error", "card", "card-body", "stats", "stat-value", "badge-success", "badge-warning", "Capture And Live Preview", "live-waveform", "live-psd", "live-spectrogram"]
     missing_daisy_terms = [term for term in daisy_terms if term not in dashboard_template]
     hidden_tab_dashboard = "tab-panel" in dashboard_template or "data-tabs" in dashboard_template
-    checks.append(report(not missing_daisy_terms and not hidden_tab_dashboard and "DaisyUI component vocabulary" in app_css and "shadcn" not in app_css.lower(), "dashboard uses local DaisyUI command console vocabulary without hidden workflow tabs"))
+    wrapping_layout_terms = ["repeat(auto-fit, minmax(140px, 1fr))", "dashboard-artifacts", "overflow-wrap: anywhere"]
+    missing_wrapping_terms = [term for term in wrapping_layout_terms if term not in app_css]
+    checks.append(report(not missing_daisy_terms and not hidden_tab_dashboard and not missing_wrapping_terms and "DaisyUI component vocabulary" in app_css and "shadcn" not in app_css.lower(), "dashboard uses local DaisyUI command console vocabulary without hidden workflow tabs"))
     if missing_daisy_terms:
         for term in missing_daisy_terms:
             print(f"  missing DaisyUI dashboard term: {term}")
     if hidden_tab_dashboard:
         print("  dashboard still contains hidden tab workflow markup")
+    if missing_wrapping_terms:
+        for term in missing_wrapping_terms:
+            print(f"  missing responsive wrapping term: {term}")
+    command_center_terms = [
+        "Dashboard Command Center",
+        "Do not hide core experiment controls behind Dashboard tabs",
+        "latest finalized visual artifacts",
+        "Logs are secondary diagnostic material",
+        "controls wrap cleanly",
+    ]
+    missing_command_center_terms = [term for term in command_center_terms if term not in ui_ux_doc]
+    checks.append(report(not missing_command_center_terms, "UI/UX spec documents one-screen experiment command center"))
+    if missing_command_center_terms:
+        for term in missing_command_center_terms:
+            print(f"  missing UI/UX term: {term}")
+    legacy_terms = [
+        "Legacy Notebook Alignment",
+        "bin_to_wav.ipynb",
+        "daq_deploy.ipynb",
+        "volume_measurer.ipynb",
+        "Raw `.bin` voltage data is the quantitative source of truth",
+        "Exact numeric parity with a notebook is not assumed",
+    ]
+    missing_legacy_terms = [term for term in legacy_terms if term not in legacy_alignment_doc]
+    checks.append(report(not missing_legacy_terms, "legacy notebook alignment is documented"))
+    if missing_legacy_terms:
+        for term in missing_legacy_terms:
+            print(f"  missing legacy alignment term: {term}")
     helper_doc_terms = [
         "cp config.example.json config.json",
         "python helper.py --config config.json",

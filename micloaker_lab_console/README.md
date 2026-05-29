@@ -4,7 +4,7 @@ MiCloaker Lab Console is a temporary local web console for acoustic/DAQ experime
 
 MiCloaker Lab Console은 음향/DAQ 실험용 임시 로컬 웹 콘솔입니다. Linux 기록 컴퓨터에서 실행하고, 모든 실험 상태를 일반 파일로 저장하며, 필요하면 Tailscale을 통해 별도 macOS 재생 Helper를 제어합니다.
 
-The UI standard is DaisyUI component vocabulary implemented locally in vanilla CSS, so the app keeps the no-build-step FastAPI/Jinja2 deployment model while using consistent `btn`, `card`, `tabs`, `stats`, and `badge` patterns.
+The UI standard is DaisyUI component vocabulary implemented locally in vanilla CSS, so the app keeps the no-build-step FastAPI/Jinja2 deployment model while using consistent `btn`, `card`, `stats`, `badge`, form, and table patterns. Core experiment operation is not hidden behind dashboard tabs.
 
 ## What This App Does
 
@@ -16,6 +16,17 @@ The UI standard is DaisyUI component vocabulary implemented locally in vanilla C
 - Finalize report-grade RMS, Welch PSD, band power, dominant-tone, and quality metrics from saved `.bin`.
 - Compare `uj0` and `uj1` runs and export JSON/CSV/PNG/SVG/ZIP artifacts.
 - Show logs, tracebacks, live preview, and optional Mac Helper playback status.
+
+## Operator Console
+
+The Dashboard is the primary experiment console. It is organized by operating priority instead of by disconnected feature tabs:
+
+1. Setup: active session, acquisition mode, and optional Mac playback state.
+2. Capture And Live Preview: quick metadata, mock/DAQ record buttons, waveform, RMS/peak, clipping, live PSD, spectrogram, and finalization status.
+3. Results, Compare, Export: latest run, latest comparison, latest finalized visual artifacts, audio preview, metrics link, and export shortcuts.
+4. Recent Runs and Operations: fast run access, readiness, and safe shutdown/status links.
+
+Use the detailed pages when you need advanced metadata, file browsing, full logs, or per-run playback details. During an experiment, the Dashboard should remain usable as the one-screen command center.
 
 ## System Layout
 

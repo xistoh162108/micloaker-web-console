@@ -20,7 +20,7 @@ done
 
 Most recent observed results:
 
-- Full test suite: `125 passed`
+- Full test suite: `126 passed`
 - Acceptance audit: `PASS`
 - Smoke routes: all listed routes returned `200`
 
@@ -54,6 +54,7 @@ Most recent observed results:
 | Individual file downloads | Proven | Session file routes and file browser support `.bin`, WAV, plots, metrics, reports, logs; route tests cover downloads. |
 | ZIP exports | Proven | Run/session/multi-session ZIPs include manifests, missing-file records, unsafe path rejection, and relative archive names. |
 | Logs/debug UI | Proven | `/logs` displays app/job events, run logs, tracebacks, and diagnostic downloads; tests cover traceback capture. |
+| Dashboard command center UI | Proven | `app/templates/dashboard.html` has always-visible Setup, Capture And Live Preview, Results/Compare/Export, live canvases, latest artifacts, recent runs, and operations; dashboard workflow controls are not hidden behind tabs. |
 | Live monitor v0.2 | Proven for mock source | `/live` and `/live/snapshot` expose waveform, RMS/peak, clipping, PSD, spectrogram, preview-only labels, finalization status, and final artifact pointers. |
 | Live monitor with real DAQ source | Not physically verified | Current live implementation uses mock preview when hardware is unavailable. A shared real DAQ live buffer should be lab-verified or extended if true real-time DAQ preview is required. |
 | Post-record finalization | Proven | Recording/import flows finalize from saved `.bin`; live snapshot surfaces latest finalized report-grade run and artifacts. |
@@ -69,7 +70,7 @@ Most recent observed results:
 
 ## Legacy Reference Alignment
 
-The notebooks under `../docs/legacy` are treated as workflow references rather than executable acceptance artifacts:
+The notebooks under `../docs/legacy` are treated as workflow references rather than executable acceptance artifacts. See `../docs/LEGACY_NOTEBOOK_ALIGNMENT.md` for the durable mapping.
 
 - `bin_to_wav.ipynb`: represented by `app/services/converter.py`, mode-tagged peak/range WAV outputs, and converter tests.
 - `plot_maker.ipynb` and `SJR_plot_maker.ipynb`: represented by waveform, PSD, spectrogram, PSD overlay, and attenuation plot generation.

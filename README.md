@@ -37,6 +37,15 @@ Tailscale
   - Connects Mac and Linux by 100.x.y.z addresses when direct browser/helper access is needed.
 ```
 
+## Operator Console Model
+
+The Linux Dashboard is the primary one-screen command center. Routine experiment operation should not require moving through hidden dashboard tabs:
+
+- Setup: session, DAQ/mock status, and optional Mac Helper state.
+- Capture And Live Preview: quick run metadata, mock/DAQ capture buttons, waveform, RMS/peak, clipping, PSD, spectrogram, and finalization status.
+- Results, Compare, Export: latest run, latest comparison, latest finalized plots/audio/metrics, and ZIP exports.
+- Recent Runs and Operations: fast run access, readiness checks, logs, and safe stop controls.
+
 ## Quick Linux Console Setup
 
 ```bash
