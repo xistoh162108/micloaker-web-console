@@ -13,6 +13,7 @@ const psdCanvas = document.getElementById("live-psd");
 const psdCtx = psdCanvas ? psdCanvas.getContext("2d") : null;
 const specCanvas = document.getElementById("live-spectrogram");
 const specCtx = specCanvas ? specCanvas.getContext("2d") : null;
+const recordingGuardMessage = document.getElementById("recording-guard-message");
 let timer = null;
 let currentIntervalMs = null;
 
@@ -46,7 +47,19 @@ async function refresh() {
   if (waveformCtx && data.waveform) drawLine(waveformCtx, waveformCanvas, data.waveform, "#245b63", "bipolar");
   if (psdCtx && data.psd) drawLine(psdCtx, psdCanvas, data.psd.map(v => Math.log10(v + 1e-18)), "#6b4e16", "auto");
   if (specCtx && data.spectrogram) drawSpectrogram(data.spectrogram);
+  updateRecordingGuard(data);
   scheduleRefresh(data);
+}
+
+function updateRecordingGuard(data) {
+  const locked = Boolean(data.active_recording || data.finalization_job || data.recording_state === "Recording" || data.recording_state === "Finalizing");
+  document.querySelectorAll("[data-recording-submit]").forEach((button) => {
+    button.disabled = locked;
+  });
+  if (recordingGuardMessage) {
+    recordingGuardMessage.hidden = !locked;
+    recordingGuardMessage.textContent = locked ? "Recording/finalization is active. Wait before starting another capture." : "";
+  }
 }
 
 function scheduleRefresh(data) {

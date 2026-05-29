@@ -89,7 +89,7 @@
           <a class="btn btn-outline" href="/live">Full Live View</a>
         </div>
         {% if active_session %}
-        <form method="post" action="/sessions/{{ active_session.session_id }}/runs" class="quick-capture-form">
+        <form method="post" action="/sessions/{{ active_session.session_id }}/runs" class="quick-capture-form" data-recording-guard>
           <label>Freq kHz
             <input name="carrier_freq_khz" type="number" step="0.1" value="25" list="dashboard-carrier-frequency-presets">
             <datalist id="dashboard-carrier-frequency-presets">
@@ -110,10 +110,11 @@
           <label>Sample rate <input name="sample_rate_hz" type="number" min="1" value="8000"></label>
           <input name="scale_mode" type="hidden" value="both">
           <input name="remove_dc" type="hidden" value="true">
-          <button class="btn btn-primary" type="submit" name="record_after_create" value="true">Create + Record Mock</button>
-          <button class="btn btn-primary" type="submit" name="record_after_create_source" value="daq">Create + Record DAQ</button>
+          <button class="btn btn-primary" type="submit" name="record_after_create" value="true" data-recording-submit {% if recording_status.active %}disabled{% endif %}>Create + Record Mock</button>
+          <button class="btn btn-primary" type="submit" name="record_after_create_source" value="daq" data-recording-submit {% if recording_status.active %}disabled{% endif %}>Create + Record DAQ</button>
           <a class="btn btn-outline" href="/runs/new?session_id={{ active_session.session_id }}">Advanced Metadata</a>
         </form>
+        <p id="recording-guard-message" class="muted" {% if not recording_status.active %}hidden{% endif %}>Recording/finalization is active. Wait before starting another capture.</p>
         {% else %}
         <p class="warn">Create a session before recording.</p>
         {% endif %}

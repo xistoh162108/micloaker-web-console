@@ -3756,6 +3756,10 @@ def test_dashboard_shows_lab_status_cards_and_shortcuts(tmp_path: Path, monkeypa
     assert ".live-command-card .capture-actions" in css
     assert ".quick-capture-form" in css
     assert "position: sticky" in css
+    assert "data-recording-submit" in page.text
+    js = client.get("/static/js/live.js").text
+    assert "updateRecordingGuard" in js
+    assert "active_recording" in js
     assert session["session_id"] in page.text
     assert final1["run_id"] in page.text
     assert "dB" in page.text
