@@ -48,6 +48,14 @@ def load_console_control_module():
     return module
 
 
+def load_lab_readiness_module():
+    spec = importlib.util.spec_from_file_location("lab_readiness_check", Path("scripts/lab_readiness_check.py"))
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def test_atomic_json_and_index_rebuild(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     ensure_workspace(tmp_path)
     for rel in [
@@ -1465,6 +1473,49 @@ def test_lab_readiness_cli_reflects_validation_gate_status(tmp_path: Path):
     )
     assert incomplete_record.returncode == 2
     assert "--record-gate requires --record-status" in incomplete_record.stderr
+
+
+def test_lab_readiness_server_check_verifies_static_ui_assets(monkeypatch: pytest.MonkeyPatch):
+    module = load_lab_readiness_module()
+
+    class FakeResponse:
+        def __init__(self, status_code: int, text: str = "ok") -> None:
+            self.status_code = status_code
+            self.text = text
+
+    class FakeClient:
+        def __init__(self, *args, **kwargs) -> None:
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args) -> None:
+            return None
+
+        def get(self, url: str):
+            if url.endswith("/static/css/app.css"):
+                return FakeResponse(200, "DaisyUI component vocabulary\ncontent-visibility: auto")
+            if url.endswith("/static/js/live.js"):
+                return FakeResponse(200, "requestAnimationFrame(renderCharts)\ncachedSpectrogramImage")
+            return FakeResponse(200)
+
+    monkeypatch.setattr(module.httpx, "Client", FakeClient)
+    findings = []
+    module._check_server_routes(findings, "http://127.0.0.1:8000")
+    assert findings == [("PASS", "server_routes", "All smoke routes and UI assets returned expected content at http://127.0.0.1:8000.")]
+
+    class MissingAssetTermClient(FakeClient):
+        def get(self, url: str):
+            if url.endswith("/static/js/live.js"):
+                return FakeResponse(200, "requestAnimationFrame(renderCharts)")
+            return super().get(url)
+
+    monkeypatch.setattr(module.httpx, "Client", MissingAssetTermClient)
+    findings = []
+    module._check_server_routes(findings, "http://127.0.0.1:8000")
+    assert findings[0][0] == "FAIL"
+    assert "/static/js/live.js: missing cachedSpectrogramImage" in findings[0][2]
 
 
 def test_new_run_page_can_create_and_record_daq_failure_metadata(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

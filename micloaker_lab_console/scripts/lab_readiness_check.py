@@ -27,6 +27,10 @@ DB_SUFFIXES = {".db", ".duckdb", ".sqlite", ".sqlite3"}
 DB_DEPENDENCIES = {"asyncpg", "databases", "duckdb", "psycopg", "psycopg2", "sqlalchemy", "tinydb"}
 SKIP_DIRS = {".git", ".mypy_cache", ".pytest_cache", ".ruff_cache", ".venv", "__pycache__"}
 SMOKE_ROUTES = ["/", "/sessions", "/runs/new", "/compare", "/mac-helper", "/files", "/logs", "/ops", "/ops/readiness", "/daq/health", "/recording/status", "/live", "/live/snapshot"]
+SMOKE_ASSETS = {
+    "/static/css/app.css": ["DaisyUI component vocabulary", "content-visibility: auto"],
+    "/static/js/live.js": ["requestAnimationFrame(renderCharts)", "cachedSpectrogramImage"],
+}
 
 
 def main() -> int:
@@ -252,10 +256,22 @@ def _check_server_routes(findings: list[tuple[str, str, str]], server_url: str) 
                 continue
             if response.status_code != 200:
                 failed.append(f"{route}: HTTP {response.status_code}")
+        for asset, required_terms in SMOKE_ASSETS.items():
+            try:
+                response = client.get(server_url.rstrip("/") + asset)
+            except Exception as exc:
+                failed.append(f"{asset}: {exc}")
+                continue
+            if response.status_code != 200:
+                failed.append(f"{asset}: HTTP {response.status_code}")
+                continue
+            missing_terms = [term for term in required_terms if term not in response.text]
+            if missing_terms:
+                failed.append(f"{asset}: missing {', '.join(missing_terms)}")
     if failed:
         findings.append(("FAIL", "server_routes", "Route smoke failures: " + "; ".join(failed)))
     else:
-        findings.append(("PASS", "server_routes", f"All smoke routes returned 200 at {server_url}."))
+        findings.append(("PASS", "server_routes", f"All smoke routes and UI assets returned expected content at {server_url}."))
 
 
 def _requirement_names(path: Path) -> set[str]:

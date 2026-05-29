@@ -16,7 +16,7 @@ Run from `micloaker_lab_console/`:
 
 Expected automated state as of this audit:
 
-- Full test suite: `133 passed`
+- Full test suite: `138 passed`
 - Acceptance audit: `PASS`
 - Tailscale lab console smoke route: `http://100.88.179.43:8000` returns HTTP 200 when started explicitly with `--tailscale`
 - Default configured bind remains `127.0.0.1`
@@ -56,7 +56,7 @@ Expected automated state as of this audit:
 | Individual, run, session, and multi-session ZIP downloads | Proven | Export service, route tests, and acceptance audit; session/multi-session ZIPs include validation/readiness evidence and `hardware_validation_plan.txt`. |
 | ZIP manifests and safe relative archive paths | Proven | Export tests and acceptance audit. |
 | Debug/log console with tracebacks | Proven | Logs route/template and traceback tests. |
-| Live Monitor waveform/RMS/peak/clipping/PSD/spectrogram | Proven for mock source | `/live`, `/live/snapshot`, live monitor service, and tests; live charts use `requestAnimationFrame`, display-size canvas rendering, and `ImageData` spectrogram updates. |
+| Live Monitor waveform/RMS/peak/clipping/PSD/spectrogram | Proven for mock source | `/live`, `/live/snapshot`, live monitor service, and tests; live charts use `requestAnimationFrame`, display-size canvas rendering, cached `ImageData` spectrogram buffers, and no per-frame spectrogram flattening. |
 | Live values are preview-only | Proven | Live UI text, JSON payload labels, docs, and tests. |
 | DAQ live preview | Code proven, lab verification required | Explicit DAQ preview route uses lazy DAQ scan and structured errors; physical DAQ waveform/PSD quality must be validated in lab. |
 | DAQ recording with real hardware | Code proven, lab verification required | DAQ code path and fake-`uldaq` tests exist; actual sample rate, channel, range, and saved `.bin` count need physical DAQ evidence. |

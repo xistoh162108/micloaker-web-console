@@ -360,6 +360,7 @@ The readiness check reports:
 - DAQ availability
 - Mac Helper config
 - server route health
+- static UI asset health for `app.css` and `live.js`
 - `/ops/readiness` route health
 - lab-only verification reminders
 - hardware validation gate status and next-action targets

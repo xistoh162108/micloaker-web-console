@@ -541,7 +541,7 @@ def main() -> int:
     checklist_terms = [
         "Automated evidence complete",
         "Lab verification required",
-        "Latest recorded result: `133 passed`",
+        "Latest recorded result: `138 passed`",
         "Run a short real DAQ smoke capture",
         "Run explicit DAQ live preview on the real DAQ",
         "Run Mac Helper on the actual macOS playback machine",
@@ -560,6 +560,7 @@ def main() -> int:
         "DAQ recording with real hardware",
         "Helper uses explicit `device_id` without changing system default output",
         "Hardware validation records with workflow navigation",
+        "cached `ImageData` spectrogram buffers",
         "hardware_validation_plan.txt` is persisted under `.micloaker",
         "scripts/lab_readiness_check.py --record-gate",
         "readiness Markdown includes record commands",
