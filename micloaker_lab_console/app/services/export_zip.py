@@ -98,6 +98,20 @@ def make_multi_session_zip(workspace: Path, session_ids: Iterable[str], out_path
     return out_path
 
 
+def make_ops_validation_zip(workspace: Path, out_path: Path) -> Path:
+    """Export workspace-level lab readiness and hardware validation evidence."""
+    included: list[str] = []
+    missing: list[str] = []
+    out_path = _unique_output_path(out_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(out_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+        _add_validation_package(zf, workspace, "ops_validation", included, missing)
+        manifest_arc = "export_manifest.json"
+        zf.writestr(manifest_arc, _manifest(workspace, [*included, manifest_arc], missing))
+    append_app_event(workspace, "ops_validation_zip_exported", path=str(out_path.relative_to(workspace)))
+    return out_path
+
+
 def _unique_output_path(out_path: Path) -> Path:
     if not out_path.exists():
         return out_path

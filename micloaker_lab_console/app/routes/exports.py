@@ -3,7 +3,8 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Query, Request
 from fastapi.responses import FileResponse
 
-from ..services.export_zip import make_multi_session_zip, make_run_zip, make_session_zip
+from ..services.export_zip import make_multi_session_zip, make_ops_validation_zip, make_run_zip, make_session_zip
+from ..services.readiness import write_readiness_artifacts
 from ..services.text_store import safe_name, session_dir
 
 router = APIRouter(prefix="/exports", tags=["exports"])
@@ -35,6 +36,15 @@ def multi_session_zip(request: Request, session_ids: list[str] | None = Query(No
     zip_name = "multi_session.zip"
     path = workspace / "uploads" / zip_name
     path = make_multi_session_zip(workspace, session_ids, path)
+    return FileResponse(path, filename=path.name)
+
+
+@router.get("/ops-validation.zip")
+def ops_validation_zip(request: Request):
+    workspace = request.app.state.settings.workspace
+    write_readiness_artifacts(request.app.state.settings)
+    path = workspace / "uploads" / "ops_validation.zip"
+    path = make_ops_validation_zip(workspace, path)
     return FileResponse(path, filename=path.name)
 
 

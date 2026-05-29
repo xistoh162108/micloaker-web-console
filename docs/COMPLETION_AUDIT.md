@@ -16,7 +16,7 @@ Run from `micloaker_lab_console/`:
 
 Expected automated state as of this audit:
 
-- Full test suite: `145 passed`
+- Full test suite: `146 passed`
 - Acceptance audit: `PASS`
 - Tailscale lab console validation route: `http://100.88.179.43:8000` returns HTTP 200 when started explicitly with `--tailscale`
 - Default configured bind remains `127.0.0.1`
@@ -53,7 +53,7 @@ Expected automated state as of this audit:
 | Waveform, PSD, spectrogram, PSD overlay, attenuation plots | Proven | Plotting service, compare artifacts, acceptance workflow, and ZIP tests; report plot previews use bounded waveform/PSD rendering and rasterized spectrogram SVG output for faster browser inspection. |
 | RMS, Welch PSD, band powers, dominant tone, clipping/DC/sample-count flags | Proven | Analyzer service and synthetic tests. |
 | `uj0`/`uj1` attenuation, remaining fraction, reduction percent | Proven | Compare service and tests. |
-| Individual, run, session, and multi-session ZIP downloads | Proven | Export service, route tests, and acceptance audit; session/multi-session ZIPs include validation/readiness evidence and `hardware_validation_plan.txt`. |
+| Individual, run, session, multi-session, and ops-evidence ZIP downloads | Proven | Export service, route tests, and acceptance audit; session/multi-session ZIPs include validation/readiness evidence and `hardware_validation_plan.txt`; `/exports/ops-validation.zip` exports workspace-level validation/readiness evidence without requiring a session export. |
 | ZIP manifests and safe relative archive paths | Proven | Export tests and acceptance audit. |
 | Debug/log console with tracebacks | Proven | Logs route/template and traceback tests. |
 | Live Monitor waveform/RMS/peak/clipping/PSD/spectrogram | Proven for offline developer source | `/live`, `/live/snapshot`, live monitor service, and tests; live charts use `requestAnimationFrame`, display-size canvas rendering, cached `ImageData` spectrogram buffers, and no per-frame spectrogram flattening. Waveform, PSD, and spectrogram canvases provide hover readouts and crosshair inspection while retaining preview-only labels. |

@@ -56,7 +56,22 @@ When `scripts/lab_readiness_check.py --check-server --write-report` was run befo
 
 Contains multiple session ZIP-like folders and a top-level manifest. Each session folder should include the workspace-level hardware validation evidence and readiness snapshot under `ops_validation/` when those files exist, so supervisors can review physical DAQ/Mac/play-and-record/attenuation evidence with the exported session package.
 
-## 5. Export manifest
+## 5. Ops validation ZIP
+
+`/exports/ops-validation.zip` contains workspace-level validation/readiness evidence without requiring a session export:
+
+```text
+ops_validation/hardware_validation.jsonl
+ops_validation/hardware_validation_report.md
+ops_validation/hardware_validation_plan.txt
+ops_validation/lab_readiness_report.json
+ops_validation/lab_readiness_report.md
+export_manifest.json
+```
+
+The route writes a fresh readiness snapshot before creating the ZIP.
+
+## 6. Export manifest
 
 Every ZIP should include:
 
@@ -71,7 +86,7 @@ Every ZIP should include:
 }
 ```
 
-## 6. Safety
+## 7. Safety
 
 - Use relative paths inside ZIP.
 - Do not include absolute home paths unless user explicitly requests.

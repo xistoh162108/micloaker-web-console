@@ -40,7 +40,7 @@ from app.services.text_store import atomic_write_text, read_json_or_default  # n
 DB_SUFFIXES = {".db", ".duckdb", ".sqlite", ".sqlite3"}
 DB_DEPENDENCIES = {"asyncpg", "databases", "duckdb", "psycopg", "psycopg2", "sqlalchemy", "tinydb"}
 SKIP_DIRS = {".git", ".mypy_cache", ".pytest_cache", ".ruff_cache", ".venv", "__pycache__"}
-VALIDATION_ROUTES = ["/", "/sessions", "/runs/new", "/compare", "/mac-helper", "/files", "/logs", "/ops", "/ops/readiness", "/daq/health", "/recording/status", "/live", "/live/snapshot"]
+VALIDATION_ROUTES = ["/", "/sessions", "/runs/new", "/compare", "/mac-helper", "/files", "/logs", "/ops", "/ops/readiness", "/exports/ops-validation.zip", "/daq/health", "/recording/status", "/live", "/live/snapshot"]
 VALIDATION_ASSETS = {
     "/static/css/app.css": ["DaisyUI component vocabulary", "content-visibility: auto"],
     "/static/js/live.js": ["requestAnimationFrame(renderCharts)", "cachedSpectrogramImage"],

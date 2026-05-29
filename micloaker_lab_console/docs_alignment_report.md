@@ -20,7 +20,7 @@ done
 
 Most recent observed results:
 
-- Full test suite: `145 passed`
+- Full test suite: `146 passed`
 - Acceptance audit: `PASS`
 - Validation routes: all listed routes returned `200`
 
@@ -52,7 +52,7 @@ Most recent observed results:
 | Plots | Proven | Waveform, PSD, spectrogram, PSD overlay, attenuation bar are generated as PNG/SVG; tests and audit verify artifacts. |
 | Compare | Proven | Manual and auto-pair `uj0`/`uj1`, metadata mismatch warnings, attenuation dB, remaining fraction, reduction percent, JSON/CSV/plots. |
 | Individual file downloads | Proven | Session file routes and file browser support `.bin`, WAV, plots, metrics, reports, logs; route tests cover downloads. |
-| ZIP exports | Proven | Run/session/multi-session ZIPs include manifests, missing-file records, unsafe path rejection, relative archive names, session-level hardware validation evidence, and readiness snapshots when records exist. |
+| ZIP exports | Proven | Run/session/multi-session ZIPs include manifests, missing-file records, unsafe path rejection, relative archive names, session-level hardware validation evidence, and readiness snapshots when records exist. `/exports/ops-validation.zip` exports workspace-level validation/readiness evidence without requiring a session export. |
 | Logs/debug UI | Proven | `/logs` displays app/job events, run logs, tracebacks, and diagnostic downloads; tests cover traceback capture. |
 | Dashboard command center UI | Proven | `app/templates/dashboard.html` has always-visible Setup, Capture And Live Preview, Results/Compare/Export, live canvases, latest artifacts, recent runs, and operations; dashboard workflow controls are not hidden behind tabs. Static plot images use lazy/async loading and stable aspect ratios so the command surface stays responsive. The current visual standard is a scientific instrument console using local DaisyUI vocabulary, neutral lab surfaces, low-contrast chart chrome, restrained semantic status colors, and cyan/blue data emphasis. |
 | Live monitor v0.2 | Proven for offline developer source | `/live` and `/live/snapshot` expose waveform, RMS/peak, clipping, PSD, spectrogram, preview-only labels, finalization status, and final artifact pointers. Canvas drawing is scheduled with `requestAnimationFrame`, avoids flattening spectrogram rows during each refresh, and provides hover readouts plus crosshair inspection for waveform time/voltage, PSD frequency/log power, and spectrogram row/frequency/value. |

@@ -600,7 +600,7 @@ def main() -> int:
     checklist_terms = [
         "Automated evidence complete",
         "Lab verification required",
-        "Latest recorded result: `145 passed`",
+        "Latest recorded result: `146 passed`",
         "Run a short real DAQ validation capture",
         "Run explicit DAQ live preview on the real DAQ",
         "Run Mac Helper on the actual macOS playback machine",
@@ -654,6 +654,8 @@ def main() -> int:
         "ops_validation/lab_readiness_report.md",
         "CLI Server Routes",
         "server/static asset validation result",
+        "/exports/ops-validation.zip",
+        "workspace-level validation/readiness evidence",
     ]
     missing_export_terms = [term for term in export_terms if term not in export_spec_doc]
     checks.append(report(not missing_export_terms, "export spec preserves readiness and CLI validation evidence"))
@@ -679,7 +681,8 @@ def main() -> int:
             print(f"  missing helper README term: {term}")
     alignment_report = (ROOT / "docs_alignment_report.md").read_text(encoding="utf-8")
     alignment_terms = [
-        "Full test suite: `145 passed`",
+        "Full test suite: `146 passed`",
+        "/exports/ops-validation.zip",
         "scientific instrument console",
         "hover readouts plus crosshair inspection",
         "evidence completeness by storing present and missing checklist labels only when non-empty `label: value` evidence is provided",

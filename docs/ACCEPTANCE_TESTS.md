@@ -81,6 +81,7 @@
 - `/ops/validation/plan` downloads the same physical validation plan as `hardware_validation_plan.txt`.
 - `/ops` and `/ops/validation` expose the persisted `hardware_validation_plan.txt` path.
 - Session ZIP and multi-session ZIP exports include `ops_validation/hardware_validation_plan.txt`.
+- `/exports/ops-validation.zip` downloads workspace-level validation/readiness evidence without requiring a session export.
 - Readiness Markdown includes terminal validation record commands for each hardware gate.
 - `scripts/lab_readiness_check.py --write-evidence-template <gate> --evidence-template-file evidence.txt` writes a fillable gate-specific evidence note and refuses accidental overwrite.
 - `/ops/validation/templates/<gate>` downloads the same fillable gate-specific evidence note for browser operators.

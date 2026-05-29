@@ -20,7 +20,7 @@ from app.config import Settings
 from app.services.analyzer import analyze_bin, auto_pair_runs, compare_metrics, compare_runs
 from app.services.converter import PEAK_WAV_HEADROOM, convert_bin_to_wav, peak_wav_name, range_wav_name
 from app.main import create_app
-from app.services.export_zip import make_multi_session_zip, make_run_zip, make_session_zip
+from app.services.export_zip import make_multi_session_zip, make_ops_validation_zip, make_run_zip, make_session_zip
 from app.services.jobs import mark_unfinished_jobs_interrupted, run_job
 from app.services.lab_validation import (
     attenuation_pair_evidence_from_comparison,
@@ -897,6 +897,52 @@ def test_session_zip_includes_hardware_validation_records(tmp_path: Path):
     assert "CLI Server Routes" in readiness_report
     assert "All validation routes and UI assets returned expected content" in readiness_report
     assert any(check["key"] == "cli_server_routes" for check in readiness_json["checks"])
+
+
+def test_ops_validation_zip_exports_workspace_evidence(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("MICLOAKER_WORKSPACE", str(tmp_path))
+    ensure_workspace(tmp_path)
+    record_lab_validation(
+        tmp_path,
+        gate="mac_playback",
+        status="warn",
+        operator="lab-op",
+        evidence="\n".join([
+            "Helper URL: http://100.64.0.10:5050",
+            "selected device_id: 4",
+            "WAV relative path: jamming_sound/25khz_1hr.wav",
+            "sample rate/channels/gain: 192000 / 1 / 0.8",
+            "validate-playback result: ok",
+            "play/stop result: pending",
+            "macOS default output unchanged: operator confirmed",
+        ]),
+    )
+    write_readiness_artifacts(Settings(workspace=tmp_path))
+
+    zip_path = make_ops_validation_zip(tmp_path, tmp_path / "ops_validation.zip")
+    with zipfile.ZipFile(zip_path) as zf:
+        names = set(zf.namelist())
+        manifest = json.loads(zf.read("export_manifest.json"))
+        records = zf.read("ops_validation/hardware_validation.jsonl").decode("utf-8")
+        readiness = json.loads(zf.read("ops_validation/lab_readiness_report.json"))
+    assert "ops_validation/hardware_validation.jsonl" in names
+    assert "ops_validation/hardware_validation_report.md" in names
+    assert "ops_validation/hardware_validation_plan.txt" in names
+    assert "ops_validation/lab_readiness_report.json" in names
+    assert "ops_validation/lab_readiness_report.md" in names
+    assert "ops_validation/hardware_validation.jsonl" in manifest["included_files"]
+    assert "ops_validation/lab_readiness_report.json" in manifest["included_files"]
+    assert "mac_playback" in records
+    assert readiness["checks"]
+
+    client = TestClient(create_app())
+    page = client.get("/ops")
+    assert page.status_code == 200
+    assert "/exports/ops-validation.zip" in page.text
+    response = client.get("/exports/ops-validation.zip")
+    assert response.status_code == 200
+    assert 'filename="ops_validation' in response.headers["content-disposition"]
+    assert (tmp_path / "uploads" / "ops_validation.zip").exists()
 
 
 def test_multi_session_zip_and_no_database_files(tmp_path: Path):
