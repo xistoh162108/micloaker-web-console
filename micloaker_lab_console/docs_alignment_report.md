@@ -12,10 +12,11 @@ Run from `micloaker_lab_console/`:
 .venv/bin/pytest -q
 .venv/bin/python scripts/acceptance_audit.py
 .venv/bin/python scripts/lab_readiness_check.py --check-server --server-url http://100.88.179.43:8000
-for path in / /sessions /runs/new /compare /mac-helper /files /logs /daq/health /recording/status /live /live/snapshot; do
+for path in / /sessions /runs/new /compare /mac-helper /files /logs /ops /ops/readiness /exports/ops-validation.zip /daq/health /recording/status /live /live/snapshot; do
   code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:8000$path")
   printf '%s %s\n' "$code" "$path"
 done
+.venv/bin/python scripts/playwright_ui_smoke.py http://100.88.179.43:8000
 ```
 
 Most recent observed results:
@@ -23,6 +24,7 @@ Most recent observed results:
 - Full test suite: `146 passed`
 - Acceptance audit: `PASS`
 - Validation routes: all listed routes returned `200`
+- Playwright UI smoke: dashboard, sessions, new-run, compare, Mac Helper, Ops, and Live screens passed desktop/mobile overflow and control-overlap checks.
 
 ## Alignment Matrix
 

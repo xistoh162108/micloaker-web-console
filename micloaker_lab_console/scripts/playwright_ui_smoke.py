@@ -6,7 +6,7 @@ from pathlib import Path
 from playwright.sync_api import sync_playwright
 
 
-URLS = ["/", "/sessions", "/runs/new", "/live"]
+URLS = ["/", "/sessions", "/runs/new", "/compare", "/mac-helper", "/ops", "/live"]
 VIEWPORTS = [(1440, 1000), (390, 900)]
 
 
@@ -29,7 +29,7 @@ def intersects(a, b) -> bool:
 
 
 def main() -> int:
-    base_url = sys.argv[1] if len(sys.argv) > 1 else "http://100.88.179.43:8000"
+    base_url = sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8000"
     out_dir = Path("workspace/.micloaker/playwright")
     out_dir.mkdir(parents=True, exist_ok=True)
     failures: list[str] = []
