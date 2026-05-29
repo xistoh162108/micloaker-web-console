@@ -17,7 +17,20 @@ if str(ROOT) not in sys.path:
 
 from app.config import DEFAULT_HOST, DEFAULT_PORT, get_settings  # noqa: E402
 from app.services.daq import daq_health  # noqa: E402
-from app.services.lab_validation import VALIDATION_GATES, VALIDATION_STATUSES, ensure_validation_artifacts, record_lab_validation, validation_evidence_template, validation_paths, validation_plan, validation_summary  # noqa: E402
+from app.services.lab_validation import (  # noqa: E402
+    VALIDATION_GATES,
+    VALIDATION_STATUSES,
+    attenuation_pair_evidence_from_comparison,
+    daq_validation_evidence_from_run,
+    ensure_validation_artifacts,
+    mac_playback_evidence_from_run,
+    play_and_record_evidence_from_run,
+    record_lab_validation,
+    validation_evidence_template,
+    validation_paths,
+    validation_plan,
+    validation_summary,
+)
 from app.services.mac_helper_client import MacHelperClient  # noqa: E402
 from app.services.readiness import write_readiness_artifacts  # noqa: E402
 from app.services.text_store import atomic_write_text, read_json_or_default  # noqa: E402
@@ -43,6 +56,12 @@ def main() -> int:
     parser.add_argument("--write-evidence-template", choices=sorted(VALIDATION_GATES), help="Write an operator-fillable evidence template for the selected validation gate.")
     parser.add_argument("--evidence-template-file", default="evidence.txt", help="Output path for --write-evidence-template.")
     parser.add_argument("--overwrite-evidence-template", action="store_true", help="Allow --write-evidence-template to replace an existing file.")
+    parser.add_argument("--write-evidence-draft", choices=["daq", "mac", "play_and_record", "attenuation"], help="Write a validation evidence draft from saved run or comparison artifacts.")
+    parser.add_argument("--evidence-draft-file", default="evidence_draft.txt", help="Output path for --write-evidence-draft.")
+    parser.add_argument("--overwrite-evidence-draft", action="store_true", help="Allow --write-evidence-draft to replace an existing file.")
+    parser.add_argument("--draft-session-id", default="", help="Session ID for --write-evidence-draft.")
+    parser.add_argument("--draft-run-id", default="", help="Run ID for run-based evidence drafts.")
+    parser.add_argument("--draft-compare-id", default="", help="Comparison ID for attenuation evidence drafts.")
     parser.add_argument("--record-gate", choices=sorted(VALIDATION_GATES), help="Append a hardware validation record for this gate before checking readiness.")
     parser.add_argument("--record-status", choices=sorted(VALIDATION_STATUSES), help="Status for --record-gate.")
     parser.add_argument("--record-operator", default="", help="Operator name or initials for --record-gate.")
@@ -64,6 +83,9 @@ def main() -> int:
         return 0
     if args.write_evidence_template:
         _write_evidence_template_from_args(parser, args)
+        return 0
+    if args.write_evidence_draft:
+        _write_evidence_draft_from_args(parser, args, settings.workspace)
         return 0
     _check_default_bind(findings, settings.host)
     _check_no_database(findings)
@@ -121,6 +143,35 @@ def _write_evidence_template_from_args(parser: argparse.ArgumentParser, args: ar
         parser.error(f"--evidence-template-file already exists: {path}; pass --overwrite-evidence-template to replace it")
     atomic_write_text(path, validation_evidence_template(args.write_evidence_template))
     print(f"evidence template written: gate={args.write_evidence_template} path={path}")
+
+
+def _write_evidence_draft_from_args(parser: argparse.ArgumentParser, args: argparse.Namespace, workspace: Path) -> None:
+    if not args.draft_session_id:
+        parser.error("--write-evidence-draft requires --draft-session-id")
+    if args.write_evidence_draft == "attenuation":
+        if not args.draft_compare_id:
+            parser.error("--write-evidence-draft attenuation requires --draft-compare-id")
+        try:
+            draft = attenuation_pair_evidence_from_comparison(workspace, args.draft_session_id, args.draft_compare_id)
+        except FileNotFoundError as exc:
+            parser.error(str(exc))
+    else:
+        if not args.draft_run_id:
+            parser.error(f"--write-evidence-draft {args.write_evidence_draft} requires --draft-run-id")
+        draft_functions = {
+            "daq": daq_validation_evidence_from_run,
+            "mac": mac_playback_evidence_from_run,
+            "play_and_record": play_and_record_evidence_from_run,
+        }
+        try:
+            draft = draft_functions[args.write_evidence_draft](workspace, args.draft_session_id, args.draft_run_id)
+        except FileNotFoundError as exc:
+            parser.error(str(exc))
+    path = Path(args.evidence_draft_file).expanduser()
+    if path.exists() and not args.overwrite_evidence_draft:
+        parser.error(f"--evidence-draft-file already exists: {path}; pass --overwrite-evidence-draft to replace it")
+    atomic_write_text(path, draft)
+    print(f"evidence draft written: type={args.write_evidence_draft} path={path}")
 
 
 def _record_evidence_text(parser: argparse.ArgumentParser, args: argparse.Namespace) -> str:

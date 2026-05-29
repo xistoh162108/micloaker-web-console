@@ -1500,6 +1500,75 @@ def test_run_page_downloads_daq_validation_evidence_draft(tmp_path: Path, monkey
     assert missing_mac.json()["detail"]["error_code"] == "RUN_NOT_FOUND"
 
 
+def test_lab_readiness_cli_writes_artifact_based_evidence_drafts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("MICLOAKER_WORKSPACE", str(tmp_path))
+    ensure_workspace(tmp_path)
+    session = create_session(tmp_path, "cli evidence drafts")
+    run0 = create_run_metadata(tmp_path, session["session_id"], carrier_freq_khz=25, uj="uj0", duration_s=0.1)
+    run1 = create_run_metadata(tmp_path, session["session_id"], carrier_freq_khz=25, uj="uj1", duration_s=0.1)
+    final0 = record_mock_and_finalize(tmp_path, run0)
+    final1 = record_mock_and_finalize(tmp_path, run1)
+    client = TestClient(create_app())
+    compare = client.post(
+        f"/compare/{session['session_id']}",
+        data={"uj0_run_id": final0["run_id"], "uj1_run_id": final1["run_id"]},
+        follow_redirects=True,
+    )
+    assert compare.status_code == 200
+    compare_id = read_json(next((session_dir(tmp_path, session["session_id"]) / "comparisons").glob("*.json")))["compare_id"]
+    env = {**os.environ, "MICLOAKER_WORKSPACE": str(tmp_path)}
+    cwd = Path(__file__).resolve().parents[1]
+
+    draft_specs = [
+        ("daq", "--draft-run-id", final0["run_id"], "Evidence Draft: Linux DAQ validation capture", "daq_smoke"),
+        ("mac", "--draft-run-id", final0["run_id"], "Evidence Draft: Mac Helper playback validation", "mac_playback"),
+        ("play_and_record", "--draft-run-id", final0["run_id"], "Evidence Draft: End-to-end play and record trial", "play_and_record"),
+        ("attenuation", "--draft-compare-id", compare_id, "Evidence Draft: uj0/uj1 attenuation pair check", "attenuation_pair"),
+    ]
+    for draft_type, id_flag, object_id, expected_header, gate in draft_specs:
+        draft_path = tmp_path / f"{draft_type}_evidence.txt"
+        command = [
+            sys.executable,
+            "scripts/lab_readiness_check.py",
+            "--write-evidence-draft",
+            draft_type,
+            "--draft-session-id",
+            session["session_id"],
+            id_flag,
+            object_id,
+            "--evidence-draft-file",
+            str(draft_path),
+        ]
+        result = subprocess.run(command, cwd=cwd, env=env, text=True, capture_output=True, check=False)
+        assert result.returncode == 0, result.stderr
+        assert f"evidence draft written: type={draft_type}" in result.stdout
+        text = draft_path.read_text(encoding="utf-8")
+        assert expected_header in text
+        assert validation_evidence_completeness(gate, evidence=text)["complete"] is True
+
+        duplicate = subprocess.run(command, cwd=cwd, env=env, text=True, capture_output=True, check=False)
+        assert duplicate.returncode == 2
+        assert "--evidence-draft-file already exists" in duplicate.stderr
+
+    missing_run_arg = subprocess.run(
+        [
+            sys.executable,
+            "scripts/lab_readiness_check.py",
+            "--write-evidence-draft",
+            "daq",
+            "--draft-session-id",
+            session["session_id"],
+        ],
+        cwd=cwd,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert missing_run_arg.returncode == 2
+    assert "--write-evidence-draft daq requires --draft-run-id" in missing_run_arg.stderr
+
+
 def test_lab_readiness_cli_reflects_validation_gate_status(tmp_path: Path):
     ensure_workspace(tmp_path)
     env = {**os.environ, "MICLOAKER_WORKSPACE": str(tmp_path)}
