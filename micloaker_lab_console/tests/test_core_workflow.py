@@ -827,15 +827,20 @@ def test_session_zip_includes_hardware_validation_records(tmp_path: Path):
         manifest = json.loads(zf.read(f"{session['session_id']}/export_manifest.json"))
         records = zf.read(f"{session['session_id']}/ops_validation/hardware_validation.jsonl").decode("utf-8")
         report = zf.read(f"{session['session_id']}/ops_validation/hardware_validation_report.md").decode("utf-8")
+        plan = zf.read(f"{session['session_id']}/ops_validation/hardware_validation_plan.txt").decode("utf-8")
         readiness_report = zf.read(f"{session['session_id']}/ops_validation/lab_readiness_report.md").decode("utf-8")
     assert f"{session['session_id']}/ops_validation/hardware_validation.jsonl" in names
     assert f"{session['session_id']}/ops_validation/hardware_validation_report.md" in names
     assert f"{session['session_id']}/ops_validation/lab_readiness_report.json" in names
     assert f"{session['session_id']}/ops_validation/lab_readiness_report.md" in names
+    assert f"{session['session_id']}/ops_validation/hardware_validation_plan.txt" in names
     assert f"{session['session_id']}/ops_validation/hardware_validation.jsonl" in manifest["included_files"]
+    assert f"{session['session_id']}/ops_validation/hardware_validation_plan.txt" in manifest["included_files"]
     assert f"{session['session_id']}/ops_validation/lab_readiness_report.json" in manifest["included_files"]
     assert "daq_smoke" in records
     assert "DAQ sample count and channel verified." in report
+    assert "MiCloaker Physical Validation Plan" in plan
+    assert "scripts/lab_readiness_check.py --record-gate daq_smoke" in plan
     assert "Gate Evidence Checklist" in report
     assert "selected device_id" in report
     assert "MiCloaker Lab Readiness Report" in readiness_report
@@ -858,8 +863,10 @@ def test_multi_session_zip_and_no_database_files(tmp_path: Path):
     assert f"{s2['session_id']}/export_manifest.json" in names
     assert f"{s1['session_id']}/session.json" in session_manifest["included_files"]
     assert f"{s1['session_id']}/ops_validation/hardware_validation.jsonl" in session_manifest["included_files"]
+    assert f"{s1['session_id']}/ops_validation/hardware_validation_plan.txt" in session_manifest["included_files"]
     assert f"{s1['session_id']}/ops_validation/lab_readiness_report.json" in session_manifest["included_files"]
     assert f"{s1['session_id']}/ops_validation/hardware_validation.jsonl" in names
+    assert f"{s1['session_id']}/ops_validation/hardware_validation_plan.txt" in names
     assert f"{s1['session_id']}/ops_validation/lab_readiness_report.json" in names
     assert session_manifest["missing_files"] == []
     assert session_manifest["unsafe_files"] == []

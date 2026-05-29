@@ -53,7 +53,7 @@ Expected automated state as of this audit:
 | Waveform, PSD, spectrogram, PSD overlay, attenuation plots | Proven | Plotting service, compare artifacts, acceptance workflow, and ZIP tests; report plot previews use bounded waveform/PSD rendering and rasterized spectrogram SVG output for faster browser inspection. |
 | RMS, Welch PSD, band powers, dominant tone, clipping/DC/sample-count flags | Proven | Analyzer service and synthetic tests. |
 | `uj0`/`uj1` attenuation, remaining fraction, reduction percent | Proven | Compare service and tests. |
-| Individual, run, session, and multi-session ZIP downloads | Proven | Export service, route tests, and acceptance audit. |
+| Individual, run, session, and multi-session ZIP downloads | Proven | Export service, route tests, and acceptance audit; session/multi-session ZIPs include validation/readiness evidence and `hardware_validation_plan.txt`. |
 | ZIP manifests and safe relative archive paths | Proven | Export tests and acceptance audit. |
 | Debug/log console with tracebacks | Proven | Logs route/template and traceback tests. |
 | Live Monitor waveform/RMS/peak/clipping/PSD/spectrogram | Proven for mock source | `/live`, `/live/snapshot`, live monitor service, and tests; live charts use `requestAnimationFrame`, display-size canvas rendering, and `ImageData` spectrogram updates. |

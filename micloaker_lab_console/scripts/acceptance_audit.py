@@ -307,9 +307,10 @@ def audit_mock_workflow(workspace: Path) -> tuple[bool, list[str]]:
             failures.append("session ZIP missing saved comparison JSON")
         validation_jsonl = f"{session['session_id']}/ops_validation/hardware_validation.jsonl"
         validation_report = f"{session['session_id']}/ops_validation/hardware_validation_report.md"
+        validation_plan = f"{session['session_id']}/ops_validation/hardware_validation_plan.txt"
         readiness_json = f"{session['session_id']}/ops_validation/lab_readiness_report.json"
         readiness_report = f"{session['session_id']}/ops_validation/lab_readiness_report.md"
-        if validation_jsonl not in session_names or validation_report not in session_names:
+        if validation_jsonl not in session_names or validation_report not in session_names or validation_plan not in session_names:
             failures.append("session ZIP missing hardware validation evidence files")
         if readiness_json not in session_names or readiness_report not in session_names:
             failures.append("session ZIP missing lab readiness evidence files")

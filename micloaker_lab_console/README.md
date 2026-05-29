@@ -201,7 +201,7 @@ workspace/.micloaker/lab_readiness_report.json
 workspace/.micloaker/lab_readiness_report.md
 ```
 
-Session ZIP and multi-session ZIP exports include these files under `ops_validation/` when validation/readiness records exist.
+Session ZIP and multi-session ZIP exports include these files plus `hardware_validation_plan.txt` under `ops_validation/` when validation/readiness records exist.
 The `/ops` page also provides direct JSONL/Markdown downloads for validation records and point-in-time readiness snapshots.
 It also provides `Download Validation Plan`, a text copy of the ordered physical validation gates and terminal record commands.
 The `/ops` validation form shows gate-specific checklist fields and includes a `Use checklist draft` button that fills the evidence box with field labels before the operator records measured values.
