@@ -17,6 +17,7 @@
 - [ ] Implement finalization job.
 - [ ] Implement compare metrics and plots.
 - [ ] Implement exports.
+- [ ] Implement hardware validation evidence records and readiness gate status.
 - [ ] Implement web routes and templates.
 - [ ] Implement logs/debug UI.
 - [ ] Implement real DAQ functions with lazy `uldaq` import.
@@ -36,3 +37,4 @@
 - [ ] Helper blocks path traversal outside `wav_root`.
 - [ ] Logs and tracebacks are visible in UI.
 - [ ] ZIP exports include manifests.
+- [ ] Hardware validation evidence is stored as text, downloadable, included in session exports, and reflected in readiness checks.

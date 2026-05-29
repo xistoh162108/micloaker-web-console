@@ -20,7 +20,7 @@ done
 
 Most recent observed results:
 
-- Full test suite: `126 passed`
+- Full test suite: `129 passed`
 - Acceptance audit: `PASS`
 - Smoke routes: all listed routes returned `200`
 
@@ -66,7 +66,8 @@ Most recent observed results:
 | README and dependency files | Proven | `README.md`, `requirements.txt`, `requirements-mac-helper.txt`, `mac_helper/README.md`. |
 | Hardware validation protocol | Proven as documented protocol | `../docs/HARDWARE_VALIDATION_PROTOCOL.md` defines the DAQ smoke capture, Mac Helper playback validation, play-and-record trial, attenuation pair check, and pass/fail evidence. Physical execution remains lab work. |
 | Safe start/stop operation | Proven for local controls | `scripts/console_control.py`, `/ops`, Linux desktop launcher installer, and Mac Helper control scripts provide explicit start/status/stop flows. |
-| Hardware validation evidence capture | Proven for text persistence | `/ops` records operator-entered DAQ/Mac/play-and-record/attenuation validation evidence to `workspace/.micloaker/hardware_validation.jsonl` and `hardware_validation_report.md`; physical execution remains lab work. |
+| Hardware validation evidence capture | Proven for text persistence | `/ops` records operator-entered DAQ/Mac/play-and-record/attenuation validation evidence to `workspace/.micloaker/hardware_validation.jsonl` and `hardware_validation_report.md`; direct downloads and ZIP inclusion are tested. Physical execution remains lab work. |
+| Hardware validation readiness gates | Proven for operator-entered evidence | `/ops/readiness` and `scripts/lab_readiness_check.py` use the latest record per gate; `fail` makes readiness fail, `warn`/missing stays warning, and `pass`/`not applicable` closes a gate. |
 | Tests without DAQ/Mac Helper | Proven | Full suite passes without physical DAQ or Mac Helper service. |
 
 ## Legacy Reference Alignment
