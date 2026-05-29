@@ -32,7 +32,7 @@
         -
         {% endif %}
       </td>
-      <td><a href="/sessions/{{ session_id }}/files/{{ file.path }}?download=1" download>download</a></td>
+      <td><a class="btn btn-outline table-action" href="/sessions/{{ session_id }}/files/{{ file.path }}?download=1" download>download</a></td>
     </tr>
     {% else %}
     <tr><td colspan="6">No files yet.</td></tr>

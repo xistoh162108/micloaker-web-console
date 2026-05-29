@@ -30,8 +30,8 @@
         -
         {% endif %}
       </td>
-      <td><a href="{{ file.download_url }}">open</a></td>
-      <td><a href="{{ file.download_url }}?download=1" download>download</a></td>
+      <td><a class="btn btn-outline table-action" href="{{ file.download_url }}">open</a></td>
+      <td><a class="btn btn-outline table-action" href="{{ file.download_url }}?download=1" download>download</a></td>
     </tr>
     {% else %}
     <tr><td colspan="8">No session files yet.</td></tr>

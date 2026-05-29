@@ -11,6 +11,7 @@
 </section>
 <section>
   <h2>Job Status</h2>
+  <div class="table-scroll log-table-scroll">
   <table class="data-table">
     <thead>
       <tr>
@@ -47,9 +48,11 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
 </section>
 <section>
   <h2>Mac Helper Client Logs</h2>
+  <div class="table-scroll log-table-scroll">
   <table class="data-table">
     <thead>
       <tr>
@@ -76,6 +79,7 @@
       {% endfor %}
     </tbody>
   </table>
+  </div>
 </section>
 <section class="grid two">
   <div>
@@ -91,19 +95,19 @@
   <div>
     <h2>{% if selected_log %}{{ selected_log.path }}{% else %}Selected Log{% endif %}</h2>
     <button class="copy-log" type="button" data-copy-target="selected-log-text">Copy Selected Log</button>
-    <pre id="selected-log-text">{% if selected_log %}{{ selected_log.text }}{% else %}Select a run log to inspect traceback/job details.{% endif %}</pre>
+    <pre id="selected-log-text" class="scroll-pre log-scroll">{% if selected_log %}{{ selected_log.text }}{% else %}Select a run log to inspect traceback/job details.{% endif %}</pre>
   </div>
 </section>
 <section class="grid two">
   <div>
     <h2>Traceback Viewer</h2>
     <button class="copy-log" type="button" data-copy-target="traceback-text">Copy Tracebacks</button>
-    <pre id="traceback-text">{{ traceback_text }}</pre>
+    <pre id="traceback-text" class="scroll-pre log-scroll">{{ traceback_text }}</pre>
   </div>
   <div>
     <h2>App and Job Events</h2>
     <button class="copy-log" type="button" data-copy-target="app-job-log-text">Copy App/Job Events</button>
-    <pre id="app-job-log-text">{{ log_text }}</pre>
+    <pre id="app-job-log-text" class="scroll-pre log-scroll">{{ log_text }}</pre>
   </div>
 </section>
 {% endblock %}

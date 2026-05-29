@@ -23,9 +23,10 @@
   <div class="card-body">
     <div class="card-title"><h2>Multi-Session Export</h2></div>
     <form method="get" action="/exports/multi-session.zip" class="form">
-      <div class="checkbox-grid">
+      <label class="filter-box">Filter sessions <input type="search" data-filter-input data-filter-target="#multi-session-export-list" placeholder="type session id or title"></label>
+      <div id="multi-session-export-list" class="checkbox-grid scroll-list export-session-list">
         {% for session in sessions %}
-        <label class="check-row"><input type="checkbox" name="session_ids" value="{{ session.session_id }}"> <span>{{ session.session_id }}</span></label>
+        <label class="check-row" data-filter-item="{{ session.session_id }} {{ session.title }}"><input type="checkbox" name="session_ids" value="{{ session.session_id }}"> <span>{{ session.session_id }}</span></label>
         {% endfor %}
       </div>
       <div class="form-actions"><button type="submit" class="btn btn-primary">Download Selected ZIP</button></div>

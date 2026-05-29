@@ -1,40 +1,37 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>New Run</h1>
-<p class="muted">Create a run in an existing session, or create a session first when starting a new experiment.</p>
-<section class="grid two">
-  <div class="card">
-    <div class="card-body">
-    <h2 class="card-title">Create Session</h2>
-    <form method="post" action="/sessions" class="form">
-      <label>Title <input name="title" required value="r25k_test"></label>
-      <label>Notes <textarea name="notes"></textarea></label>
-      <div class="form-actions"><button type="submit" class="btn btn-primary">Create Session</button></div>
-    </form>
-  </div>
-  </div>
-  <div class="card">
-    <div class="card-body">
-    <h2 class="card-title">Choose a Session</h2>
-    <form method="get" action="/runs/new" class="form inline">
-      <select name="session_id" aria-label="Session">
-        {% for session in sessions %}
-        <option value="{{ session.session_id }}" {% if session.session_id == selected_session_id %}selected{% endif %}>{{ session.session_id }} ({{ session.run_count }} runs)</option>
-        {% endfor %}
-      </select>
+<p class="muted">Create a run in an existing session. Create new sessions from the Sessions page.</p>
+<section class="card">
+  <div class="card-body">
+    <div class="card-title">
+      <h2>Choose a Session</h2>
+      <a class="btn btn-outline" href="/sessions">Create or manage sessions</a>
+    </div>
+    {% if sessions %}
+    <form method="get" action="/runs/new" class="session-picker-form">
+      <label>Session
+        <select name="session_id" aria-label="Session">
+          {% for session in sessions %}
+          <option value="{{ session.session_id }}" {% if session.session_id == selected_session_id %}selected{% endif %}>{{ session.session_id }} / {{ session.run_count }} runs</option>
+          {% endfor %}
+        </select>
+      </label>
       <button type="submit" class="btn btn-primary">Use Session</button>
     </form>
-    <ul class="list">
+    <label class="filter-box">Filter sessions <input type="search" data-filter-input data-filter-target="#new-run-session-list" placeholder="type session id or title"></label>
+    <div id="new-run-session-list" class="scroll-list session-scroll-list">
       {% for session in sessions %}
-      <li>
-        <a href="/sessions/{{ session.session_id }}">{{ session.session_id }}</a>
-        <span>{{ session.run_count }} runs</span>
-      </li>
-      {% else %}
-      <li>No sessions yet.</li>
+      <a class="session-row" href="/runs/new?session_id={{ session.session_id }}" data-filter-item="{{ session.session_id }} {{ session.title }}">
+        <span>{{ session.session_id }}</span>
+        <small>{{ session.run_count }} runs</small>
+      </a>
       {% endfor %}
-    </ul>
-  </div>
+    </div>
+    {% else %}
+    <p>No sessions yet.</p>
+    <a class="btn btn-primary" href="/sessions">Create Session</a>
+    {% endif %}
   </div>
 </section>
 {% if selected_session_id %}
@@ -61,7 +58,6 @@
           <option value="custom">custom ordinary sound</option>
         </select>
       </label>
-      <p class="wide small-text">0 kHz = no jamming signal emitted. Sound describes ordinary recorded sound or WER material, not ultrasonic jamming playback.</p>
       <label>Duration <input name="duration_s" type="number" min="0.01" step="0.01" value="1.00" inputmode="decimal"></label>
       <label>Sample rate <input name="sample_rate_hz" type="number" min="1" value="8000"></label>
       <label>Scale mode <select name="scale_mode"><option value="both">peak + range</option><option value="peak">peak</option><option value="range">range</option></select></label>

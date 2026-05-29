@@ -26,6 +26,63 @@ document.querySelectorAll("[data-tabs]").forEach((tabs) => {
   });
 });
 
+document.querySelectorAll("[data-filter-input]").forEach((input) => {
+  const target = document.querySelector(input.dataset.filterTarget || "");
+  if (!target) return;
+  const items = Array.from(target.querySelectorAll("[data-filter-item]"));
+  input.addEventListener("input", () => {
+    const needle = input.value.trim().toLowerCase();
+    items.forEach((item) => {
+      const haystack = String(item.dataset.filterItem || item.textContent || "").toLowerCase();
+      item.hidden = Boolean(needle) && !haystack.includes(needle);
+    });
+  });
+});
+
+document.querySelectorAll("[data-run-helper-form]").forEach((form) => {
+  const sessionTarget = form.querySelector("[data-session-target]");
+  const target = form.querySelector("[data-run-target]");
+  if (!target) return;
+  const runOptions = Array.from(target.options);
+  const actionButtons = Array.from(form.querySelectorAll("[data-helper-action]"));
+  const routeSuffix = {
+    "Validate Playback": "validate-playback",
+    Play: "play",
+    "Stop Playback": "stop",
+    "Play & Dev Capture": "play-and-capture-mock",
+    "Play & Capture DAQ": "play-and-capture-daq",
+    "Play & Dev Record": "play-and-record-mock",
+    "Play & Record DAQ": "play-and-record-daq",
+  };
+  const updateRunActions = () => {
+    const [sessionId, runId] = String(target.value || "").split("|");
+    if (!sessionId || !runId) return;
+    actionButtons.forEach((button) => {
+      const suffix = routeSuffix[button.dataset.helperAction];
+      if (suffix) button.setAttribute("formaction", `/mac-helper/sessions/${sessionId}/runs/${runId}/${suffix}`);
+    });
+    form.setAttribute("action", `/mac-helper/sessions/${sessionId}/runs/${runId}/validate-playback`);
+  };
+  const updateRunChoices = () => {
+    if (!sessionTarget) return;
+    const sessionId = sessionTarget.value;
+    let firstVisible = null;
+    runOptions.forEach((option) => {
+      const visible = option.dataset.sessionId === sessionId;
+      option.hidden = !visible;
+      option.disabled = !visible;
+      if (visible && !firstVisible) firstVisible = option;
+    });
+    if (target.selectedOptions[0]?.disabled && firstVisible) {
+      target.value = firstVisible.value;
+    }
+    updateRunActions();
+  };
+  sessionTarget?.addEventListener("change", updateRunChoices);
+  target.addEventListener("change", updateRunActions);
+  updateRunChoices();
+});
+
 document.querySelectorAll("form").forEach((form) => {
   const method = (form.getAttribute("method") || "get").toLowerCase();
   if (method !== "post" || form.dataset.nativeSubmit === "true") return;

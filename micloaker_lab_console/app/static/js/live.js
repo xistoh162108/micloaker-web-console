@@ -109,8 +109,10 @@ function updateRecordingGuard(data) {
 
 function scheduleRefresh(data) {
   const intervals = data.client_poll_intervals_ms || {};
+  const recommended = data.recommended_update_rates_hz || {};
   const state = data.recording_state || "Stopped";
-  const nextInterval = (state === "Recording" || data.running) ? (intervals.preview || intervals.recording || 200) : (intervals.idle || 1000);
+  const recommendedPreviewMs = recommended.preview ? Math.max(100, Math.round(1000 / Number(recommended.preview))) : null;
+  const nextInterval = (state === "Recording" || data.running) ? (intervals.preview || intervals.recording || recommendedPreviewMs || 200) : (intervals.idle || 1000);
   if (timer && currentIntervalMs === nextInterval) return;
   if (timer) clearInterval(timer);
   timer = setInterval(refresh, nextInterval);
@@ -153,23 +155,15 @@ function metricReadoutHtml(data) {
   const rms = formatMetric(data.rms_v, " V");
   const peak = formatMetric(data.peak_v, " V");
   const rate = Number.isFinite(Number(data.sample_rate_hz)) ? `${Number(data.sample_rate_hz).toLocaleString()} Hz` : "n/a";
+  const finalSource = data.final_metrics_source || ".bin";
   return `
     <div class="metric-readout-grid">
       <div><span class="metric-label">RMS</span><strong>${rms}</strong></div>
       <div><span class="metric-label">Peak</span><strong>${peak}</strong></div>
       <div><span class="metric-label">Sample rate</span><strong>${rate}</strong></div>
       <div><span class="metric-label">Preview</span><strong>${escapeHtml(data.preview_source || "daq")}</strong></div>
+      <div><span class="metric-label">Final source</span><strong>${escapeHtml(finalSource)}</strong></div>
     </div>
-    <p class="muted small-text">${escapeHtml(data.preview_label || "Preview only")}</p>
-    <details><summary>Preview payload</summary><pre class="scroll-pre">${escapeHtml(JSON.stringify({
-      final_metrics_source: data.final_metrics_source,
-      waveform_points: data.waveform_point_count,
-      psd_bins: data.psd_bin_count,
-      spectrogram_rows: data.spectrogram_row_count,
-      recommended_update_rates_hz: data.recommended_update_rates_hz,
-      payload_limits: data.payload_limits,
-      preview_saved: data.preview_saved,
-    }, null, 2))}</pre></details>
   `;
 }
 

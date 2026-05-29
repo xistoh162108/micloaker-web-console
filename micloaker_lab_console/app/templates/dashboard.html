@@ -115,7 +115,6 @@
               <option value="custom">custom ordinary sound</option>
             </select>
           </label>
-          <p class="wide small-text">0 kHz = no jamming signal emitted. Sound describes ordinary recorded sound or WER material, not ultrasonic jamming playback.</p>
           <label>Duration s <input name="duration_s" type="number" min="0.01" step="0.01" value="1.00" inputmode="decimal"></label>
           <label>Sample rate <input name="sample_rate_hz" type="number" min="1" value="8000"></label>
           <input name="scale_mode" type="hidden" value="both">
@@ -137,11 +136,54 @@
             <h3>Mac Playback + Run Capture</h3>
             <span class="badge {{ 'badge-success' if mac_status.connected else 'badge-warning' }}">{{ "helper connected" if mac_status.connected else "helper optional" }}</span>
           </div>
-          <p class="small-text">Target run: <a href="/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}">{{ last_run.run_id }}</a>. Validate playback, test playback only, stop playback, or start synchronized Play & Record from this same console.</p>
+          <p class="small-text">Validate playback, test playback only, stop playback, or start synchronized Play & Record from this same console.</p>
           <form method="post" action="/mac-helper/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}/validate-playback" class="form grid-form run-helper-form" data-run-helper-form>
-            <label>Mac WAV file <input name="file" value="{{ last_run.mac_helper.planned_file or last_run.mac_helper.file or '' }}" placeholder="jamming_sound/25khz_1hr.wav"></label>
-            <label>Device ID <input name="device_id" type="number" value="{{ last_run.mac_helper.planned_device_id if last_run.mac_helper.planned_device_id is not none else (last_run.mac_helper.device_id if last_run.mac_helper.device_id is not none else 0) }}"></label>
-            <label>Playback sample rate <input name="sample_rate" type="number" min="1" value="{{ last_run.mac_helper.planned_sample_rate if last_run.mac_helper.planned_sample_rate is not none else (last_run.mac_helper.requested_sample_rate if last_run.mac_helper.requested_sample_rate is not none else 192000) }}"></label>
+            <label>Target session
+              <select name="target_session" data-session-target>
+                {% for session in sessions %}
+                <option value="{{ session.session_id }}" {% if session.session_id == last_run.session_id %}selected{% endif %}>{{ session.session_id }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label>Target run
+              <select name="target_run" data-run-target>
+                {% for session in sessions %}
+                  {% for run in runs_by_session.get(session.session_id, []) %}
+                  <option value="{{ run.session_id }}|{{ run.run_id }}" data-session-id="{{ run.session_id }}" {% if run.run_id == last_run.run_id and run.session_id == last_run.session_id %}selected{% endif %}>{{ run.run_id }} / {{ run.condition.uj }} / {{ run.condition.carrier_freq_khz }} kHz</option>
+                  {% endfor %}
+                {% endfor %}
+              </select>
+            </label>
+            <label>Mac WAV file
+              <select name="file" required>
+                {% if helper_files %}
+                  {% for file in helper_files %}
+                  <option value="{{ file.path }}" {% if file.path == (last_run.mac_helper.planned_file or last_run.mac_helper.file) %}selected{% endif %}>{{ file.path }}{% if file.sample_rate %} / {{ file.sample_rate }} Hz{% endif %}</option>
+                  {% endfor %}
+                {% else %}
+                  <option value="{{ last_run.mac_helper.planned_file or last_run.mac_helper.file or '' }}">{{ last_run.mac_helper.planned_file or last_run.mac_helper.file or "Connect Helper to list WAV files" }}</option>
+                {% endif %}
+              </select>
+            </label>
+            <label>Device ID
+              <select name="device_id" required>
+                {% if helper_devices %}
+                  {% for device in helper_devices %}
+                  <option value="{{ device.id }}" {% if device.id == (last_run.mac_helper.planned_device_id if last_run.mac_helper.planned_device_id is not none else last_run.mac_helper.device_id) %}selected{% endif %}>{{ device.id }} / {{ device.name }}{% if device.default_samplerate %} / {{ device.default_samplerate|int }} Hz{% endif %}</option>
+                  {% endfor %}
+                {% else %}
+                  <option value="{{ last_run.mac_helper.planned_device_id if last_run.mac_helper.planned_device_id is not none else (last_run.mac_helper.device_id if last_run.mac_helper.device_id is not none else 0) }}">{{ last_run.mac_helper.planned_device_id if last_run.mac_helper.planned_device_id is not none else (last_run.mac_helper.device_id if last_run.mac_helper.device_id is not none else 0) }}</option>
+                {% endif %}
+              </select>
+            </label>
+            <label>Playback sample rate
+              <select name="sample_rate">
+                {% set selected_sample_rate = last_run.mac_helper.planned_sample_rate if last_run.mac_helper.planned_sample_rate is not none else (last_run.mac_helper.requested_sample_rate if last_run.mac_helper.requested_sample_rate is not none else 96000) %}
+                {% for rate in helper_sample_rates %}
+                <option value="{{ rate }}" {% if rate == selected_sample_rate %}selected{% endif %}>{{ rate }} Hz</option>
+                {% endfor %}
+              </select>
+            </label>
             <label>Channels <input name="channels" type="number" min="1" value="{{ last_run.mac_helper.planned_channels if last_run.mac_helper.planned_channels is not none else (last_run.mac_helper.channels if last_run.mac_helper.channels is not none else 1) }}"></label>
             <label>Gain <input name="gain" type="number" min="0" max="1" step="0.01" value="{{ last_run.mac_helper.planned_gain if last_run.mac_helper.planned_gain is not none else (last_run.mac_helper.gain if last_run.mac_helper.gain is not none else 1.0) }}"></label>
             <label>Delay ms <input name="delay_ms" type="number" min="0" value="{{ last_run.mac_helper.planned_delay_ms if last_run.mac_helper.planned_delay_ms is not none else (last_run.mac_helper.delay_ms if last_run.mac_helper.delay_ms is not none else 500) }}"></label>
@@ -187,12 +229,12 @@
         <div class="panel finalization-panel">
           <div class="card-title"><h3>Finalization Status</h3><span class="badge {{ 'badge-warning' if recording_status.active else 'badge-success' }}">{{ "recording" if recording_status.active else "stopped" }}</span></div>
           <pre id="live-finalization" class="compact-pre">Start recording from this console or a run page.</pre>
+          <div id="live-final-run" class="final-run-summary">none</div>
           <nav class="actions">
             <a id="live-final-run-link" class="btn btn-outline" href="#" hidden>Open finalized run</a>
             <a id="live-final-metrics-link" class="btn btn-outline" href="#" hidden>Metrics JSON</a>
             <a id="live-final-log-link" class="btn btn-outline" href="#" hidden>Run log</a>
           </nav>
-          <div id="live-final-run" class="final-run-summary">none</div>
         </div>
       </div>
     </div>
@@ -277,15 +319,16 @@
   </div>
 
   <aside class="console-side">
-    <div class="card">
+    <div class="card side-card">
       <div class="card-body">
         <h2 class="card-title">Recent Runs</h2>
-        <div class="table-scroll">
+        <label class="filter-box">Filter runs <input type="search" data-filter-input data-filter-target="#recent-runs-table" placeholder="run id, uj, status"></label>
+        <div class="table-scroll side-table-scroll">
         <table class="data-table dense">
           <thead><tr><th>Run</th><th>UJ</th><th>Status</th><th>Open</th></tr></thead>
-          <tbody>
+          <tbody id="recent-runs-table">
           {% for run in recent_runs %}
-            <tr>
+            <tr data-filter-item="{{ run.run_id }} {{ run.condition.uj }} {{ run.analysis.status }}">
               <td>{{ run.run_id }}</td>
               <td>{{ run.condition.uj }}</td>
               <td>{{ run.analysis.status }}</td>
@@ -299,11 +342,13 @@
         </div>
       </div>
     </div>
-    <div class="card">
+    <div class="card side-card operations-card">
       <div class="card-body">
         <h2 class="card-title">Operations</h2>
-        <p class="mono">{{ workspace }}</p>
-        <p class="muted">Persistent state is plain JSON, JSONL, CSV, Markdown, .log, .bin, WAV, PNG, and SVG files.</p>
+        <div>
+          <p class="mono">{{ workspace }}</p>
+          <p class="muted">Persistent state is plain JSON, JSONL, CSV, Markdown, .log, .bin, WAV, PNG, and SVG files.</p>
+        </div>
         <div class="button-row">
           <a class="btn btn-outline" href="/ops/readiness">Readiness JSON</a>
           <a class="btn btn-error" href="/ops">Open Ops</a>

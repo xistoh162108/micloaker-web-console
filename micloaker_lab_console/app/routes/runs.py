@@ -276,6 +276,7 @@ def run_detail(request: Request, session_id: str, run_id: str):
             "session_id": session_id,
             "run": run,
             "metrics": metrics,
+            "quality_flag_details": [_quality_flag_detail(flag) for flag in metrics.get("quality_flags", [])],
             "files": files,
             "file_set": file_set,
             "artifacts": _run_artifacts(run, file_set),
@@ -536,6 +537,72 @@ def _file_browser_row(path: str, size_bytes: int) -> dict[str, object]:
         "role": "Artifact",
         "is_audio": False,
     }
+
+
+def _quality_flag_detail(flag: str) -> dict[str, str]:
+    details = {
+        "dc_offset_large": {
+            "label": "Large DC offset",
+            "meaning": "The raw voltage has a noticeable DC bias compared with the signal RMS.",
+            "action": "Keep remove-DC enabled for analysis/WAV conversion and check DAQ grounding, input mode, and sensor bias before report use.",
+        },
+        "clipping_possible": {
+            "label": "Possible clipping",
+            "meaning": "The signal is close to the configured full-scale voltage range.",
+            "action": "Reduce gain or choose a wider DAQ range, then repeat the capture if attenuation values matter.",
+        },
+        "sample_count_mismatch": {
+            "label": "Sample count mismatch",
+            "meaning": "The saved sample count differs from the requested sample rate and duration.",
+            "action": "Inspect the run log, actual sample rate, and DAQ timing before comparing this run.",
+        },
+        "sample_rate_mismatch": {
+            "label": "Sample rate mismatch",
+            "meaning": "The actual recording sample rate differs from the requested metadata.",
+            "action": "Use the actual sample rate shown in metrics, or repeat the capture with verified DAQ timing.",
+        },
+        "too_short_after_trim": {
+            "label": "Too short after trim",
+            "meaning": "The trim settings leave too little data for stable metrics.",
+            "action": "Reduce trim start/end or record a longer run.",
+        },
+        "zero_or_near_zero_signal": {
+            "label": "Near-zero signal",
+            "meaning": "The captured voltage is very small.",
+            "action": "Check microphone/DAQ connection, channel, input mode, and physical playback before trusting this run.",
+        },
+        "analysis_band_exceeds_nyquist": {
+            "label": "Analysis band exceeds Nyquist",
+            "meaning": "The requested frequency band is above what this sample rate can represent.",
+            "action": "Use a higher DAQ sample rate or lower the analysis band.",
+        },
+        "awaiting_operator_approval": {
+            "label": "Awaiting operator approval",
+            "meaning": "Capture finished but final report-grade processing is intentionally waiting.",
+            "action": "Listen to preview WAV and inspect plots, then approve/finalize from saved .bin.",
+        },
+        "recording_failed": {
+            "label": "Recording failed",
+            "meaning": "The recording job failed before a valid capture was finalized.",
+            "action": "Open the run log/traceback and repeat after fixing the DAQ or file issue.",
+        },
+        "finalization_failed": {
+            "label": "Finalization failed",
+            "meaning": "Saved data exists but final metrics/plots could not be generated.",
+            "action": "Inspect the run log, then retry finalization from the saved .bin.",
+        },
+        "plot_generation_failed": {
+            "label": "Plot generation failed",
+            "meaning": "Metrics may exist, but one or more report plots could not be rendered.",
+            "action": "Check plotting dependencies and the run log, then rerun finalization.",
+        },
+    }
+    fallback = {
+        "label": flag.replace("_", " ").title(),
+        "meaning": "This is a recorded analysis or workflow warning.",
+        "action": "Inspect the metrics JSON and run log before using this run for report-grade comparison.",
+    }
+    return {"code": flag, **details.get(flag, fallback)}
 
 
 def _run_artifacts(run: dict, file_set: set[str]) -> list[dict[str, object]]:

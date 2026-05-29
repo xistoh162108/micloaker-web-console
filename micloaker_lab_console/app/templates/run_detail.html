@@ -107,13 +107,20 @@
       </tbody>
     </table>
     <h3>Quality Flags</h3>
-    <ul class="list">
-      {% for flag in metrics.quality_flags %}
-      <li><span class="warn">{{ flag }}</span></li>
+    <div class="quality-flag-list">
+      {% for flag in quality_flag_details %}
+      <div class="quality-flag-card">
+        <div>
+          <span class="badge badge-warning">{{ flag.label }}</span>
+          <span class="mono small-text">{{ flag.code }}</span>
+        </div>
+        <p>{{ flag.meaning }}</p>
+        <p class="muted">{{ flag.action }}</p>
+      </div>
       {% else %}
-      <li>No quality flags.</li>
+      <p>No quality flags.</p>
       {% endfor %}
-    </ul>
+    </div>
     {% else %}
     <p class="muted">No finalized metrics yet.</p>
     {% endif %}
@@ -152,7 +159,7 @@
   {% endif %}
   </div>
 </section>
-<section class="card">
+<section class="card mac-helper-run-panel">
   <div class="card-body">
   <h2 class="card-title">Optional Mac Helper</h2>
   <div class="helper-state">
@@ -297,11 +304,7 @@
         <td>{{ artifact.label }}</td>
         <td>{{ artifact.role }}</td>
         <td>
-          {% if artifact.exists %}
-          <a href="/sessions/{{ session_id }}/files/{{ artifact.path }}">{{ artifact.path }}</a>
-          {% else %}
           {{ artifact.path }}
-          {% endif %}
         </td>
         <td>{% if artifact.exists %}<span class="badge">available</span>{% else %}<span class="warn">missing</span>{% endif %}</td>
         <td>{% if artifact.exists %}<a class="btn btn-outline" href="/sessions/{{ session_id }}/files/{{ artifact.path }}?download=1" download>download</a>{% else %}-{% endif %}</td>
@@ -309,7 +312,6 @@
       {% endfor %}
     </tbody>
   </table>
-  <ul class="list">{% for file in files %}<li><a href="/sessions/{{ session_id }}/files/{{ file }}">{{ file }}</a></li>{% endfor %}</ul>
   </div>
 </section>
 <section class="card">
