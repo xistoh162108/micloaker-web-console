@@ -2156,16 +2156,26 @@ def test_run_detail_renders_metrics_table_and_quality_flags(tmp_path: Path, monk
         "Metadata Summary",
         "Raw Run JSON",
         "Carrier",
-        "UJ",
+        "Unjammed",
         "Recording source",
         "DAQ range / mode",
         "Scale modes",
         "Primary band",
         "Final Metrics",
         "DAQ Live Preview",
-        "Start DAQ Live Preview",
-        "Mac Playback",
-        "Mac Helper is disconnected. DAQ-only live preview and Linux recording remain available.",
+        "Run Controls",
+        "Start Preview",
+        "Record Only",
+        "Record + Finalize",
+        "Stop Playback + Preview",
+        "Mac Helper is disconnected. Use record-only or import a saved raw .bin; Mac playback can be connected later.",
+        "Import BIN + Finalize",
+        "Edit Run Details",
+        "Save Run Details",
+        '<select name="ai_range">',
+        '<option value="BIP10VOLTS" selected>BIP10VOLTS</option>',
+        '<select name="input_mode">',
+        '<option value="SINGLE_ENDED" selected>SINGLE_ENDED</option>',
         "Effective primary band",
         "Primary band power",
         "Primary band RMS",
@@ -2202,6 +2212,29 @@ def test_run_detail_renders_metrics_table_and_quality_flags(tmp_path: Path, monk
     ]:
         assert text in page.text
     assert "uldaq" not in sys.modules
+
+
+def test_run_detail_preview_snapshot_uses_saved_bin_data(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("MICLOAKER_WORKSPACE", str(tmp_path))
+    ensure_workspace(tmp_path)
+    session = create_session(tmp_path, "saved bin preview")
+    run = create_run_metadata(tmp_path, session["session_id"], carrier_freq_khz=25, uj="uj0", duration_s=0.1)
+    final = record_mock_and_finalize(tmp_path, run)
+    client = TestClient(create_app())
+    page = client.get(f"/sessions/{session['session_id']}/runs/{final['run_id']}")
+    assert f'data-run-preview-url="/sessions/{session["session_id"]}/runs/{final["run_id"]}/preview-snapshot"' in page.text
+    snapshot = client.get(f"/sessions/{session['session_id']}/runs/{final['run_id']}/preview-snapshot")
+    assert snapshot.status_code == 200
+    body = snapshot.json()
+    assert body["preview_source"] == "saved_bin"
+    assert body["recording_state"] == "Finalized"
+    assert body["waveform_point_count"] > 0
+    assert body["psd_bin_count"] > 0
+    assert body["spectrogram_row_count"] > 0
+    assert body["rms_v"] > 0
+    assert body["peak_v"] > 0
+    assert body["final_run_id"] == final["run_id"]
+    assert body["finalized_from_saved_bin"] is True
 
 
 def test_run_detail_integrates_connected_mac_playback_into_live_preview(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -2241,21 +2274,98 @@ def test_run_detail_integrates_connected_mac_playback_into_live_preview(tmp_path
     assert page.status_code == 200
     for text in [
         "DAQ Live Preview",
-        "Mac Playback",
-        "helper connected",
+        "Run Controls",
+        "Mac Helper",
+        "connected",
         "jamming_sound/25khz_1hr.wav / 96000 Hz",
         "2 / Ultrasound DAC / 96000 Hz",
         '<option value="96000" selected>96000 Hz</option>',
         "Validate Playback",
-        "Play",
-        "Play & Capture DAQ",
-        "Play & Record DAQ",
-        "Stop Playback",
+        "Play Only",
+        "Play + Record Only",
+        "Play + Record + Finalize",
+        "Stop Playback + Preview",
+        'class="btn btn-error" type="button" data-run-stop-all',
+        "Record Only",
+        "Record + Finalize",
+        "Import BIN + Finalize",
     ]:
         assert text in page.text
     assert page.text.count("WAV file on Mac") == 1
     assert page.text.count("Device ID") == 2
     assert "Play & Record DAQ</button></div>\n  </form>" not in page.text
+    assert page.text.index('card-title">Plots') < page.text.index('card-title">Optional Mac Helper')
+
+
+def test_run_detail_updates_editable_run_details(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("MICLOAKER_WORKSPACE", str(tmp_path))
+    ensure_workspace(tmp_path)
+    session = create_session(tmp_path, "editable run")
+    run = create_run_metadata(tmp_path, session["session_id"], carrier_freq_khz=25, uj="uj0", duration_s=1.0)
+    client = TestClient(create_app())
+    page = client.get(f"/sessions/{session['session_id']}/runs/{run['run_id']}")
+    assert 'action="/sessions/{}/runs/{}/metadata"'.format(session["session_id"], run["run_id"]) in page.text
+
+    response = client.post(
+        f"/sessions/{session['session_id']}/runs/{run['run_id']}/metadata",
+        data={
+            "carrier_freq_khz": "32.8",
+            "uj": "uj1",
+            "sound_condition": "speech",
+            "source": "upload",
+            "sample_rate_hz": "96000",
+            "duration_s": "2.5",
+            "channel": "1",
+            "ai_range": "BIP5VOLTS",
+            "input_mode": "DIFFERENTIAL",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    saved = load_run(tmp_path, session["session_id"], run["run_id"])
+    assert saved["condition"]["carrier_freq_khz"] == 32.8
+    assert saved["condition"]["uj"] == "uj1"
+    assert saved["condition"]["sound_condition"] == "speech"
+    assert saved["recording"]["source"] == "upload"
+    assert saved["recording"]["sample_rate_hz"] == 96000
+    assert saved["recording"]["actual_sample_rate_hz"] == 96000
+    assert saved["recording"]["duration_s"] == 2.5
+    assert saved["recording"]["channels"] == [1]
+    assert saved["recording"]["ai_range"] == "BIP5VOLTS"
+    assert saved["recording"]["input_mode"] == "DIFFERENTIAL"
+    events = read_jsonl(session_dir(tmp_path, session["session_id"]) / "events.jsonl")
+    assert any(row.get("event") == "run_metadata_updated" and row.get("run_id") == run["run_id"] for row in events)
+
+
+def test_existing_run_can_import_bin_from_run_controls(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("MICLOAKER_WORKSPACE", str(tmp_path))
+    ensure_workspace(tmp_path)
+    session = create_session(tmp_path, "existing run upload")
+    run = create_run_metadata(tmp_path, session["session_id"], carrier_freq_khz=25, uj="uj0", duration_s=0.1)
+    samples = np.sin(2 * np.pi * 440 * np.arange(800) / 8000).astype("<f8")
+    client = TestClient(create_app())
+    response = client.post(
+        f"/sessions/{session['session_id']}/runs/{run['run_id']}/import-bin",
+        files={"file": ("capture.bin", samples.tobytes(), "application/octet-stream")},
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    saved = load_run(tmp_path, session["session_id"], run["run_id"])
+    assert saved["recording"]["source"] == "upload"
+    assert saved["recording"]["imported_filename"] == "capture.bin"
+    assert saved["analysis"]["status"] == "finalized"
+    assert (session_dir(tmp_path, session["session_id"]) / saved["files"]["bin"]).is_file()
+    page = client.get(f"/sessions/{session['session_id']}/runs/{run['run_id']}")
+    assert "Saved BIN" in page.text
+    assert saved["files"]["bin"] in page.text
+    assert "Imported file" in page.text
+    assert "capture.bin" in page.text
+    conflict = client.post(
+        f"/sessions/{session['session_id']}/runs/{run['run_id']}/import-bin",
+        files={"file": ("capture.bin", samples.tobytes(), "application/octet-stream")},
+    )
+    assert conflict.status_code == 409
+    assert conflict.json()["detail"]["error_code"] == "RAW_BIN_EXISTS"
 
 
 def test_pending_run_detail_does_not_link_missing_plot_previews(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -2385,8 +2495,8 @@ def test_compare_route_saves_and_renders_result(tmp_path: Path, monkeypatch: pyt
     assert response.status_code == 200
     assert "Saved Results" in response.text
     assert "dB" in response.text
-    assert "UJ0 100.0%" in response.text
-    assert "UJ1" in response.text
+    assert "unjammed=false 100.0%" in response.text
+    assert "unjammed=true" in response.text
     assert "% reduction" in response.text
     assert "Bar PNG" in response.text
     assert "Bar SVG" in response.text
@@ -4046,8 +4156,9 @@ def test_daq_play_and_record_uses_validated_helper_settings_and_daq_recorder(tmp
     assert saved["mac_helper"]["play_request_ok"] is True
     assert saved["mac_helper"]["play_id"] == "play_daq_001"
     assert saved["mac_helper"]["last_request"]["delay_ms"] == 25
+    assert saved["mac_helper"]["last_request"]["duration_s"] == 0.15
     page = client.get(f"/sessions/{session['session_id']}/runs/{run['run_id']}")
-    assert "Play & Record DAQ" in page.text
+    assert "Play + Record + Finalize" in page.text
 
 
 def test_create_run_persists_expanded_metadata(tmp_path: Path):
@@ -4915,7 +5026,7 @@ def test_new_run_page_selects_session_and_nav_points_there(tmp_path: Path, monke
     assert "Existing Runs" in page.text
     assert "Run Metadata" in page.text
     assert f'action="/sessions/{session["session_id"]}/runs"' in page.text
-    assert 'name="duration_s" type="number" min="0.01" step="0.01" value="1.00"' in page.text
+    assert 'name="duration_s" type="number" min="0.5" step="0.5" value="1.0"' in page.text
     for field in [
         "carrier_freq_khz",
         "uj",

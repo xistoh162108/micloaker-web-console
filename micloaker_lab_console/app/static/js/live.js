@@ -19,6 +19,7 @@ const specReadout = document.getElementById("live-spectrogram-readout");
 const spectrogramBufferCanvas = document.createElement("canvas");
 const spectrogramBufferCtx = spectrogramBufferCanvas.getContext("2d");
 const recordingGuardMessage = document.getElementById("recording-guard-message");
+const runPreviewUrl = document.querySelector("[data-run-preview-url]")?.dataset.runPreviewUrl || "";
 let timer = null;
 let currentIntervalMs = null;
 let pendingChartFrame = false;
@@ -55,8 +56,18 @@ function showStructuredAlert(detail, fallback) {
 }
 
 async function refresh() {
-  const res = await fetch("/live/snapshot");
-  const data = await res.json();
+  const liveRes = await fetch("/live/snapshot");
+  let data = await liveRes.json();
+  const captureActive = Boolean(data.active_recording || data.finalization_job || data.recording_state === "Recording" || data.recording_state === "Finalizing");
+  const liveHasSamples = Boolean(data.running && (data.waveform?.length || data.psd?.length || data.spectrogram?.length));
+  if (runPreviewUrl && !captureActive && !liveHasSamples) {
+    try {
+      const runRes = await fetch(runPreviewUrl);
+      if (runRes.ok) data = await runRes.json();
+    } catch {
+      // Keep the generic live snapshot when the run-specific preview cannot load.
+    }
+  }
   if (stateOutput) stateOutput.textContent = data.recording_state || "Stopped";
   if (finalizationOutput) finalizationOutput.textContent = data.finalization_status || data.preview_label || "";
   renderFinalRun(data);
@@ -79,15 +90,15 @@ function renderCharts() {
   pendingChartFrame = false;
   const data = latestChartData || {};
   if (waveformCtx && data.waveform) {
-    drawLine(waveformCtx, waveformCanvas, data.waveform, "#0a8793", "bipolar");
+    drawLine(waveformCtx, waveformCanvas, data.waveform, "#0a8793", "auto", "V", data.preview_window_s || 0.25);
     drawCrosshair(waveformCtx, waveformCanvas, chartPointers.waveform);
   }
   if (psdCtx && data.psd) {
-    drawLine(psdCtx, psdCanvas, data.psd.map(v => Math.log10(v + 1e-18)), "#2f5f93", "auto");
+    drawLine(psdCtx, psdCanvas, data.psd.map(v => Math.log10(v + 1e-18)), "#2f5f93", "auto", "log PSD", Number(data.sample_rate_hz || 0) / 2);
     drawCrosshair(psdCtx, psdCanvas, chartPointers.psd);
   }
   if (specCtx && data.spectrogram) {
-    drawSpectrogram(data.spectrogram);
+    drawSpectrogram(data.spectrogram, Number(data.sample_rate_hz || 0));
     drawCrosshair(specCtx, specCanvas, chartPointers.spectrogram);
   }
 }
@@ -236,30 +247,33 @@ function escapeHtml(value) {
   })[char]);
 }
 
-function drawLine(ctx, canvas, points, color, mode) {
+function drawLine(ctx, canvas, points, color, mode, yLabel, xMax) {
   const width = resizeCanvasForDisplay(canvas);
   const height = canvas.height;
   ctx.clearRect(0, 0, width, height);
   if (!points.length) return;
+  const plot = plotArea(width, height);
   ctx.strokeStyle = color;
   ctx.lineWidth = 2;
   ctx.beginPath();
-  const bounds = mode === "bipolar" ? { min: -0.35, max: 0.35 } : pointBounds(points);
+  const bounds = autoBounds(points, mode);
   const min = bounds.min;
   const max = bounds.max;
   const span = Math.max(1e-12, max - min);
   points.forEach((v, i) => {
-    const x = i * width / Math.max(1, points.length - 1);
-    const y = height - ((v - min) / span) * height;
+    const x = plot.left + i * plot.width / Math.max(1, points.length - 1);
+    const y = plot.top + (1 - ((v - min) / span)) * plot.height;
     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   });
   ctx.stroke();
+  drawAxes(ctx, plot, { xMin: 0, xMax: Number(xMax || points.length - 1), yMin: min, yMax: max, yLabel });
 }
 
-function drawSpectrogram(rows) {
+function drawSpectrogram(rows, sampleRateHz) {
   if (!rows.length) return;
   const width = resizeCanvasForDisplay(specCanvas);
   const height = specCanvas.height;
+  const plot = plotArea(width, height);
   const cols = rows.length;
   const bins = rows[0].length;
   const image = spectrogramImage(cols, bins);
@@ -281,7 +295,8 @@ function drawSpectrogram(rows) {
   spectrogramBufferCtx.putImageData(image, 0, 0);
   specCtx.imageSmoothingEnabled = false;
   specCtx.clearRect(0, 0, width, height);
-  specCtx.drawImage(spectrogramBufferCanvas, 0, 0, width, height);
+  specCtx.drawImage(spectrogramBufferCanvas, plot.left, plot.top, plot.width, plot.height);
+  drawAxes(specCtx, plot, { xMin: 0, xMax: rows.length, yMin: 0, yMax: Number(sampleRateHz || 0) / 2, yLabel: "Hz" });
 }
 
 function drawCrosshair(ctx, canvas, pointer) {
@@ -335,6 +350,80 @@ function pointBounds(points) {
     if (v > max) max = v;
   }
   return { min, max };
+}
+
+function autoBounds(points, mode) {
+  const bounds = pointBounds(points);
+  if (mode === "bipolar") return { min: -0.35, max: 0.35 };
+  if (!Number.isFinite(bounds.min) || !Number.isFinite(bounds.max)) return { min: -1, max: 1 };
+  const peak = Math.max(Math.abs(bounds.min), Math.abs(bounds.max));
+  if (peak > 0 && bounds.min < 0 && bounds.max > 0) {
+    const pad = peak * 0.12;
+    return { min: -(peak + pad), max: peak + pad };
+  }
+  const span = Math.max(1e-12, bounds.max - bounds.min);
+  return { min: bounds.min - span * 0.08, max: bounds.max + span * 0.08 };
+}
+
+function plotArea(width, height) {
+  const scale = Math.min(window.devicePixelRatio || 1, 2);
+  const left = 62 * scale;
+  const right = 14 * scale;
+  const top = 16 * scale;
+  const bottom = 36 * scale;
+  return { left, top, width: Math.max(1, width - left - right), height: Math.max(1, height - top - bottom), bottom: height - bottom, right: width - right };
+}
+
+function drawAxes(ctx, plot, { xMin, xMax, yMin, yMax, yLabel }) {
+  ctx.save();
+  ctx.strokeStyle = "rgba(89, 104, 102, 0.55)";
+  ctx.fillStyle = "rgba(61, 76, 73, 0.88)";
+  ctx.lineWidth = 1;
+  ctx.font = `${Math.max(10, Math.round(11 * Math.min(window.devicePixelRatio || 1, 2)))}px IBM Plex Mono, monospace`;
+  ctx.textBaseline = "middle";
+  ctx.beginPath();
+  ctx.moveTo(plot.left, plot.top);
+  ctx.lineTo(plot.left, plot.top + plot.height);
+  ctx.lineTo(plot.left + plot.width, plot.top + plot.height);
+  ctx.stroke();
+  for (let i = 0; i <= 4; i += 1) {
+    const x = plot.left + (plot.width * i / 4);
+    const y = plot.top + (plot.height * i / 4);
+    ctx.strokeStyle = "rgba(178, 188, 185, 0.28)";
+    ctx.beginPath();
+    ctx.moveTo(x, plot.top);
+    ctx.lineTo(x, plot.top + plot.height);
+    ctx.moveTo(plot.left, y);
+    ctx.lineTo(plot.left + plot.width, y);
+    ctx.stroke();
+    if (i > 0) {
+      ctx.textAlign = "right";
+      ctx.fillText(formatAxisValue(yMax - ((yMax - yMin) * i / 4)), plot.left - 8, y);
+    }
+    if (i % 2 === 0) {
+      ctx.textAlign = i === 0 ? "left" : (i === 4 ? "right" : "center");
+      ctx.textBaseline = "top";
+      ctx.fillText(formatAxisValue(xMin + ((xMax - xMin) * i / 4)), x, plot.top + plot.height + 10);
+      ctx.textBaseline = "middle";
+    }
+  }
+  if (yLabel) {
+    ctx.fillStyle = "rgba(23, 32, 31, 0.88)";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText(yLabel, plot.left + 6, plot.top + 4);
+  }
+  ctx.restore();
+}
+
+function formatAxisValue(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "";
+  const abs = Math.abs(number);
+  if (abs >= 1000) return `${Math.round(number / 1000)}k`;
+  if (abs >= 10) return number.toFixed(0);
+  if (abs >= 1) return number.toFixed(1);
+  return number.toFixed(2);
 }
 
 function nestedBounds(rows) {

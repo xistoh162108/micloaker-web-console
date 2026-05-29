@@ -17,6 +17,13 @@ BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 
+def unjammed_label(value: str) -> str:
+    return "Unjammed: true" if value == "uj1" else "Unjammed: false"
+
+
+templates.env.filters["unjammed_label"] = unjammed_label
+
+
 def create_app() -> FastAPI:
     settings = get_settings()
     ensure_workspace(settings.workspace)

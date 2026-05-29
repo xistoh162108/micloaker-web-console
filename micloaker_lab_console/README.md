@@ -14,7 +14,7 @@ The UI standard is DaisyUI component vocabulary implemented locally in vanilla C
 - Convert `.bin` to listening-preview peak WAV and range cross-check WAV.
 - Generate waveform, PSD, spectrogram, PSD overlay, and attenuation plots.
 - Finalize report-grade RMS, Welch PSD, band power, dominant-tone, and quality metrics from saved `.bin`.
-- Compare `uj0` and `uj1` runs and export JSON/CSV/PNG/SVG/ZIP artifacts.
+- Compare unjammed=false and unjammed=true runs and export JSON/CSV/PNG/SVG/ZIP artifacts. Internal filenames and JSON keys still use `uj0`/`uj1` for compatibility.
 - Show logs, tracebacks, live preview, and optional Mac Helper playback status.
 - Run explicit DAQ live preview when DAQ hardware is available.
 
@@ -313,7 +313,7 @@ Typical full experiment:
 4. Create a session.
 5. Create a run with metadata:
    - jamming carrier frequency (`0 kHz` means no jamming signal emitted)
-   - `uj0` or `uj1`
+   - unjammed condition shown in the UI as `Unjammed: false` or `Unjammed: true` (`uj0`/`uj1` internally)
    - ordinary sound condition for quiet baseline, room sound, speech, or WER material
    - mic, room, distance, angle
    - DAQ channel/range/sample rate/duration
@@ -323,7 +323,7 @@ Typical full experiment:
 7. Record DAQ, upload `.bin`, or use Play & Record. Use Capture Only or Play & Capture when the operator should approve the WAV preview before report-grade processing.
 8. After normal recording, finalization reloads the saved `.bin` and recomputes report-grade metrics. After capture-only recording, the run remains `awaiting_approval` until Finalize From `.bin` is clicked.
 9. Preview WAVs and plots on the run page.
-10. Repeat for matching `uj0` and `uj1` runs.
+10. Repeat for matching unjammed=false and unjammed=true runs.
 11. Use Compare to compute attenuation.
 12. Export run ZIP, session ZIP, or multi-session ZIP.
 13. Inspect `/logs` for job status, tracebacks, and app events.
@@ -340,7 +340,7 @@ Typical full experiment:
 7. DAQ/upload/Play & Record 중 하나로 기록합니다.
 8. 기록 후 saved `.bin`에서 report-grade metrics가 재계산됩니다.
 9. Run page에서 WAV/plot/metrics/log를 확인합니다.
-10. `uj0`/`uj1` pair를 만든 뒤 Compare 합니다.
+10. `Unjammed: false`/`Unjammed: true` pair를 만든 뒤 Compare 합니다.
 11. ZIP으로 export합니다.
 12. 실험 종료 후 console을 끕니다.
 
@@ -354,6 +354,7 @@ Typical full experiment:
 - Range WAV names include `__scale-range-fs10V.wav` or the configured full-scale value.
 - Raw `.bin` files are never silently overwritten.
 - Long-running jobs write text logs and capture tracebacks.
+- Operator-facing tables and generated comparison plots use `Unjammed: false/true` labels. `uj0`/`uj1` remains only as the internal compatibility value in file names, JSON keys, and historical artifacts.
 
 ## Verification
 

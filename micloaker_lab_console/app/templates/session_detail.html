@@ -36,7 +36,7 @@
         <option value="32.8">32.8 kHz</option>
       </select>
     </label>
-    <label>UJ <select name="uj"><option>uj0</option><option>uj1</option></select></label>
+    <label>Unjammed <select name="uj"><option value="uj0">false</option><option value="uj1">true</option></select></label>
     <label>Ordinary recorded sound
       <select name="sound_condition">
         <option value="sound0">none / quiet baseline</option>
@@ -46,14 +46,26 @@
       </select>
     </label>
     <label>Sample rate <input name="sample_rate_hz" type="number" value="8000"></label>
-    <label>Duration <input name="duration_s" type="number" min="0.01" step="0.01" value="1.00" inputmode="decimal"></label>
+    <label>Duration <input name="duration_s" type="number" min="0.5" step="0.5" value="1.0" inputmode="decimal"></label>
     <label>Scale mode <select name="scale_mode"><option value="both">peak + range</option><option value="peak">peak</option><option value="range">range</option></select></label>
     <label class="wide">Notes <input name="notes"></label>
     <details class="wide">
       <summary>Advanced</summary>
       <div class="form grid-form nested-form">
-        <label>DAQ range <input name="ai_range" value="BIP10VOLTS"></label>
-        <label>Input mode <input name="input_mode" value="SINGLE_ENDED"></label>
+        <label>DAQ range
+          <select name="ai_range">
+            <option value="BIP10VOLTS" selected>BIP10VOLTS</option>
+            <option value="BIP5VOLTS">BIP5VOLTS</option>
+            <option value="BIP2VOLTS">BIP2VOLTS</option>
+            <option value="BIP1VOLTS">BIP1VOLTS</option>
+          </select>
+        </label>
+        <label>Input mode
+          <select name="input_mode">
+            <option value="SINGLE_ENDED" selected>SINGLE_ENDED</option>
+            <option value="DIFFERENTIAL">DIFFERENTIAL</option>
+          </select>
+        </label>
         <label>Channel <input name="channel" type="number" value="0"></label>
         <label>Mic <input name="mic_id" value="daq_ch0"></label>
         <label>Room <input name="room" value="lab"></label>
@@ -99,11 +111,11 @@
         <option value="32.8">32.8 kHz</option>
       </select>
     </label>
-    <label>UJ <select name="uj"><option>uj0</option><option>uj1</option></select></label>
+    <label>Unjammed <select name="uj"><option value="uj0">false</option><option value="uj1">true</option></select></label>
     <label>Ordinary recorded sound <input name="sound_condition" value="sound0"></label>
     <label>Mic <input name="mic_id" value="upload_ch0"></label>
     <label>Sample rate <input name="sample_rate_hz" type="number" value="8000"></label>
-    <label>Expected duration s <input name="duration_s" type="number" min="0" step="0.01" value="0" inputmode="decimal"></label>
+        <label>Expected duration s <input name="duration_s" type="number" min="0" step="0.5" value="0" inputmode="decimal"></label>
     <label>Scale mode <select name="scale_mode"><option value="both">peak + range</option><option value="peak">peak</option><option value="range">range</option></select></label>
     <label>Full-scale V <input name="full_scale_volts" type="number" step="0.1" value="10"></label>
     <label class="inline-check"><input name="remove_dc" type="hidden" value="false"><input name="remove_dc" type="checkbox" value="true" checked> <span>remove DC before WAV/analysis</span></label>
@@ -114,8 +126,20 @@
     <details class="wide">
       <summary>Advanced upload metadata</summary>
       <div class="form grid-form nested-form">
-        <label>DAQ range <input name="ai_range" value="BIP10VOLTS"></label>
-        <label>Input mode <input name="input_mode" value="SINGLE_ENDED"></label>
+        <label>DAQ range
+          <select name="ai_range">
+            <option value="BIP10VOLTS" selected>BIP10VOLTS</option>
+            <option value="BIP5VOLTS">BIP5VOLTS</option>
+            <option value="BIP2VOLTS">BIP2VOLTS</option>
+            <option value="BIP1VOLTS">BIP1VOLTS</option>
+          </select>
+        </label>
+        <label>Input mode
+          <select name="input_mode">
+            <option value="SINGLE_ENDED" selected>SINGLE_ENDED</option>
+            <option value="DIFFERENTIAL">DIFFERENTIAL</option>
+          </select>
+        </label>
         <label>Channel <input name="channel" type="number" min="0" value="0"></label>
         <label>Room <input name="room" value="lab"></label>
         <label>Distance cm <input name="distance_cm" type="number" min="0" step="0.1"></label>
@@ -152,7 +176,7 @@
       <option value="32.8" {% if filters.carrier_freq_khz == "32.8" %}selected{% endif %}>32.8 kHz</option>
     </select>
   </label>
-  <label>UJ <select name="uj"><option value="">any</option><option value="uj0" {% if filters.uj == "uj0" %}selected{% endif %}>uj0</option><option value="uj1" {% if filters.uj == "uj1" %}selected{% endif %}>uj1</option></select></label>
+  <label>Unjammed <select name="uj"><option value="">any</option><option value="uj0" {% if filters.uj == "uj0" %}selected{% endif %}>false</option><option value="uj1" {% if filters.uj == "uj1" %}selected{% endif %}>true</option></select></label>
   <label>Ordinary sound <input name="sound_condition" value="{{ filters.sound_condition }}"></label>
   <label>Mic <input name="mic_id" value="{{ filters.mic_id }}"></label>
   <label>Room <input name="room" value="{{ filters.room }}"></label>
@@ -168,7 +192,7 @@
       <th>run_id</th>
       <th>date</th>
       <th>jamming carrier</th>
-      <th>uj</th>
+      <th>unjammed</th>
       <th>ordinary sound</th>
       <th>mic</th>
       <th>room</th>
@@ -181,7 +205,7 @@
       <td><a href="/sessions/{{ session_id }}/runs/{{ run.run_id }}">{{ run.run_id }}</a></td>
       <td>{{ run.created_at[:10] }}</td>
       <td>{{ run.condition.carrier_freq_khz }}</td>
-      <td>{{ run.condition.uj }}</td>
+      <td>{{ run.condition.uj | unjammed_label }}</td>
       <td>{{ run.condition.sound_condition }}</td>
       <td>{{ run.condition.mic_id }}</td>
       <td>{{ run.condition.room }}</td>

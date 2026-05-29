@@ -200,6 +200,62 @@ document.querySelectorAll("[data-daq-health-alert]").forEach((button) => {
   });
 });
 
+document.querySelectorAll("[data-run-stop-all]").forEach((button) => {
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    document.getElementById("live-stop")?.click();
+    const messages = ["Live preview stopped."];
+    try {
+      const response = await fetch(button.dataset.helperStopUrl || "/mac-helper/stop", {
+        method: "POST",
+        body: new FormData(),
+        headers: { Accept: "application/json" },
+      });
+      const data = await response.json().catch(() => ({}));
+      messages.push(response.ok && data.ok !== false ? "Mac playback stop requested." : structuredMessage(data.detail || data, "Mac playback stop request failed."));
+    } catch (error) {
+      messages.push(`Mac playback stop request failed: ${error?.message || error}`);
+    }
+    try {
+      const status = await fetch("/recording/status", { headers: { Accept: "application/json" } }).then((response) => response.json());
+      if (status.active) {
+        messages.push("DAQ recording/finalization is already running and cannot be interrupted safely from the browser; wait for the current run to finish.");
+      }
+    } catch {
+      messages.push("Recording status could not be checked.");
+    }
+    window.alert(messages.join("\n"));
+    button.disabled = false;
+  });
+});
+
+document.querySelectorAll("[data-run-duration]").forEach((timer) => {
+  const output = timer.querySelector("[data-run-countdown]");
+  if (!output) return;
+  const duration = Number(timer.dataset.runDuration || 0);
+  const renderIdle = () => {
+    output.textContent = Number.isFinite(duration) && duration > 0 ? `will stop after ${duration.toFixed(2)} s` : "duration not set";
+  };
+  const update = async () => {
+    try {
+      const status = await fetch("/recording/status", { headers: { Accept: "application/json" } }).then((response) => response.json());
+      const startedAt = status.recording?.started_at;
+      if (!status.active || !startedAt || !Number.isFinite(duration) || duration <= 0) {
+        renderIdle();
+        return;
+      }
+      const elapsed = Math.max(0, (Date.now() - Date.parse(startedAt)) / 1000);
+      const remaining = Math.max(0, duration - elapsed);
+      output.textContent = `${remaining.toFixed(1)} s remaining`;
+    } catch {
+      renderIdle();
+    }
+  };
+  renderIdle();
+  update();
+  setInterval(update, 1000);
+});
+
 const plotDialog = document.createElement("div");
 plotDialog.className = "plot-modal";
 plotDialog.hidden = true;

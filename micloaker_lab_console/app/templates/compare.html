@@ -3,10 +3,10 @@
 <section class="command-hero">
   <div>
     <h1>Compare {{ session_id }}</h1>
-    <p>Compute report-grade attenuation from finalized uj0/uj1 runs. BIN is primary; range WAV is cross-check only.</p>
+    <p>Compute report-grade attenuation from finalized unjammed=false and unjammed=true runs. BIN is primary; range WAV is cross-check only.</p>
   </div>
   <form method="post" action="/compare/{{ session_id }}/auto-pair" class="hero-actions">
-    <button type="submit" class="btn btn-primary">Auto-Pair Finalized UJ0/UJ1</button>
+    <button type="submit" class="btn btn-primary">Auto-Pair Finalized Runs</button>
   </form>
 </section>
 {% if compare_alert %}
@@ -22,10 +22,10 @@
   <div class="card-body">
   <h2 class="card-title">Manual Comparison</h2>
 <form method="post" class="form grid-form">
-  <label>UJ0 run
+  <label>Unjammed false run
     <select name="uj0_run_id">{% for run in finalized_uj0_runs %}<option value="{{ run.run_id }}">{{ run.run_id }} finalized</option>{% endfor %}</select>
   </label>
-  <label>UJ1 run
+  <label>Unjammed true run
     <select name="uj1_run_id">{% for run in finalized_uj1_runs %}<option value="{{ run.run_id }}">{{ run.run_id }} finalized</option>{% endfor %}</select>
   </label>
   <label>Source
@@ -47,7 +47,7 @@
   <div class="form-actions"><button type="submit" class="btn btn-primary" {% if not finalized_uj0_runs or not finalized_uj1_runs %}disabled{% endif %}>Compute Attenuation</button></div>
 </form>
 {% if not finalized_uj0_runs or not finalized_uj1_runs %}
-<p class="warn">Finalize at least one uj0 run and one uj1 run before manual comparison.</p>
+<p class="warn">Finalize at least one unjammed=false run and one unjammed=true run before manual comparison.</p>
 {% endif %}
 <p class="muted">BIN is the report-grade source. Range WAV is a cross-check only when full-scale voltage is correct. Peak WAV is listening-only and disabled for quantitative comparison.</p>
   </div>
@@ -59,7 +59,7 @@
     {% for item in comparisons %}
     <li>
       <span>{{ item.uj0_run_id }} vs {{ item.uj1_run_id }}</span>
-      <span>{{ item.source }} {{ item.band_hz }}: {{ "%.2f"|format(item.attenuation_db) }} dB, UJ0 {{ "%.1f"|format(item.uj0_relative_energy_percent) }}%, UJ1 {{ "%.1f"|format(item.uj1_relative_energy_percent) }}%, {{ "%.1f"|format(item.reduction_percent) }}% reduction</span>
+      <span>{{ item.source }} {{ item.band_hz }}: {{ "%.2f"|format(item.attenuation_db) }} dB, unjammed=false {{ "%.1f"|format(item.uj0_relative_energy_percent) }}%, unjammed=true {{ "%.1f"|format(item.uj1_relative_energy_percent) }}%, {{ "%.1f"|format(item.reduction_percent) }}% reduction</span>
       <span class="badge">{{ item.result_grade or "unknown-grade" }}</span>
       {% if item.source_label %}<span class="muted">{{ item.source_label }}</span>{% endif %}
       <span class="muted">{{ item.attenuation_formula or "10*log10(uj0_power/uj1_power)" }}; {{ item.power_units or "V^2 integrated Welch PSD band power" }}</span>

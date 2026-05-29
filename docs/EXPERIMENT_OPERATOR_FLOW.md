@@ -14,7 +14,7 @@ This document fixes the intended lab workflow for the MiCloaker console.
 
 - `carrier_freq_khz` is the ultrasonic jamming carrier frequency.
 - `carrier_freq_khz = 0` means no jamming signal is emitted.
-- `uj` records whether the unjammer condition is `uj0` or `uj1`.
+- `uj` remains the internal compatibility field, but the UI and newly generated comparison plots should show `Unjammed: false` for `uj0` and `Unjammed: true` for `uj1`.
 - `sound_condition` describes ordinary sound captured in the room, not the ultrasonic jamming signal.
 - sound_condition describes ordinary sound captured in the room; the UI may display it as ordinary recorded sound.
 - Ordinary sound examples include quiet baseline, meeting-room sound, speech, and WER material.
@@ -39,6 +39,6 @@ This document fixes the intended lab workflow for the MiCloaker console.
 
 ## Analysis intent
 
-The first required comparison is energy or band-power comparison between unjammer conditions, typically `uj0` versus `uj1`, using saved `.bin` data as the quantitative source. Later calibration, WER/CER, and other measurements can be layered on top of the same session/run structure.
+The first required comparison is energy or band-power comparison between unjammer conditions, shown to operators as `Unjammed: false` versus `Unjammed: true`, using saved `.bin` data as the quantitative source. Later calibration, WER/CER, and other measurements can be layered on top of the same session/run structure.
 
 Plots should be clean enough for reports or papers: waveform, PSD, spectrogram, comparison PSD overlay, and attenuation bar charts should default to publication-friendly labels, readable ticks, and exportable image files.

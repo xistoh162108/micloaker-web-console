@@ -4,14 +4,17 @@ import math
 from pathlib import Path
 import tempfile
 
+import numpy as np
 from fastapi import APIRouter, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, RedirectResponse
 
 from ..services.daq import DaqNotConfiguredError, DaqUnavailableError, daq_health
+from ..services.live_monitor import preview_contract
 from ..services.mac_helper_client import MacHelperClient
-from ..services.metadata import create_run_metadata, load_run, load_runs, load_sessions
+from ..services.metadata import create_run_metadata, load_run, load_runs, load_sessions, regenerate_summary, save_run
+from ..services.raw_bin import read_raw_float64_bin
 from ..services.recorder import RecordingBusyError, import_bin_and_finalize, record_daq_and_finalize, record_mock_and_finalize, validate_raw_bin_source
-from ..services.text_store import read_json, read_json_or_default, safe_name, session_dir
+from ..services.text_store import append_jsonl, now_iso, read_json, read_json_or_default, safe_name, session_dir
 
 router = APIRouter(tags=["runs"])
 
@@ -263,6 +266,118 @@ async def upload_bin_run(
     return RedirectResponse(f"/sessions/{session_id}/runs/{run['run_id']}", status_code=303)
 
 
+@router.post("/sessions/{session_id}/runs/{run_id}/import-bin")
+async def import_bin_for_existing_run(
+    request: Request,
+    session_id: str,
+    run_id: str,
+    file: UploadFile = File(...),
+):
+    workspace = request.app.state.settings.workspace
+    _require_run(workspace, session_id, run_id)
+    if not file.filename or not file.filename.lower().endswith(".bin"):
+        raise HTTPException(status_code=400, detail=_invalid_raw_bin_error("uploaded raw data must use a .bin extension"))
+    run = load_run(workspace, session_id, run_id)
+    run.setdefault("recording", {})["imported_filename"] = file.filename
+    run["recording"]["imported_at"] = now_iso()
+    with tempfile.NamedTemporaryFile(prefix="micloaker_run_upload_", suffix=".bin", delete=False) as tmp:
+        tmp_path = Path(tmp.name)
+        while chunk := await file.read(1024 * 1024):
+            tmp.write(chunk)
+    try:
+        try:
+            validate_raw_bin_source(tmp_path)
+            import_bin_and_finalize(workspace, run, tmp_path)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=_invalid_raw_bin_error(str(exc))) from exc
+        except FileExistsError as exc:
+            raise HTTPException(status_code=409, detail=_raw_bin_exists_error(str(exc))) from exc
+    finally:
+        tmp_path.unlink(missing_ok=True)
+    return RedirectResponse(f"/sessions/{session_id}/runs/{run_id}", status_code=303)
+
+
+@router.post("/sessions/{session_id}/runs/{run_id}/metadata")
+def update_run_metadata(
+    request: Request,
+    session_id: str,
+    run_id: str,
+    carrier_freq_khz: float = Form(...),
+    uj: str = Form(...),
+    sound_condition: str = Form(...),
+    source: str = Form(...),
+    sample_rate_hz: int = Form(...),
+    duration_s: float = Form(...),
+    channel: int = Form(0),
+    ai_range: str = Form("BIP10VOLTS"),
+    input_mode: str = Form("SINGLE_ENDED"),
+):
+    workspace = request.app.state.settings.workspace
+    _require_run(workspace, session_id, run_id)
+    run = load_run(workspace, session_id, run_id)
+    source = source.strip().lower()
+    if source not in {"daq", "upload"}:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error_code": "INVALID_RUN_METADATA",
+                "message": "recording source must be daq or upload",
+                "suggestion": "Use daq for Linux hardware capture, or upload for an imported saved .bin file.",
+            },
+        )
+    conversion = run.get("conversion", {})
+    analysis = run.get("analysis", {})
+    mac_helper = run.get("mac_helper", {})
+    condition = run.get("condition", {})
+    _validate_run_form(
+        carrier_freq_khz=carrier_freq_khz,
+        sample_rate_hz=sample_rate_hz,
+        duration_s=duration_s,
+        trim_start_s=float(analysis.get("trim_start_s", 0.0) or 0.0),
+        trim_end_s=float(analysis.get("trim_end_s", 0.0) or 0.0),
+        analysis_band_low_hz=float((analysis.get("primary_band_hz") or [300.0, 3400.0])[0]),
+        analysis_band_high_hz=float((analysis.get("primary_band_hz") or [300.0, 3400.0])[1]),
+        full_scale_volts=float(conversion.get("full_scale_volts", 10.0) or 10.0),
+        scale_mode=_scale_mode_from_run(run),
+        channel=channel,
+        distance_cm=condition.get("distance_cm"),
+        safety_max_spl_db=run.get("safety", {}).get("max_spl_db"),
+        mac_helper_device_id=mac_helper.get("planned_device_id"),
+        mac_helper_sample_rate=mac_helper.get("planned_sample_rate"),
+        mac_helper_channels=int(mac_helper.get("planned_channels", 1) or 1),
+        mac_helper_gain=float(mac_helper.get("planned_gain", 1.0) or 1.0),
+        mac_helper_delay_ms=int(mac_helper.get("planned_delay_ms", 0) or 0),
+        allow_zero_duration=False,
+    )
+    run.setdefault("condition", {})
+    run["condition"].update(
+        {
+            "carrier_freq_khz": carrier_freq_khz,
+            "uj": uj.strip(),
+            "sound_condition": sound_condition.strip(),
+        }
+    )
+    run.setdefault("recording", {})
+    run["recording"].update(
+        {
+            "source": source,
+            "sample_rate_hz": sample_rate_hz,
+            "duration_s": duration_s,
+            "channels": [channel],
+            "ai_range": ai_range.strip(),
+            "input_mode": input_mode.strip(),
+        }
+    )
+    if not int(run["recording"].get("written_samples", 0) or 0):
+        run["recording"]["actual_sample_rate_hz"] = sample_rate_hz
+    run["updated_at"] = now_iso()
+    save_run(workspace, run)
+    base = session_dir(workspace, session_id)
+    append_jsonl(base / "events.jsonl", {"event": "run_metadata_updated", "run_id": run_id, "updated_at": run["updated_at"]})
+    regenerate_summary(workspace, session_id)
+    return RedirectResponse(f"/sessions/{session_id}/runs/{run_id}", status_code=303)
+
+
 @router.get("/sessions/{session_id}/runs/{run_id}")
 def run_detail(request: Request, session_id: str, run_id: str):
     workspace = request.app.state.settings.workspace
@@ -302,6 +417,33 @@ def run_detail(request: Request, session_id: str, run_id: str):
             "enable_dev_mock_ui": request.app.state.settings.enable_dev_mock_ui,
         },
     )
+
+
+@router.get("/sessions/{session_id}/runs/{run_id}/preview-snapshot")
+def run_preview_snapshot(request: Request, session_id: str, run_id: str):
+    workspace = request.app.state.settings.workspace
+    _require_run(workspace, session_id, run_id)
+    run = load_run(workspace, session_id, run_id)
+    base = session_dir(workspace, session_id)
+    bin_path = base / run.get("files", {}).get("bin", "")
+    if not bin_path.is_file():
+        return {
+            "running": False,
+            "preview_only": False,
+            "result_grade": "none",
+            "preview_source": "no_saved_data",
+            **preview_contract(),
+            "sample_rate_hz": run.get("recording", {}).get("sample_rate_hz", 8000),
+            "preview_label": "No saved .bin data yet. Record DAQ or import a saved raw .bin file.",
+            "waveform_point_count": 0,
+            "psd_bin_count": 0,
+            "spectrogram_row_count": 0,
+            "clipping": False,
+            "recording_state": "Stopped",
+            "finalization_status": "No saved .bin data for this run yet.",
+            "state_options": ["Stopped", "Previewing", "Recording", "Finalizing", "Finalized"],
+        }
+    return _saved_bin_preview_payload(base, run, bin_path)
 
 
 @router.get("/sessions/{session_id}/browser")
@@ -422,6 +564,94 @@ def _record_after_create_source(record_after_create: bool, source: str) -> str:
 
 def _valid_carrier_frequency(value: float) -> bool:
     return any(abs(float(value) - allowed) < 1e-9 for allowed in (0.0, 25.0, 32.8))
+
+
+def _scale_mode_from_run(run: dict[str, object]) -> str:
+    modes = set((run.get("conversion", {}) or {}).get("scale_modes", []) or [])
+    if {"peak", "range"}.issubset(modes):
+        return "both"
+    if "range" in modes:
+        return "range"
+    return "peak"
+
+
+def _saved_bin_preview_payload(base: Path, run: dict, bin_path: Path) -> dict:
+    data = read_raw_float64_bin(bin_path).astype(np.float64)
+    recording = run.get("recording", {})
+    analysis = run.get("analysis", {})
+    conversion = run.get("conversion", {})
+    sample_rate = float(recording.get("actual_sample_rate_hz") or recording.get("sample_rate_hz") or 8000)
+    preview_data = data
+    if bool(conversion.get("remove_dc", True)) and preview_data.size:
+        preview_data = preview_data - float(np.mean(preview_data))
+    peak = float(np.max(np.abs(preview_data))) if preview_data.size else 0.0
+    rms = float(np.sqrt(np.mean(preview_data * preview_data))) if preview_data.size else 0.0
+    waveform = preview_data[:: max(1, preview_data.size // 800)].tolist() if preview_data.size else []
+    freqs, psd = _preview_welch(preview_data, sample_rate)
+    psd_limit = min(256, len(psd))
+    spectrogram = _preview_spectrogram(preview_data, sample_rate)
+    metrics_path = base / run.get("files", {}).get("metrics_json", "")
+    finalized = analysis.get("status") == "finalized" and metrics_path.is_file()
+    return {
+        "running": False,
+        "preview_only": False,
+        "result_grade": analysis.get("result_grade") or ("report-grade" if finalized else "saved-bin-preview"),
+        "preview_source": "saved_bin",
+        **preview_contract(),
+        "preview_saved": True,
+        "sample_rate_hz": sample_rate,
+        "preview_window_s": float(data.size / sample_rate) if sample_rate > 0 else 0.0,
+        "preview_label": "Saved .bin data loaded for this run.",
+        "rms_v": rms,
+        "peak_v": peak,
+        "clipping": peak >= 0.98 * float(conversion.get("full_scale_volts", 10.0) or 10.0),
+        "waveform": waveform,
+        "psd_freq_hz": freqs[:psd_limit].tolist(),
+        "psd": psd[:psd_limit].tolist(),
+        "spectrogram": spectrogram,
+        "waveform_point_count": len(waveform),
+        "psd_bin_count": psd_limit,
+        "spectrogram_row_count": len(spectrogram),
+        "recording_state": "Finalized" if finalized else "Saved BIN",
+        "finalization_status": "Saved .bin preview loaded. Final report values are available." if finalized else "Saved .bin preview loaded; finalize from .bin for report-grade metrics.",
+        "final_run_id": run["run_id"] if finalized else None,
+        "final_session_id": run["session_id"] if finalized else None,
+        "finalized_at": analysis.get("finalized_at"),
+        "final_bin_path": run.get("files", {}).get("bin"),
+        "final_metrics_path": analysis.get("metrics_path") or run.get("files", {}).get("metrics_json"),
+        "final_log_path": f"logs/{run['run_id']}.log",
+        "final_result_grade": analysis.get("result_grade"),
+        "finalized_from_saved_bin": analysis.get("finalized_from_saved_bin") is True,
+        "final_raw_sample_count": int(data.size),
+        "final_raw_size_bytes": bin_path.stat().st_size,
+        "final_raw_dtype": recording.get("raw_dtype") or recording.get("dtype"),
+        "state_options": ["Stopped", "Previewing", "Recording", "Finalizing", "Finalized"],
+    }
+
+
+def _preview_welch(data: np.ndarray, sample_rate: float) -> tuple[np.ndarray, np.ndarray]:
+    if data.size < 8:
+        return np.array([]), np.array([])
+    try:
+        import scipy.signal
+    except ImportError:
+        return np.array([]), np.array([])
+    nperseg = min(4096, max(256, data.size // 4)) if data.size >= 256 else data.size
+    return scipy.signal.welch(data, fs=sample_rate, nperseg=nperseg, detrend=False)
+
+
+def _preview_spectrogram(data: np.ndarray, sample_rate: float) -> list[list[float]]:
+    if data.size < 32:
+        return []
+    rows: list[list[float]] = []
+    row_count = min(60, max(1, data.size // 512))
+    for chunk in np.array_split(data, row_count):
+        if chunk.size < 8:
+            continue
+        _, psd = _preview_welch(chunk, sample_rate)
+        if psd.size:
+            rows.append(np.log10(psd[:128] + 1e-18).tolist())
+    return rows
 
 
 def _invalid_raw_bin_error(message: str) -> dict[str, str]:

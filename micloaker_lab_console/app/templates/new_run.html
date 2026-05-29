@@ -55,7 +55,7 @@
       <label>Run
         <select data-existing-run-select>
           {% for run in selected_runs %}
-          <option value="/sessions/{{ selected_session_id }}/runs/{{ run.run_id }}">{{ run.run_id }} / {{ run.condition.uj }} / {{ run.condition.carrier_freq_khz }} kHz / {{ run.analysis.status }}</option>
+          <option value="/sessions/{{ selected_session_id }}/runs/{{ run.run_id }}">{{ run.run_id }} / {{ run.condition.uj | unjammed_label }} / {{ run.condition.carrier_freq_khz }} kHz / {{ run.analysis.status }}</option>
           {% endfor %}
         </select>
       </label>
@@ -80,7 +80,7 @@
           <option value="32.8">32.8 kHz</option>
         </select>
       </label>
-      <label>UJ <select name="uj"><option>uj0</option><option>uj1</option></select></label>
+      <label>Unjammed <select name="uj"><option value="uj0">false</option><option value="uj1">true</option></select></label>
       <label>Ordinary recorded sound
         <select name="sound_condition">
           <option value="sound0">none / quiet baseline</option>
@@ -89,15 +89,27 @@
           <option value="custom">custom ordinary sound</option>
         </select>
       </label>
-      <label>Duration <input name="duration_s" type="number" min="0.01" step="0.01" value="1.00" inputmode="decimal"></label>
+      <label>Duration <input name="duration_s" type="number" min="0.5" step="0.5" value="1.0" inputmode="decimal"></label>
       <label>Sample rate <input name="sample_rate_hz" type="number" min="1" value="8000"></label>
       <label>Scale mode <select name="scale_mode"><option value="both">peak + range</option><option value="peak">peak</option><option value="range">range</option></select></label>
       <label class="wide">Notes <input name="notes"></label>
       <details class="wide">
         <summary>Advanced</summary>
         <div class="form grid-form nested-form">
-          <label>DAQ range <input name="ai_range" value="BIP10VOLTS"></label>
-          <label>Input mode <input name="input_mode" value="SINGLE_ENDED"></label>
+          <label>DAQ range
+            <select name="ai_range">
+              <option value="BIP10VOLTS" selected>BIP10VOLTS</option>
+              <option value="BIP5VOLTS">BIP5VOLTS</option>
+              <option value="BIP2VOLTS">BIP2VOLTS</option>
+              <option value="BIP1VOLTS">BIP1VOLTS</option>
+            </select>
+          </label>
+          <label>Input mode
+            <select name="input_mode">
+              <option value="SINGLE_ENDED" selected>SINGLE_ENDED</option>
+              <option value="DIFFERENTIAL">DIFFERENTIAL</option>
+            </select>
+          </label>
           <label>Channel <input name="channel" type="number" min="0" value="0"></label>
           <label>Mic <input name="mic_id" value="daq_ch0"></label>
           <label>Room <input name="room" value="lab"></label>

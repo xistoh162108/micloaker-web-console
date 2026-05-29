@@ -76,10 +76,11 @@ def plot_compare(result: dict, out_dir: Path, compare_id: str) -> dict[str, str]
     reduction = float(result.get("reduction_percent", 0.0))
     attenuation = float(result.get("attenuation_db", 0.0))
     fig, ax = plt.subplots(figsize=(5.8, 3.4), constrained_layout=True)
-    bars = ax.bar(["UJ0 reference", "UJ1 measured"], [uj0_pct, uj1_pct], color=["#2f5f93", "#0a8793"])
+    labels = ["Unjammed: false\nreference", "Unjammed: true\nmeasured"]
+    bars = ax.bar(labels, [uj0_pct, uj1_pct], color=["#2f5f93", "#0a8793"])
     ax.set_ylabel("Relative band energy (%)")
     ax.set_ylim(0, max(110.0, uj0_pct * 1.12, uj1_pct * 1.12))
-    ax.set_title(f"UJ1 remaining energy {uj1_pct:.1f}% ({reduction:.1f}% reduction, {attenuation:.2f} dB)")
+    ax.set_title(f"Unjammed: true remaining energy {uj1_pct:.1f}% ({reduction:.1f}% reduction, {attenuation:.2f} dB)")
     ax.grid(axis="y", alpha=0.25)
     for rect, value in zip(bars, [uj0_pct, uj1_pct]):
         ax.text(rect.get_x() + rect.get_width() / 2.0, rect.get_height(), f"{value:.1f}%", ha="center", va="bottom", fontsize=9)
@@ -106,13 +107,13 @@ def plot_psd_overlay(
     p1 = np.asarray(metrics1.get("psd_v2_per_hz", []), dtype=float)
     fig, ax = plt.subplots(figsize=(8, 3), constrained_layout=True)
     if f0.size and p0.size:
-        ax.semilogy(f0, p0, label="uj0", color="#2f5f93", linewidth=1.0)
+        ax.semilogy(f0, p0, label="Unjammed: false reference", color="#2f5f93", linewidth=1.0)
     if f1.size and p1.size:
-        ax.semilogy(f1, p1, label="uj1", color="#a52828", linewidth=1.0)
+        ax.semilogy(f1, p1, label="Unjammed: true measured", color="#a52828", linewidth=1.0)
     _highlight_band(ax, band_hz, label=_band_label(band_hz))
     ax.set_xlabel("Frequency (Hz)")
     ax.set_ylabel("PSD (V^2/Hz)")
-    ax.set_title("Comparison PSD Overlay")
+    ax.set_title("Comparison PSD Overlay: Unjammed False vs True")
     ax.grid(alpha=0.25)
     ax.legend(loc="best")
     fig.savefig(png, dpi=160)

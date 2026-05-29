@@ -29,6 +29,7 @@ class PlaybackRequest(BaseModel):
     channels: int = 1
     gain: float = 1.0
     delay_ms: int = 0
+    duration_s: float | None = None
 
 
 def create_app(config: dict[str, Any]) -> FastAPI:
@@ -158,7 +159,8 @@ def create_app(config: dict[str, Any]) -> FastAPI:
             )
             return valid
         play_id = _new_play_id()
-        expected_end_after_s = (req.delay_ms / 1000.0) + float(valid.get("duration_s") or 0.0)
+        playback_duration_s = _effective_playback_duration(req, float(valid.get("duration_s") or 0.0))
+        expected_end_after_s = (req.delay_ms / 1000.0) + playback_duration_s
         STATE.update({
             "playing": True,
             "current_play_id": play_id,
@@ -175,7 +177,8 @@ def create_app(config: dict[str, Any]) -> FastAPI:
             "gain": req.gain,
             "delay_ms": req.delay_ms,
             "started": time.monotonic(),
-            "duration_s": valid.get("duration_s"),
+            "duration_s": playback_duration_s,
+            "source_duration_s": valid.get("duration_s"),
             "expected_end_after_s": expected_end_after_s,
             "last_error": None,
             "last_error_code": None,
@@ -201,7 +204,8 @@ def create_app(config: dict[str, Any]) -> FastAPI:
             "source_sample_rate": valid.get("source_sample_rate"),
             "requested_sample_rate": valid.get("requested_sample_rate"),
             "will_resample": valid.get("will_resample"),
-            "duration_s": valid.get("duration_s"),
+            "duration_s": playback_duration_s,
+            "source_duration_s": valid.get("duration_s"),
             "source_channels": valid.get("channels"),
             "requested_channels": valid.get("requested_channels"),
             "will_channel_map": valid.get("will_channel_map"),
@@ -262,6 +266,8 @@ def _validate(root: Path, req: PlaybackRequest, *, mock_audio: bool = False, def
         return _error("INVALID_CHANNELS", "Channels must be at least 1.", "Use mono or stereo output settings.")
     if req.delay_ms < 0:
         return _error("INVALID_DELAY", "Delay must be zero or positive.", "Use a delay of 0 ms or greater.")
+    if req.duration_s is not None and req.duration_s <= 0:
+        return _error("INVALID_DURATION", "Playback duration must be positive when provided.", "Use the run duration or leave duration_s empty.")
     if not math.isfinite(req.gain) or not 0.0 <= req.gain <= 1.0:
         return _error("INVALID_GAIN", "Gain must be between 0.0 and 1.0.", "Lower the gain.")
     try:
@@ -353,6 +359,8 @@ def _play_file(path: Path, req: PlaybackRequest, play_id: str) -> None:
         data = data * req.gain
         if int(sample_rate) != int(req.sample_rate):
             data = _resample_audio(data, int(sample_rate), int(req.sample_rate))
+        if req.duration_s and req.duration_s > 0:
+            data = data[: max(1, int(round(req.duration_s * req.sample_rate)))]
         if not _playback_still_active(play_id):
             return
         sd.play(data, samplerate=req.sample_rate, device=req.device_id, blocking=True)
@@ -362,6 +370,12 @@ def _play_file(path: Path, req: PlaybackRequest, play_id: str) -> None:
         if STATE.get("current_play_id") == play_id:
             STATE["playing"] = False
         _set_playback_error("PLAYBACK_FAILED", str(exc), "Check the WAV file, output device, and audio backend logs before retrying.")
+
+
+def _effective_playback_duration(req: PlaybackRequest, source_duration_s: float) -> float:
+    if req.duration_s and req.duration_s > 0:
+        return min(source_duration_s, float(req.duration_s))
+    return source_duration_s
 
 
 def _playback_still_active(play_id: str) -> bool:

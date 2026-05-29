@@ -131,7 +131,7 @@ def play_run_helper(
     workspace = request.app.state.settings.workspace
     _require_run(workspace, session_id, run_id)
     run = load_run(workspace, session_id, run_id)
-    payload = {"file": file, "device_id": device_id, "sample_rate": sample_rate, "channels": channels, "gain": gain, "delay_ms": delay_ms}
+    payload = {"file": file, "device_id": device_id, "sample_rate": sample_rate, "channels": channels, "gain": gain, "delay_ms": delay_ms, "duration_s": _run_duration_s(run)}
     _reject_if_jamming_file_mismatches_run(workspace, session_id, run_id, run, payload, action="play")
     result = _client_from_config(workspace).play(payload)
     _store_helper_result(workspace, session_id, run_id, "play", payload, result)
@@ -286,7 +286,7 @@ def _play_and_record(
         }
         _store_helper_result(workspace, session_id, run_id, "play_and_record_rejected", requested, result)
         raise HTTPException(status_code=400, detail=result)
-    payload = {**requested, "delay_ms": delay_ms}
+    payload = {**requested, "delay_ms": delay_ms, "duration_s": _run_duration_s(run)}
     client = _client_from_config(workspace)
     play_result = client.play(payload)
     _store_helper_result(workspace, session_id, run_id, "play", payload, play_result)
@@ -529,3 +529,8 @@ def _helper_connected_state(action: str, result: dict, helper: dict) -> bool:
     if "connected" in result:
         return bool(result.get("connected"))
     return True
+
+
+def _run_duration_s(run: dict) -> float:
+    duration = float(run.get("recording", {}).get("duration_s", 0.0) or 0.0)
+    return duration if duration > 0 else 0.0
