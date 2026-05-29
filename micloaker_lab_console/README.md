@@ -16,13 +16,14 @@ The UI standard is DaisyUI component vocabulary implemented locally in vanilla C
 - Finalize report-grade RMS, Welch PSD, band power, dominant-tone, and quality metrics from saved `.bin`.
 - Compare `uj0` and `uj1` runs and export JSON/CSV/PNG/SVG/ZIP artifacts.
 - Show logs, tracebacks, live preview, and optional Mac Helper playback status.
+- Run mock live preview by default, with an explicit DAQ live preview sanity-check mode when DAQ hardware is available.
 
 ## Operator Console
 
 The Dashboard is the primary experiment console. It is organized by operating priority instead of by disconnected feature tabs:
 
 1. Setup: active session, acquisition mode, and optional Mac playback state.
-2. Capture And Live Preview: quick metadata, mock/DAQ record buttons, waveform, RMS/peak, clipping, live PSD, spectrogram, and finalization status.
+2. Capture And Live Preview: quick metadata, mock/DAQ live preview, mock/DAQ record buttons, waveform, RMS/peak, clipping, live PSD, spectrogram, and finalization status.
 3. Results, Compare, Export: latest run, latest comparison, latest finalized visual artifacts, audio preview, metrics link, and export shortcuts.
 4. Recent Runs and Operations: fast run access, readiness, and safe shutdown/status links.
 

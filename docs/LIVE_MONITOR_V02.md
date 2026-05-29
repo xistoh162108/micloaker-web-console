@@ -13,6 +13,8 @@ Live Monitor Mode lets the user check the incoming microphone/DAQ signal in real
 - scrolling spectrogram
 - status text and logs
 
+The default live source is mock preview so the console remains usable without DAQ hardware. The UI may also expose an explicit **Start DAQ Live** control that performs short DAQ preview scans through the same lazy `uldaq` recording backend. If DAQ preview is unavailable, the live API must return a structured preview error while keeping the page and Linux-only workflow usable.
+
 ## 3. Preview-only rule
 
 Live data may be downsampled or approximate. UI must label it:
@@ -39,7 +41,7 @@ After recording ends, automatically start a finalization job:
 
 ## 5. Architecture
 
-Use one acquisition source:
+Use one acquisition source where possible:
 
 ```text
 DAQ/mock source
@@ -48,7 +50,7 @@ DAQ/mock source
   └── quick metric calculator
 ```
 
-Avoid two separate DAQ readers.
+Avoid two competing DAQ readers during a recording. DAQ live preview is an explicit setup/sanity-check mode, not a replacement for saved `.bin` capture and finalization.
 
 ## 6. Data transfer
 
@@ -70,6 +72,7 @@ Keep payload compact:
 ## 7. Acceptance criteria
 
 - Mock live monitor runs without DAQ.
+- Explicit DAQ live preview can be requested and degrades cleanly when DAQ is unavailable.
 - Browser updates waveform continuously.
 - RMS/peak and clipping status update.
 - PSD and spectrogram update.

@@ -115,7 +115,7 @@ On startup, scan workspace files to rebuild in-memory state.
 
 ## 6. Live Monitor architecture
 
-Use one acquisition source.
+Use one acquisition source where possible.
 
 ```text
 DAQ Reader
@@ -124,7 +124,7 @@ DAQ Reader
   └── quick metrics
 ```
 
-Never create two competing readers for the same DAQ.
+Never create two competing readers for the same DAQ during a recording. The console may offer an explicit DAQ live preview setup mode that performs short lazy-`uldaq` scans before recording; if DAQ preview is unavailable it must report a preview error and leave mock/live page operation intact.
 
 ## 7. Security posture
 

@@ -20,7 +20,7 @@ done
 
 Most recent observed results:
 
-- Full test suite: `129 passed`
+- Full test suite: `131 passed`
 - Acceptance audit: `PASS`
 - Smoke routes: all listed routes returned `200`
 
@@ -56,7 +56,7 @@ Most recent observed results:
 | Logs/debug UI | Proven | `/logs` displays app/job events, run logs, tracebacks, and diagnostic downloads; tests cover traceback capture. |
 | Dashboard command center UI | Proven | `app/templates/dashboard.html` has always-visible Setup, Capture And Live Preview, Results/Compare/Export, live canvases, latest artifacts, recent runs, and operations; dashboard workflow controls are not hidden behind tabs. |
 | Live monitor v0.2 | Proven for mock source | `/live` and `/live/snapshot` expose waveform, RMS/peak, clipping, PSD, spectrogram, preview-only labels, finalization status, and final artifact pointers. |
-| Live monitor with real DAQ source | Not physically verified | Current live implementation uses mock preview when hardware is unavailable. A shared real DAQ live buffer should be lab-verified or extended if true real-time DAQ preview is required. |
+| Live monitor with real DAQ source | Code path proven, not physically verified | Default live preview remains mock. Explicit DAQ live preview performs short lazy-`uldaq` scans and degrades to structured preview errors when hardware/drivers are unavailable. Physical DAQ live signal quality still needs lab verification. |
 | Post-record finalization | Proven | Recording/import flows finalize from saved `.bin`; live snapshot surfaces latest finalized report-grade run and artifacts. |
 | Optional Mac Helper APIs | Proven in mock/test mode | `/health`, `/devices`, `/files`, `/validate-playback`, `/play`, `/stop`, `/status`; standalone tests cover structured responses. |
 | Mac Helper path safety | Proven | Relative-only `wav_root` validation, traversal rejection, symlink-outside exclusion, optional bearer token tests. |
@@ -87,7 +87,7 @@ These items are outside what the local mock/test environment can prove:
 1. Connect the actual DAQ and run a short DAQ capture through `Record DAQ + Finalize`.
 2. Confirm actual sample rate, channel, DAQ range, and `.bin` sample count match lab expectations.
 3. Run Mac Helper on macOS with a real output device, validate a prepared WAV, play it, stop it, and confirm the selected `device_id` receives audio without changing the system default output.
-4. If real-time DAQ live monitoring is required beyond mock preview, verify or extend the live monitor to use the same DAQ acquisition source and preview buffer during recording.
+4. Verify explicit DAQ live preview with the actual DAQ, including selected channel/range/input mode and expected waveform/PSD behavior.
 5. Compare a known legacy `.bin` sample against legacy notebook output if exact historical numeric parity is needed.
 
 Use `../docs/HARDWARE_VALIDATION_PROTOCOL.md` as the operator checklist for items 1-3 and the first attenuation pair check.

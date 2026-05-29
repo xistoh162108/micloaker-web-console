@@ -6,6 +6,7 @@ from typing import Any
 
 import numpy as np
 
+from .daq import DaqNotConfiguredError, DaqUnavailableError, record_voltage
 from .mock_daq import generate_mock_voltage
 
 
@@ -43,10 +44,30 @@ def preview_contract() -> dict[str, Any]:
 class LiveMonitor:
     sample_rate_hz: int = 8000
     running: bool = False
+    source: str = "mock"
+    channel: int = 0
+    input_mode: str = "SINGLE_ENDED"
+    ai_range: str = "BIP10VOLTS"
     tick: int = 0
     spectrogram_rows: list[list[float]] = field(default_factory=list)
 
-    def start(self) -> None:
+    def start(
+        self,
+        *,
+        source: str = "mock",
+        sample_rate_hz: int | None = None,
+        channel: int = 0,
+        input_mode: str = "SINGLE_ENDED",
+        ai_range: str = "BIP10VOLTS",
+    ) -> None:
+        if source not in {"mock", "daq"}:
+            raise ValueError("live preview source must be 'mock' or 'daq'")
+        self.source = source
+        if sample_rate_hz:
+            self.sample_rate_hz = int(sample_rate_hz)
+        self.channel = int(channel)
+        self.input_mode = input_mode
+        self.ai_range = ai_range
         self.running = True
         self.tick = 0
         self.spectrogram_rows.clear()
@@ -60,7 +81,7 @@ class LiveMonitor:
                 "running": False,
                 "preview_only": True,
                 "result_grade": "preview",
-                "preview_source": "mock",
+                "preview_source": self.source,
                 **preview_contract(),
                 "sample_rate_hz": self.sample_rate_hz,
                 "preview_label": "Preview only. Final metrics will be recomputed from saved .bin after recording.",
@@ -69,8 +90,8 @@ class LiveMonitor:
                 "spectrogram_row_count": len(self.spectrogram_rows),
         }
         self.tick += 1
-        data = generate_mock_voltage(self.sample_rate_hz, 0.25, "uj0", 25.0)
-        if data.size:
+        data = self._sample_preview()
+        if self.source == "mock" and data.size:
             data = np.roll(data, self.tick * max(1, data.size // 40))
         peak = float(np.max(np.abs(data))) if data.size else 0.0
         rms = float(np.sqrt(np.mean(data * data))) if data.size else 0.0
@@ -83,7 +104,7 @@ class LiveMonitor:
             "running": True,
             "preview_only": True,
             "result_grade": "preview",
-            "preview_source": "mock",
+            "preview_source": self.source,
             **preview_contract(),
             "sample_rate_hz": self.sample_rate_hz,
             "preview_tick": self.tick,
@@ -99,6 +120,22 @@ class LiveMonitor:
             "psd_bin_count": min(128, len(psd)),
             "spectrogram_row_count": len(self.spectrogram_rows),
         }
+
+    def _sample_preview(self) -> np.ndarray:
+        if self.source == "mock":
+            return generate_mock_voltage(self.sample_rate_hz, 0.25, "uj0", 25.0)
+        try:
+            data_result = record_voltage(
+                sample_rate_hz=self.sample_rate_hz,
+                duration_s=0.25,
+                channels=[self.channel],
+                input_mode=self.input_mode,
+                ai_range=self.ai_range,
+            )
+        except (DaqUnavailableError, DaqNotConfiguredError) as exc:
+            raise RuntimeError(f"DAQ live preview unavailable: {exc}") from exc
+        data = data_result[0] if isinstance(data_result, tuple) else data_result
+        return np.asarray(data, dtype=np.float64)
 
 
 live_monitor = LiveMonitor()

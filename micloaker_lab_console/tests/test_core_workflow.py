@@ -2039,6 +2039,8 @@ def test_live_snapshot_contains_preview_psd_and_spectrogram(tmp_path: Path, monk
     page = client.get("/live")
     assert page.status_code == 200
     assert "Recording State" in page.text
+    assert "Start Mock Live" in page.text
+    assert "Start DAQ Live" in page.text
     assert "Finalization Status" in page.text
     assert "Latest Finalization Result" in page.text
     assert "Download metrics JSON" in page.text
@@ -2049,6 +2051,8 @@ def test_live_snapshot_contains_preview_psd_and_spectrogram(tmp_path: Path, monk
     assert "failed_run_id" in live_js
     assert "finalization_error_log" in live_js
     assert "preview_source" in live_js
+    assert "data-live-start" in page.text
+    assert 'payload.set("source"' in live_js
     assert "final_metrics_source" in live_js
     assert "recommended_update_rates_hz" in live_js
     assert "client_poll_intervals_ms" in live_js
@@ -2099,6 +2103,60 @@ def test_live_snapshot_contains_preview_psd_and_spectrogram(tmp_path: Path, monk
     stopped = client.post("/live/stop").json()
     assert stopped["running"] is False
     assert stopped["recording_state"] == "Stopped"
+
+
+def test_live_daq_preview_is_explicit_and_degrades_without_hardware(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    sys.modules.pop("uldaq", None)
+    monkeypatch.setenv("MICLOAKER_WORKSPACE", str(tmp_path))
+    ensure_workspace(tmp_path)
+    client = TestClient(create_app())
+
+    unavailable = client.post("/live/start", data={"source": "daq"})
+    assert unavailable.status_code == 200
+    body = unavailable.json()
+    assert body["running"] is True
+    assert body["preview_source"] == "daq"
+    assert body["preview_error_code"] == "LIVE_PREVIEW_UNAVAILABLE"
+    assert "DAQ live preview unavailable" in body["preview_error"]
+    assert "uldaq" not in sys.modules
+    client.post("/live/stop")
+
+    invalid = client.post("/live/start", data={"source": "invalid"})
+    assert invalid.status_code == 400
+    assert invalid.json()["detail"]["error_code"] == "INVALID_LIVE_SOURCE"
+
+
+def test_live_daq_preview_uses_short_daq_scan_when_available(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("MICLOAKER_WORKSPACE", str(tmp_path))
+    ensure_workspace(tmp_path)
+    captured = {}
+
+    def fake_record_voltage(**kwargs):
+        captured.update(kwargs)
+        fs = int(kwargs["sample_rate_hz"])
+        t = np.arange(max(1, int(fs * 0.25)), dtype=np.float64) / fs
+        return 0.1 * np.sin(2 * np.pi * 1000 * t), float(fs)
+
+    monkeypatch.setattr(live_monitor_module, "record_voltage", fake_record_voltage)
+    client = TestClient(create_app())
+    body = client.post(
+        "/live/start",
+        data={"source": "daq", "sample_rate_hz": "4000", "channel": "2", "input_mode": "DIFFERENTIAL", "ai_range": "BIP5VOLTS"},
+    ).json()
+    assert body["running"] is True
+    assert body["preview_source"] == "daq"
+    assert body["sample_rate_hz"] == 4000
+    assert body["waveform"]
+    assert body["psd"]
+    assert body["spectrogram"]
+    assert captured == {
+        "sample_rate_hz": 4000,
+        "duration_s": 0.25,
+        "channels": [2],
+        "input_mode": "DIFFERENTIAL",
+        "ai_range": "BIP5VOLTS",
+    }
+    client.post("/live/stop")
 
 
 def test_live_snapshot_reports_preview_dependency_error_without_breaking_page(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

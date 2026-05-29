@@ -17,8 +17,10 @@ const recordingGuardMessage = document.getElementById("recording-guard-message")
 let timer = null;
 let currentIntervalMs = null;
 
-async function post(url) {
-  const res = await fetch(url, { method: "POST" });
+async function post(url, data) {
+  const options = { method: "POST" };
+  if (data) options.body = data;
+  const res = await fetch(url, options);
   return res.json();
 }
 
@@ -165,9 +167,17 @@ function drawSpectrogram(rows) {
   });
 }
 
-document.getElementById("live-start")?.addEventListener("click", async () => {
-  await post("/live/start");
-  await refresh();
+document.querySelectorAll("[data-live-start]").forEach((button) => {
+  button.addEventListener("click", async () => {
+    const payload = new FormData();
+    payload.set("source", button.dataset.liveSource || "mock");
+    payload.set("sample_rate_hz", button.dataset.liveSampleRate || "8000");
+    payload.set("channel", button.dataset.liveChannel || "0");
+    payload.set("input_mode", button.dataset.liveInputMode || "SINGLE_ENDED");
+    payload.set("ai_range", button.dataset.liveAiRange || "BIP10VOLTS");
+    await post("/live/start", payload);
+    await refresh();
+  });
 });
 document.getElementById("live-stop")?.addEventListener("click", async () => {
   await post("/live/stop");

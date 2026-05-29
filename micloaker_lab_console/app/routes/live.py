@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Form, HTTPException, Request
 
 from ..services.live_monitor import live_monitor, preview_contract
 from ..services.metadata import load_runs, load_sessions
@@ -16,8 +16,31 @@ def live_page(request: Request):
 
 
 @router.post("/start")
-def live_start(request: Request):
-    live_monitor.start()
+def live_start(
+    request: Request,
+    source: str = Form("mock"),
+    sample_rate_hz: int = Form(8000),
+    channel: int = Form(0),
+    input_mode: str = Form("SINGLE_ENDED"),
+    ai_range: str = Form("BIP10VOLTS"),
+):
+    try:
+        live_monitor.start(
+            source=source,
+            sample_rate_hz=sample_rate_hz,
+            channel=channel,
+            input_mode=input_mode,
+            ai_range=ai_range,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error_code": "INVALID_LIVE_SOURCE",
+                "message": str(exc),
+                "suggestion": "Choose mock for DAQ-free preview or daq for a short real DAQ preview scan.",
+            },
+        ) from exc
     return _snapshot(request)
 
 
@@ -40,7 +63,7 @@ def _snapshot(request: Request) -> dict:
             "running": live_monitor.running,
             "preview_only": True,
             "result_grade": "preview",
-            "preview_source": "mock",
+            "preview_source": live_monitor.source,
             **preview_contract(),
             "sample_rate_hz": live_monitor.sample_rate_hz,
             "preview_label": "Preview only. Final metrics will be recomputed from saved .bin after recording.",
