@@ -42,6 +42,7 @@ def main() -> int:
     parser.add_argument("--record-run-id", default="", help="Run ID for --record-gate.")
     parser.add_argument("--record-helper-url", default="", help="Mac Helper URL for --record-gate.")
     parser.add_argument("--record-evidence", default="", help="Evidence text for --record-gate.")
+    parser.add_argument("--record-evidence-file", default="", help="Read evidence text for --record-gate from a UTF-8 text file.")
     parser.add_argument("--record-notes", default="", help="Notes for --record-gate.")
     args = parser.parse_args()
 
@@ -74,8 +75,9 @@ def _record_validation_from_args(parser: argparse.ArgumentParser, args: argparse
         parser.error("--record-status requires --record-gate")
     if not args.record_status:
         parser.error("--record-gate requires --record-status")
-    if args.record_status in {"pass", "warn", "fail"} and not args.record_evidence.strip():
-        parser.error("--record-evidence is required for pass/warn/fail validation records")
+    evidence = _record_evidence_text(parser, args)
+    if args.record_status in {"pass", "warn", "fail"} and not evidence.strip():
+        parser.error("--record-evidence or --record-evidence-file is required for pass/warn/fail validation records")
     record = record_lab_validation(
         workspace,
         gate=args.record_gate,
@@ -84,7 +86,7 @@ def _record_validation_from_args(parser: argparse.ArgumentParser, args: argparse
         session_id=args.record_session_id,
         run_id=args.record_run_id,
         helper_url=args.record_helper_url,
-        evidence=args.record_evidence,
+        evidence=evidence,
         notes=args.record_notes,
     )
     paths = validation_paths(workspace)
@@ -96,6 +98,21 @@ def _record_validation_from_args(parser: argparse.ArgumentParser, args: argparse
             report=paths["report"],
         )
     )
+
+
+def _record_evidence_text(parser: argparse.ArgumentParser, args: argparse.Namespace) -> str:
+    if args.record_evidence and args.record_evidence_file:
+        parser.error("use either --record-evidence or --record-evidence-file, not both")
+    if not args.record_evidence_file:
+        return str(args.record_evidence or "")
+    path = Path(args.record_evidence_file).expanduser()
+    try:
+        if not path.is_file():
+            parser.error(f"--record-evidence-file is not a file: {path}")
+        return path.read_text(encoding="utf-8").strip()
+    except OSError as exc:
+        parser.error(f"could not read --record-evidence-file {path}: {exc}")
+    return ""
 
 
 def _check_default_bind(findings: list[tuple[str, str, str]], host: str) -> None:

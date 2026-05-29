@@ -201,7 +201,7 @@ workspace/.micloaker/lab_readiness_report.md
 Session ZIP and multi-session ZIP exports include these files under `ops_validation/` when validation/readiness records exist.
 The `/ops` page also provides direct JSONL/Markdown downloads for validation records and point-in-time readiness snapshots.
 The `/ops` validation form shows gate-specific checklist fields and includes a `Use checklist draft` button that fills the evidence box with field labels before the operator records measured values.
-Terminal-only operators can append the same validation records with `scripts/lab_readiness_check.py --record-gate <gate> --record-status <pass|warn|fail|na> --record-evidence "..."`.
+Terminal-only operators can append the same validation records with `scripts/lab_readiness_check.py --record-gate <gate> --record-status <pass|warn|fail|na> --record-evidence "..."`; use `--record-evidence-file evidence.txt` for longer copied lab notes.
 Readiness treats the latest record for each validation gate as the active state: any `fail` gate makes readiness fail, any `warn` or missing gate keeps readiness in warning state, and each gate must be `pass` or explicitly marked `not applicable` before the hardware validation section is green.
 The same gate status logic is used by `scripts/lab_readiness_check.py`; a failed validation gate makes the CLI exit non-zero. Add `--write-report` to save the readiness JSON/Markdown snapshot for the lab notebook or exported session package.
 

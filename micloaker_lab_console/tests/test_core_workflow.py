@@ -1225,6 +1225,53 @@ def test_lab_readiness_cli_reflects_validation_gate_status(tmp_path: Path):
     assert cli_records[-1]["operator"] == "lab-op"
     assert "comparison pending supervisor review" in cli_records[-1]["evidence"]
 
+    evidence_file = tmp_path / "evidence.txt"
+    evidence_file.write_text("file evidence line 1\nfile evidence line 2\n", encoding="utf-8")
+    file_record = subprocess.run(
+        [
+            sys.executable,
+            "scripts/lab_readiness_check.py",
+            "--record-gate",
+            "play_and_record",
+            "--record-status",
+            "warn",
+            "--record-evidence-file",
+            str(evidence_file),
+        ],
+        cwd=Path(__file__).resolve().parents[1],
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert file_record.returncode == 0
+    file_records = read_jsonl(tmp_path / ".micloaker" / "hardware_validation.jsonl")
+    assert file_records[-1]["gate"] == "play_and_record"
+    assert "file evidence line 1" in file_records[-1]["evidence"]
+    assert "file evidence line 2" in file_records[-1]["evidence"]
+
+    duplicate_evidence = subprocess.run(
+        [
+            sys.executable,
+            "scripts/lab_readiness_check.py",
+            "--record-gate",
+            "daq_smoke",
+            "--record-status",
+            "warn",
+            "--record-evidence",
+            "inline",
+            "--record-evidence-file",
+            str(evidence_file),
+        ],
+        cwd=Path(__file__).resolve().parents[1],
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert duplicate_evidence.returncode == 2
+    assert "use either --record-evidence or --record-evidence-file" in duplicate_evidence.stderr
+
     incomplete_record = subprocess.run(
         [sys.executable, "scripts/lab_readiness_check.py", "--record-gate", "daq_smoke"],
         cwd=Path(__file__).resolve().parents[1],
