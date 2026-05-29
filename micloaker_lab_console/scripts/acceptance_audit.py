@@ -133,6 +133,7 @@ def audit_mock_workflow(workspace: Path) -> tuple[bool, list[str]]:
 
     from app.main import create_app
     from app.services.export_zip import make_run_zip, make_session_zip
+    from app.services.lab_validation import record_lab_validation
     from app.services.metadata import create_run_metadata, create_session, load_runs, load_sessions
     from app.services.recorder import record_mock_and_finalize
     from app.services.text_store import read_json, read_jsonl, session_dir
@@ -271,6 +272,14 @@ def audit_mock_workflow(workspace: Path) -> tuple[bool, list[str]]:
     if "band_power_300_3400" not in rebuilt_summary or finalized["run_id"] not in rebuilt_summary:
         failures.append("startup rebuild did not regenerate summary.csv from saved run metrics")
 
+    record_lab_validation(
+        workspace,
+        gate="attenuation_pair",
+        status="pass",
+        session_id=session["session_id"],
+        run_id=finalized1["run_id"],
+        evidence="acceptance audit validation evidence",
+    )
     run_zip = make_run_zip(workspace, session["session_id"], finalized["run_id"], workspace / "run_audit.zip")
     session_zip = make_session_zip(workspace, session["session_id"], workspace / "session_audit.zip")
     with zipfile.ZipFile(run_zip) as zf:
@@ -292,6 +301,10 @@ def audit_mock_workflow(workspace: Path) -> tuple[bool, list[str]]:
             failures.append("session ZIP missing run raw .bin")
         if not any(name.startswith(f"{session['session_id']}/comparisons/") and name.endswith(".json") for name in session_names):
             failures.append("session ZIP missing saved comparison JSON")
+        validation_jsonl = f"{session['session_id']}/ops_validation/hardware_validation.jsonl"
+        validation_report = f"{session['session_id']}/ops_validation/hardware_validation_report.md"
+        if validation_jsonl not in session_names or validation_report not in session_names:
+            failures.append("session ZIP missing hardware validation evidence files")
 
     try:
         record_mock_and_finalize(workspace, finalized)

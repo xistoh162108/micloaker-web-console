@@ -18,6 +18,7 @@ from app.services.converter import PEAK_WAV_HEADROOM, convert_bin_to_wav, peak_w
 from app.main import create_app
 from app.services.export_zip import make_multi_session_zip, make_run_zip, make_session_zip
 from app.services.jobs import mark_unfinished_jobs_interrupted, run_job
+from app.services.lab_validation import record_lab_validation
 from app.services.mac_helper_client import MacHelperClient
 from app.services.metadata import create_run_metadata, create_session, load_run, load_runs, rebuild_indexes, regenerate_summary, save_run
 from app.services.recorder import RecordingBusyError, _recording_lock, finalize_run, import_bin_and_finalize, record_daq_and_finalize, record_mock_and_finalize, recording_status, validate_raw_bin_source
@@ -702,10 +703,37 @@ def test_session_file_route_supports_individual_artifact_downloads(tmp_path: Pat
     assert f"/sessions/{session['session_id']}/files/{final['files']['metrics_json']}?download=1" in run_page.text
 
 
+def test_session_zip_includes_hardware_validation_records(tmp_path: Path):
+    ensure_workspace(tmp_path)
+    session = create_session(tmp_path, "validation export")
+    record_lab_validation(
+        tmp_path,
+        gate="daq_smoke",
+        status="pass",
+        operator="lab-op",
+        session_id=session["session_id"],
+        run_id="daq_smoke_run",
+        evidence="DAQ sample count and channel verified.",
+    )
+
+    session_zip = make_session_zip(tmp_path, session["session_id"], tmp_path / "validation_session.zip")
+    with zipfile.ZipFile(session_zip) as zf:
+        names = set(zf.namelist())
+        manifest = json.loads(zf.read(f"{session['session_id']}/export_manifest.json"))
+        records = zf.read(f"{session['session_id']}/ops_validation/hardware_validation.jsonl").decode("utf-8")
+        report = zf.read(f"{session['session_id']}/ops_validation/hardware_validation_report.md").decode("utf-8")
+    assert f"{session['session_id']}/ops_validation/hardware_validation.jsonl" in names
+    assert f"{session['session_id']}/ops_validation/hardware_validation_report.md" in names
+    assert f"{session['session_id']}/ops_validation/hardware_validation.jsonl" in manifest["included_files"]
+    assert "daq_smoke" in records
+    assert "DAQ sample count and channel verified." in report
+
+
 def test_multi_session_zip_and_no_database_files(tmp_path: Path):
     ensure_workspace(tmp_path)
     s1 = create_session(tmp_path, "one")
     s2 = create_session(tmp_path, "two")
+    record_lab_validation(tmp_path, gate="attenuation_pair", status="warn", session_id=s1["session_id"], evidence="comparison pending")
     out = make_multi_session_zip(tmp_path, [s1["session_id"], s2["session_id"]], tmp_path / "multi.zip")
     with zipfile.ZipFile(out) as zf:
         names = zf.namelist()
@@ -716,6 +744,8 @@ def test_multi_session_zip_and_no_database_files(tmp_path: Path):
     assert f"{s1['session_id']}/export_manifest.json" in names
     assert f"{s2['session_id']}/export_manifest.json" in names
     assert f"{s1['session_id']}/session.json" in session_manifest["included_files"]
+    assert f"{s1['session_id']}/ops_validation/hardware_validation.jsonl" in session_manifest["included_files"]
+    assert f"{s1['session_id']}/ops_validation/hardware_validation.jsonl" in names
     assert session_manifest["missing_files"] == []
     assert session_manifest["unsafe_files"] == []
     assert manifest["missing_files"] == []

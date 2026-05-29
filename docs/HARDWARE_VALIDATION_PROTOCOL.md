@@ -36,6 +36,7 @@ workspace/.micloaker/hardware_validation_report.md
 ```
 
 Use one record per gate: DAQ smoke capture, Mac Helper playback validation, play-and-record trial, attenuation pair check, and optional legacy notebook parity check.
+Session ZIP and multi-session ZIP exports include these records under `ops_validation/` when records exist.
 
 ## 2. Linux DAQ Smoke Capture
 

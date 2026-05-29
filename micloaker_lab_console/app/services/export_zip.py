@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Iterable
 
 from ..config import APP_VERSION
+from .lab_validation import validation_paths
 from .metadata import regenerate_session_report, regenerate_summary
 from .text_store import append_app_event, now_iso, read_json_or_default, session_dir
 
@@ -46,6 +47,7 @@ def make_session_zip(workspace: Path, session_id: str, out_path: Path) -> Path:
             missing.extend(run_missing)
             included.append(run_manifest_arc)
         _add_comparison_package(zf, base, f"{session_id}/comparisons", included, missing)
+        _add_validation_package(zf, workspace, f"{session_id}/ops_validation", included, missing)
         manifest_arc = f"{session_id}/export_manifest.json"
         zf.writestr(manifest_arc, _manifest(workspace, [*included, manifest_arc], missing))
     path = out_path
@@ -84,6 +86,7 @@ def make_multi_session_zip(workspace: Path, session_ids: Iterable[str], out_path
                 session_missing.extend(run_missing)
                 session_included.append(run_manifest_arc)
             _add_comparison_package(zf, base, f"{sid}/comparisons", session_included, session_missing)
+            _add_validation_package(zf, workspace, f"{sid}/ops_validation", session_included, session_missing)
             manifest_arc = f"{sid}/export_manifest.json"
             zf.writestr(manifest_arc, _manifest(workspace, [*session_included, manifest_arc], session_missing))
             included.extend(session_included)
@@ -173,6 +176,13 @@ def _expected_comparison_files(base: Path, comparison_json_path: Path) -> list[s
     if isinstance(plots, dict):
         files.extend(str(path) for path in plots.values() if path)
     return _dedupe(files)
+
+
+def _add_validation_package(zf: zipfile.ZipFile, workspace: Path, arc_prefix: str, included: list[str], missing: list[str]) -> None:
+    for name, path in validation_paths(workspace).items():
+        arc = f"{arc_prefix}/{path.name}"
+        if path.exists() and path.is_file() and _path_inside(workspace, path):
+            _write_member(zf, path, arc, included, missing)
 
 
 def _range_wav_fallback(base: Path, run_id: str) -> str:

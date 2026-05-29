@@ -52,7 +52,7 @@ Most recent observed results:
 | Plots | Proven | Waveform, PSD, spectrogram, PSD overlay, attenuation bar are generated as PNG/SVG; tests and audit verify artifacts. |
 | Compare | Proven | Manual and auto-pair `uj0`/`uj1`, metadata mismatch warnings, attenuation dB, remaining fraction, reduction percent, JSON/CSV/plots. |
 | Individual file downloads | Proven | Session file routes and file browser support `.bin`, WAV, plots, metrics, reports, logs; route tests cover downloads. |
-| ZIP exports | Proven | Run/session/multi-session ZIPs include manifests, missing-file records, unsafe path rejection, and relative archive names. |
+| ZIP exports | Proven | Run/session/multi-session ZIPs include manifests, missing-file records, unsafe path rejection, relative archive names, and session-level hardware validation evidence when records exist. |
 | Logs/debug UI | Proven | `/logs` displays app/job events, run logs, tracebacks, and diagnostic downloads; tests cover traceback capture. |
 | Dashboard command center UI | Proven | `app/templates/dashboard.html` has always-visible Setup, Capture And Live Preview, Results/Compare/Export, live canvases, latest artifacts, recent runs, and operations; dashboard workflow controls are not hidden behind tabs. |
 | Live monitor v0.2 | Proven for mock source | `/live` and `/live/snapshot` expose waveform, RMS/peak, clipping, PSD, spectrogram, preview-only labels, finalization status, and final artifact pointers. |

@@ -42,13 +42,15 @@ A session ZIP contains:
   summary.csv
   runs/... all run packages
   comparisons/... compare results
+  ops_validation/hardware_validation.jsonl
+  ops_validation/hardware_validation_report.md
   session_report.md
   export_manifest.json
 ```
 
 ## 4. Multi-session ZIP
 
-Contains multiple session ZIP-like folders and a top-level manifest.
+Contains multiple session ZIP-like folders and a top-level manifest. Each session folder should include the workspace-level hardware validation evidence under `ops_validation/` when records exist, so supervisors can review physical DAQ/Mac/play-and-record/attenuation evidence with the exported session package.
 
 ## 5. Export manifest
 

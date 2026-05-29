@@ -193,6 +193,8 @@ workspace/.micloaker/hardware_validation.jsonl
 workspace/.micloaker/hardware_validation_report.md
 ```
 
+Session ZIP and multi-session ZIP exports include these files under `ops_validation/` when validation records exist.
+
 ## Live Monitor
 
 Live Monitor is a setup and sanity-check view. Live preview is approximate, preview-only, and not report-grade. Final report values are recomputed from saved `.bin` after recording/finalization.
