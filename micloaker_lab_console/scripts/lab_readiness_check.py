@@ -102,10 +102,26 @@ def _check_workspace(findings: list[tuple[str, str, str]], workspace: Path) -> N
 def _check_validation_records(findings: list[tuple[str, str, str]], workspace: Path) -> None:
     summary = validation_summary(workspace)
     count = summary["record_count"]
-    if count:
-        findings.append(("PASS", "hardware_validation_records", f"{count} physical validation record(s) saved."))
-    else:
+    counts = summary.get("status_counts", {})
+    if not count:
         findings.append(("WARN", "hardware_validation_records", "No physical validation records saved yet; record evidence in /ops before report-grade hardware experiments."))
+        return
+    level = "FAIL" if counts.get("fail", 0) else "WARN" if counts.get("warn", 0) or counts.get("missing", 0) else "PASS"
+    findings.append(
+        (
+            level,
+            "hardware_validation_records",
+            (
+                f"{count} physical validation record(s): "
+                f"{counts.get('pass', 0)} pass, {counts.get('na', 0)} not applicable, "
+                f"{counts.get('warn', 0)} warn, {counts.get('fail', 0)} fail, "
+                f"{counts.get('missing', 0)} missing gate(s)."
+            ),
+        )
+    )
+    for gate in summary.get("gate_status", []):
+        if gate.get("status") in {"fail", "warn", "missing"}:
+            findings.append((level if gate.get("status") == "fail" else "WARN", f"validation_{gate.get('gate')}", f"{gate.get('gate_label')}: {gate.get('status')}"))
 
 
 def _check_daq(findings: list[tuple[str, str, str]]) -> None:

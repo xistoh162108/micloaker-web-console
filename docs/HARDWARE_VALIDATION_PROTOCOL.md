@@ -39,6 +39,7 @@ Use one record per gate: DAQ smoke capture, Mac Helper playback validation, play
 Session ZIP and multi-session ZIP exports include these records under `ops_validation/` when records exist.
 The `/ops` page also provides direct downloads for `hardware_validation.jsonl` and `hardware_validation_report.md`.
 The latest record for each gate controls the readiness status: any `fail` gate makes readiness fail, any `warn` or missing gate keeps readiness in warning state, and each gate must be `pass` or explicitly marked `not applicable` before the hardware validation section is green.
+The same gate status logic is used by `scripts/lab_readiness_check.py`; a failed validation gate makes the CLI exit non-zero.
 
 ## 2. Linux DAQ Smoke Capture
 

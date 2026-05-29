@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import csv
 import json
+import os
+import subprocess
 import sys
 import types
 import wave
@@ -1095,6 +1097,28 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     bad = client.post("/ops/validation", data={"gate": "bad_gate", "status": "pass"})
     assert bad.status_code == 400
     assert bad.json()["detail"]["error_code"] == "INVALID_VALIDATION_RECORD"
+
+
+def test_lab_readiness_cli_reflects_validation_gate_status(tmp_path: Path):
+    ensure_workspace(tmp_path)
+    env = {**os.environ, "MICLOAKER_WORKSPACE": str(tmp_path)}
+
+    no_records = subprocess.run([sys.executable, "scripts/lab_readiness_check.py"], cwd=Path(__file__).resolve().parents[1], env=env, text=True, capture_output=True, check=False)
+    assert no_records.returncode == 0
+    assert "WARN: hardware_validation_records: No physical validation records saved yet" in no_records.stdout
+
+    record_lab_validation(tmp_path, gate="daq_smoke", status="pass", evidence="DAQ smoke passed")
+    record_lab_validation(tmp_path, gate="mac_playback", status="fail", evidence="Mac playback failed")
+    failed = subprocess.run([sys.executable, "scripts/lab_readiness_check.py"], cwd=Path(__file__).resolve().parents[1], env=env, text=True, capture_output=True, check=False)
+    assert failed.returncode == 1
+    assert "1 pass, 0 not applicable, 0 warn, 1 fail, 3 missing gate" in failed.stdout
+    assert "FAIL: validation_mac_playback" in failed.stdout
+
+    for gate in ["mac_playback", "play_and_record", "attenuation_pair", "legacy_parity"]:
+        record_lab_validation(tmp_path, gate=gate, status="na", evidence="not applicable")
+    passed = subprocess.run([sys.executable, "scripts/lab_readiness_check.py"], cwd=Path(__file__).resolve().parents[1], env=env, text=True, capture_output=True, check=False)
+    assert passed.returncode == 0
+    assert "1 pass, 4 not applicable, 0 warn, 0 fail, 0 missing gate" in passed.stdout
 
 
 def test_new_run_page_can_create_and_record_daq_failure_metadata(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
