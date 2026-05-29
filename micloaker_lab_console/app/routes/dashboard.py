@@ -26,15 +26,8 @@ def dashboard(request: Request):
     finalized_count = sum(1 for run in all_runs if run.get("analysis", {}).get("status") == "finalized")
     failed_count = sum(1 for run in all_runs if run.get("analysis", {}).get("status") == "failed")
     recent_runs = sorted(all_runs, key=lambda run: run.get("created_at", ""), reverse=True)[:6]
-    runs_by_session = {
-        session["session_id"]: sorted(load_runs(workspace, session["session_id"]), key=lambda run: run.get("created_at", ""), reverse=True)
-        for session in sessions
-    }
     config = read_json_or_default(workspace / ".micloaker" / "config.json", {"mac_helper_url": "", "mac_helper_token": ""})
-    mac_client = MacHelperClient(config.get("mac_helper_url", ""), config.get("mac_helper_token", ""))
-    mac_status = mac_client.health()
-    helper_files = mac_client.files() if mac_status.get("connected") else {"ok": False, "files": []}
-    helper_devices = mac_client.devices() if mac_status.get("connected") else {"ok": False, "output_devices": []}
+    mac_status = MacHelperClient(config.get("mac_helper_url", ""), config.get("mac_helper_token", "")).health()
     daq_status = daq_health()
     return request.app.state.templates.TemplateResponse(
         name="dashboard.html",
@@ -47,7 +40,6 @@ def dashboard(request: Request):
             "last_run_artifacts": last_run_artifacts,
             "last_comparison": last_comparison,
             "recent_runs": recent_runs,
-            "runs_by_session": runs_by_session,
             "stats": {
                 "session_count": len(sessions),
                 "run_count": len(all_runs),
@@ -55,9 +47,6 @@ def dashboard(request: Request):
                 "failed_count": failed_count,
             },
             "mac_status": mac_status,
-            "helper_files": helper_files.get("files", []) if helper_files.get("ok") else [],
-            "helper_devices": helper_devices.get("output_devices", []) if helper_devices.get("ok") else [],
-            "helper_sample_rates": [44100, 48000, 96000, 192000, 384000],
             "daq_status": daq_status,
             "recording_status": recording_status(),
             "enable_dev_mock_ui": request.app.state.settings.enable_dev_mock_ui,

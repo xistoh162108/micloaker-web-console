@@ -581,6 +581,7 @@ pre {
   border-radius: var(--rounded-box);
 }
 .log-table-scroll .data-table { margin: 0; }
+.compact-log-table { max-height: 180px; }
 .small-text { font-size: 0.82rem; }
 .metric-readout, .final-run-summary {
   display: grid;

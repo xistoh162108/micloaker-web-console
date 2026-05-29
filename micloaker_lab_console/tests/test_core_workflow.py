@@ -4308,14 +4308,14 @@ def test_create_run_form_can_record_mock_immediately(tmp_path: Path, monkeypatch
     assert (session_dir(tmp_path, session["session_id"]) / saved["files"]["bin"]).exists()
 
 
-def test_dashboard_quick_capture_returns_to_command_console(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_legacy_dashboard_capture_redirects_to_run_detail(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("MICLOAKER_WORKSPACE", str(tmp_path))
     ensure_workspace(tmp_path)
     session = create_session(tmp_path, "dashboard quick capture")
     client = TestClient(create_app())
     page = client.get("/")
-    assert 'name="return_to_dashboard" type="hidden" value="true"' in page.text
-    assert 'id="capture"' in page.text
+    assert 'name="return_to_dashboard" type="hidden" value="true"' not in page.text
+    assert 'id="capture"' not in page.text
 
     response = client.post(
         f"/sessions/{session['session_id']}/runs",
@@ -4331,8 +4331,8 @@ def test_dashboard_quick_capture_returns_to_command_console(tmp_path: Path, monk
         follow_redirects=False,
     )
     assert response.status_code == 303
-    assert response.headers["location"] == "/#capture"
     saved = read_json(next((session_dir(tmp_path, session["session_id"]) / "metadata").glob("*.json")))
+    assert response.headers["location"] == f"/sessions/{session['session_id']}/runs/{saved['run_id']}"
     assert saved["analysis"]["status"] == "finalized"
     assert saved["condition"]["sound_condition"] == "sound1"
 
@@ -4913,13 +4913,6 @@ def test_dashboard_shows_lab_status_cards_and_shortcuts(tmp_path: Path, monkeypa
         "Session",
         "Acquisition",
         "Mac Playback",
-        "Capture And Live Preview",
-        "RMS/Peak Meter",
-        "Scrolling Spectrogram",
-        "Live monitor",
-        "Detailed Live Page",
-                "Create + Record DAQ",
-        "Advanced Metadata",
         "Latest Run",
         "Latest Comparison",
         "Results, Compare, Export",
@@ -4928,18 +4921,16 @@ def test_dashboard_shows_lab_status_cards_and_shortcuts(tmp_path: Path, monkeypa
         "PSD",
         "Spectrogram",
         "Peak WAV Preview",
-        "preview only",
         "Export active session ZIP",
     ]:
         assert text in page.text
     assert "tab-panel" not in page.text
     assert "data-tabs" not in page.text
-    assert "live-waveform" in page.text
-    assert "live-waveform-readout" in page.text
-    assert "live-psd-readout" in page.text
-    assert "live-spectrogram-readout" in page.text
+    assert "Capture And Live Preview" not in page.text
+    assert "live-waveform" not in page.text
+    assert "live-waveform-readout" not in page.text
+    assert "Detailed Live Page" not in page.text
     assert "Record Latest Mock" not in page.text
-    assert 'action="/sessions/' in page.text and '/runs"' in page.text
     css = client.get("/static/css/app.css").text
     assert ".live-command-card .capture-actions" in css
     assert ".operator-action-bar" in css
@@ -4954,7 +4945,7 @@ def test_dashboard_shows_lab_status_cards_and_shortcuts(tmp_path: Path, monkeypa
     assert ".checkbox-grid" in css
     assert ".metric-readout-grid" in css
     assert ".scroll-pre" in css
-    assert "data-recording-submit" in page.text
+    assert "data-recording-submit" not in page.text
     js = client.get("/static/js/live.js").text
     assert "updateRecordingGuard" in js
     assert "active_recording" in js

@@ -12,11 +12,18 @@
 </section>
 <section>
   <h2>Diagnostic Downloads</h2>
-  <ul class="list">
-    {% for name in diagnostic_files %}
-    <li><a href="/logs/download/{{ name }}" download>{{ name }}</a></li>
-    {% endfor %}
-  </ul>
+  <div class="table-scroll log-table-scroll compact-log-table">
+  <table class="data-table dense">
+    <thead><tr><th>File</th><th>Download</th></tr></thead>
+    <tbody>
+      {% for name in diagnostic_files %}
+      <tr><td>{{ name }}</td><td><a class="btn btn-outline table-action" href="/logs/download/{{ name }}" download>download</a></td></tr>
+      {% else %}
+      <tr><td colspan="2">No diagnostic files yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
 </section>
 <section>
   <h2>Job Status</h2>
@@ -93,13 +100,18 @@
 <section class="grid two">
   <div>
     <h2>Run Logs</h2>
-    <ul class="list">
-      {% for path in run_logs %}
-      <li><a href="/logs/view/{{ path }}">{{ path }}</a></li>
-      {% else %}
-      <li>No run logs yet.</li>
-      {% endfor %}
-    </ul>
+    <div class="table-scroll log-table-scroll">
+    <table class="data-table dense">
+      <thead><tr><th>Log path</th><th>Open</th></tr></thead>
+      <tbody>
+        {% for path in run_logs %}
+        <tr><td>{{ path }}</td><td><a class="btn btn-outline table-action" href="/logs/view/{{ path }}">open</a></td></tr>
+        {% else %}
+        <tr><td colspan="2">No run logs yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
   </div>
   <div>
     <h2>{% if selected_log %}{{ selected_log.path }}{% else %}Selected Log{% endif %}</h2>

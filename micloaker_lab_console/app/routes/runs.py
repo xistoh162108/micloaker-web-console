@@ -150,7 +150,7 @@ def create_run(
         except DaqNotConfiguredError as exc:
             raise HTTPException(status_code=501, detail=_daq_not_configured_error(str(exc))) from exc
     if return_to_dashboard:
-        return RedirectResponse("/#capture", status_code=303)
+        return RedirectResponse(f"/sessions/{session_id}/runs/{run['run_id']}", status_code=303)
     return RedirectResponse(f"/sessions/{session_id}/runs/{run['run_id']}", status_code=303)
 
 
