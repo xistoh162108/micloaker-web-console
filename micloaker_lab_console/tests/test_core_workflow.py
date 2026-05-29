@@ -3737,6 +3737,9 @@ def test_dashboard_shows_lab_status_cards_and_shortcuts(tmp_path: Path, monkeypa
         "Capture And Live Preview",
         "RMS/Peak Meter",
         "Scrolling Spectrogram",
+        "Create + Record Mock",
+        "Create + Record DAQ",
+        "Advanced Metadata",
         "Latest Run",
         "Latest Comparison",
         "Results, Compare, Export",
@@ -3747,9 +3750,11 @@ def test_dashboard_shows_lab_status_cards_and_shortcuts(tmp_path: Path, monkeypa
     assert "tab-panel" not in page.text
     assert "data-tabs" not in page.text
     assert "live-waveform" in page.text
-    assert "Record Latest Mock" in page.text
+    assert "Record Latest Mock" not in page.text
+    assert 'action="/sessions/' in page.text and '/runs"' in page.text
     css = client.get("/static/css/app.css").text
     assert ".live-command-card .capture-actions" in css
+    assert ".quick-capture-form" in css
     assert "position: sticky" in css
     assert session["session_id"] in page.text
     assert final1["run_id"] in page.text
