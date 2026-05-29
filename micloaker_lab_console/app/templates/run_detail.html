@@ -1,28 +1,41 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>{{ run.run_id }}</h1>
-<p class="badge">{{ run.analysis.status }}</p>
-<p class="badge">{{ run.analysis.result_grade }}</p>
-<p class="muted">{{ run.analysis.label }}</p>
+<section class="command-hero">
+  <div>
+    <h1>{{ run.run_id }}</h1>
+    <p>{{ run.analysis.label }}</p>
+    <span class="badge {% if run.analysis.status == 'finalized' %}badge-success{% else %}badge-warning{% endif %}">{{ run.analysis.status }}</span>
+    <span class="badge">{{ run.analysis.result_grade }}</span>
+  </div>
+  <a class="btn btn-primary" href="/exports/sessions/{{ session_id }}/runs/{{ run.run_id }}.zip">Run ZIP</a>
+</section>
 {% if daq_status and not daq_status.available %}
 <p class="warn">DAQ unavailable - mock recording and raw .bin upload remain available.</p>
 {% endif %}
 <nav class="actions">
-  <form method="post" action="/sessions/{{ session_id }}/runs/{{ run.run_id }}/record-mock"><button type="submit">Record Mock + Finalize</button></form>
-  <form method="post" action="/sessions/{{ session_id }}/runs/{{ run.run_id }}/record-daq"><button type="submit">Record DAQ + Finalize</button></form>
+  <form method="post" action="/sessions/{{ session_id }}/runs/{{ run.run_id }}/record-mock"><button type="submit" class="btn btn-primary">Record Mock + Finalize</button></form>
+  <form method="post" action="/sessions/{{ session_id }}/runs/{{ run.run_id }}/record-daq"><button type="submit" class="btn btn-primary">Record DAQ + Finalize</button></form>
   <form method="post" action="/sessions/{{ session_id }}/runs/{{ run.run_id }}/finalize">
     <label class="inline-check"><input name="overwrite_existing" type="checkbox" value="true"> overwrite derived outputs</label>
-    <button type="submit">Finalize From .bin</button>
+    <button type="submit" class="btn btn-outline">Finalize From .bin</button>
   </form>
   <form method="post" action="/sessions/{{ session_id }}/runs/{{ run.run_id }}/convert">
     <label class="inline-check"><input name="overwrite_existing" type="checkbox" value="true"> overwrite WAVs</label>
-    <button type="submit">Convert WAVs</button>
+    <button type="submit" class="btn btn-outline">Convert WAVs</button>
   </form>
-  <a href="/exports/sessions/{{ session_id }}/runs/{{ run.run_id }}.zip">Run ZIP</a>
 </nav>
+<section class="stats">
+  <div class="stat"><span class="stat-value">{{ run.condition.carrier_freq_khz }} kHz</span><span class="stat-title">Carrier</span></div>
+  <div class="stat"><span class="stat-value">{{ run.condition.uj }}</span><span class="stat-title">UJ condition</span></div>
+  <div class="stat"><span class="stat-value">{{ run.recording.source }}</span><span class="stat-title">Recording source</span></div>
+  <div class="stat"><span class="stat-value">{{ run.recording.actual_sample_rate_hz or run.recording.sample_rate_hz }}</span><span class="stat-title">Sample rate Hz</span></div>
+  <div class="stat"><span class="stat-value">{{ run.recording.duration_s }} s</span><span class="stat-title">Duration</span></div>
+  <div class="stat"><span class="stat-value">.bin</span><span class="stat-title">Report source</span></div>
+</section>
 <section class="grid two">
-  <div>
-    <h2>Metadata Summary</h2>
+  <div class="card">
+    <div class="card-body">
+    <h2 class="card-title">Metadata Summary</h2>
     <table class="data-table">
       <tbody>
         <tr><th>Session</th><td>{{ run.session_id }}</td></tr>
@@ -52,8 +65,10 @@
       <pre>{{ run | tojson(indent=2) }}</pre>
     </details>
   </div>
-  <div>
-    <h2>Final Metrics</h2>
+  </div>
+  <div class="card">
+    <div class="card-body">
+    <h2 class="card-title">Final Metrics</h2>
     {% if metrics %}
     <table class="data-table">
       <tbody>
@@ -96,9 +111,11 @@
       <pre>{{ metrics | tojson(indent=2) }}</pre>
     </details>
   </div>
+  </div>
 </section>
-<section>
-  <h2>Preview Audio</h2>
+<section class="card">
+  <div class="card-body">
+  <h2 class="card-title">Preview Audio</h2>
   <p>BIN: primary quantitative data.</p>
   {% if run.conversion.outputs %}
   <table class="data-table">
@@ -122,9 +139,11 @@
   <p>Range WAV: scale-valid cross-check if full-scale voltage is correct.</p>
   <audio controls src="/sessions/{{ session_id }}/files/{{ run.files.wav_range }}"></audio>
   {% endif %}
+  </div>
 </section>
-<section>
-  <h2>Optional Mac Helper</h2>
+<section class="card">
+  <div class="card-body">
+  <h2 class="card-title">Optional Mac Helper</h2>
   <div class="helper-state">
     <p class="muted">Last action: {{ run.mac_helper.last_action or "none" }}</p>
     <p class="muted">Last error code: {{ run.mac_helper.last_error_code or "none" }}</p>
@@ -159,7 +178,7 @@
     <label>Sample rate <input name="sample_rate" type="number" value="{{ run.mac_helper.planned_sample_rate if run.mac_helper.planned_sample_rate is not none else 192000 }}"></label>
     <label>Channels <input name="channels" type="number" value="{{ run.mac_helper.planned_channels if run.mac_helper.planned_channels is not none else 1 }}"></label>
     <label>Gain <input name="gain" type="number" step="0.1" value="{{ run.mac_helper.planned_gain if run.mac_helper.planned_gain is not none else 1.0 }}"></label>
-    <button type="submit">Validate Playback</button>
+    <div class="form-actions"><button type="submit" class="btn btn-outline">Validate Playback</button></div>
   </form>
   <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/play" class="form grid-form">
     <label>WAV file on Mac <input name="file" value="{{ run.mac_helper.planned_file or run.mac_helper.file or '' }}" placeholder="jamming_25khz.wav"></label>
@@ -168,10 +187,10 @@
     <label>Channels <input name="channels" type="number" value="{{ run.mac_helper.planned_channels if run.mac_helper.planned_channels is not none else (run.mac_helper.channels if run.mac_helper.channels is not none else 1) }}"></label>
     <label>Gain <input name="gain" type="number" step="0.1" value="{{ run.mac_helper.planned_gain if run.mac_helper.planned_gain is not none else (run.mac_helper.gain if run.mac_helper.gain is not none else 1.0) }}"></label>
     <label>Delay ms <input name="delay_ms" type="number" value="{{ run.mac_helper.planned_delay_ms if run.mac_helper.planned_delay_ms is not none else (run.mac_helper.delay_ms if run.mac_helper.delay_ms is not none else 0) }}"></label>
-    <button type="submit">Play</button>
+    <div class="form-actions"><button type="submit" class="btn btn-primary">Play</button></div>
   </form>
   <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/stop" class="form">
-    <button type="submit">Stop Playback</button>
+    <div class="form-actions"><button type="submit" class="btn btn-outline">Stop Playback</button></div>
   </form>
   <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/play-and-record-mock" class="form grid-form">
     <label>WAV file on Mac <input name="file" value="{{ run.mac_helper.planned_file or '' }}" placeholder="jamming_25khz.wav"></label>
@@ -180,7 +199,7 @@
     <label>Channels <input name="channels" type="number" value="{{ run.mac_helper.planned_channels if run.mac_helper.planned_channels is not none else 1 }}"></label>
     <label>Gain <input name="gain" type="number" step="0.1" value="{{ run.mac_helper.planned_gain if run.mac_helper.planned_gain is not none else 1.0 }}"></label>
     <label>Delay ms <input name="delay_ms" type="number" value="{{ run.mac_helper.planned_delay_ms if run.mac_helper.planned_delay_ms is not none else 500 }}"></label>
-    <button type="submit">Play & Record Mock</button>
+    <div class="form-actions"><button type="submit" class="btn btn-primary">Play & Record Mock</button></div>
   </form>
   <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/play-and-record-daq" class="form grid-form">
     <label>WAV file on Mac <input name="file" value="{{ run.mac_helper.planned_file or '' }}" placeholder="jamming_25khz.wav"></label>
@@ -189,11 +208,13 @@
     <label>Channels <input name="channels" type="number" value="{{ run.mac_helper.planned_channels if run.mac_helper.planned_channels is not none else 1 }}"></label>
     <label>Gain <input name="gain" type="number" step="0.1" value="{{ run.mac_helper.planned_gain if run.mac_helper.planned_gain is not none else 1.0 }}"></label>
     <label>Delay ms <input name="delay_ms" type="number" value="{{ run.mac_helper.planned_delay_ms if run.mac_helper.planned_delay_ms is not none else 500 }}"></label>
-    <button type="submit">Play & Record DAQ</button>
+    <div class="form-actions"><button type="submit" class="btn btn-primary">Play & Record DAQ</button></div>
   </form>
+  </div>
 </section>
-<section>
-  <h2>Plots</h2>
+<section class="card">
+  <div class="card-body">
+  <h2 class="card-title">Plots</h2>
   <div class="plots">
     {% if run.files.get("waveform_png") in file_set %}
     <figure>
@@ -229,9 +250,11 @@
     <p class="muted">No finalized plots yet.</p>
     {% endif %}
   </div>
+  </div>
 </section>
-<section>
-  <h2>Files</h2>
+<section class="card">
+  <div class="card-body">
+  <h2 class="card-title">Files</h2>
   <table class="data-table">
     <thead><tr><th>Artifact</th><th>Role</th><th>Path</th><th>Status</th><th>Download</th></tr></thead>
     <tbody>
@@ -247,15 +270,18 @@
           {% endif %}
         </td>
         <td>{% if artifact.exists %}<span class="badge">available</span>{% else %}<span class="warn">missing</span>{% endif %}</td>
-        <td>{% if artifact.exists %}<a href="/sessions/{{ session_id }}/files/{{ artifact.path }}?download=1" download>download</a>{% else %}-{% endif %}</td>
+        <td>{% if artifact.exists %}<a class="btn btn-outline" href="/sessions/{{ session_id }}/files/{{ artifact.path }}?download=1" download>download</a>{% else %}-{% endif %}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
   <ul class="list">{% for file in files %}<li><a href="/sessions/{{ session_id }}/files/{{ file }}">{{ file }}</a></li>{% endfor %}</ul>
+  </div>
 </section>
-<section>
-  <h2>Log</h2>
+<section class="card">
+  <div class="card-body">
+  <h2 class="card-title">Log</h2>
   <pre>{{ log_text }}</pre>
+  </div>
 </section>
 {% endblock %}

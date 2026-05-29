@@ -1,6 +1,17 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Compare {{ session_id }}</h1>
+<section class="command-hero">
+  <div>
+    <h1>Compare {{ session_id }}</h1>
+    <p>Compute report-grade attenuation from finalized uj0/uj1 runs. BIN is primary; range WAV is cross-check only.</p>
+  </div>
+  <form method="post" action="/compare/{{ session_id }}/auto-pair" class="hero-actions">
+    <button type="submit" class="btn btn-primary">Auto-Pair Finalized UJ0/UJ1</button>
+  </form>
+</section>
+<section class="card">
+  <div class="card-body">
+  <h2 class="card-title">Manual Comparison</h2>
 <form method="post" class="form grid-form">
   <label>UJ0 run
     <select name="uj0_run_id">{% for run in finalized_uj0_runs %}<option value="{{ run.run_id }}">{{ run.run_id }} finalized</option>{% endfor %}</select>
@@ -24,17 +35,17 @@
   </label>
   <label>Custom low Hz <input name="custom_low_hz" type="number" step="1" placeholder="300"></label>
   <label>Custom high Hz <input name="custom_high_hz" type="number" step="1" placeholder="3400"></label>
-  <button type="submit" {% if not finalized_uj0_runs or not finalized_uj1_runs %}disabled{% endif %}>Compute Attenuation</button>
+  <div class="form-actions"><button type="submit" class="btn btn-primary" {% if not finalized_uj0_runs or not finalized_uj1_runs %}disabled{% endif %}>Compute Attenuation</button></div>
 </form>
 {% if not finalized_uj0_runs or not finalized_uj1_runs %}
 <p class="warn">Finalize at least one uj0 run and one uj1 run before manual comparison.</p>
 {% endif %}
 <p class="muted">BIN is the report-grade source. Range WAV is a cross-check only when full-scale voltage is correct. Peak WAV is listening-only and disabled for quantitative comparison.</p>
-<form method="post" action="/compare/{{ session_id }}/auto-pair" class="form inline">
-  <button type="submit">Auto-Pair Finalized UJ0/UJ1</button>
-</form>
-<section>
-  <h2>Saved Results</h2>
+  </div>
+</section>
+<section class="card">
+  <div class="card-body">
+  <h2 class="card-title">Saved Results</h2>
   <ul class="list">
     {% for item in comparisons %}
     <li>
@@ -47,13 +58,13 @@
       <span class="muted">sources: {{ item.uj0_source_path }} / {{ item.uj1_source_path }}</span>
       {% endif %}
       <span>
-        <a href="/sessions/{{ session_id }}/files/{{ item.json_file }}?download=1" download>JSON</a>
-        <a href="/sessions/{{ session_id }}/files/{{ item.csv_file }}?download=1" download>CSV</a>
+        <a class="btn btn-outline" href="/sessions/{{ session_id }}/files/{{ item.json_file }}?download=1" download>JSON</a>
+        <a class="btn btn-outline" href="/sessions/{{ session_id }}/files/{{ item.csv_file }}?download=1" download>CSV</a>
         {% if item.plots %}
-        <a href="/sessions/{{ session_id }}/files/{{ item.plots.attenuation_png }}?download=1" download>Bar PNG</a>
-        <a href="/sessions/{{ session_id }}/files/{{ item.plots.attenuation_svg }}?download=1" download>Bar SVG</a>
-        <a href="/sessions/{{ session_id }}/files/{{ item.plots.psd_overlay_png }}?download=1" download>PSD PNG</a>
-        <a href="/sessions/{{ session_id }}/files/{{ item.plots.psd_overlay_svg }}?download=1" download>PSD SVG</a>
+        <a class="btn btn-outline" href="/sessions/{{ session_id }}/files/{{ item.plots.attenuation_png }}?download=1" download>Bar PNG</a>
+        <a class="btn btn-outline" href="/sessions/{{ session_id }}/files/{{ item.plots.attenuation_svg }}?download=1" download>Bar SVG</a>
+        <a class="btn btn-outline" href="/sessions/{{ session_id }}/files/{{ item.plots.psd_overlay_png }}?download=1" download>PSD PNG</a>
+        <a class="btn btn-outline" href="/sessions/{{ session_id }}/files/{{ item.plots.psd_overlay_svg }}?download=1" download>PSD SVG</a>
         {% endif %}
       </span>
       {% if item.warnings %}<span class="warn">{{ item.warnings|join(", ") }}</span>{% endif %}
@@ -78,10 +89,16 @@
     <li>No saved comparisons yet.</li>
     {% endfor %}
   </ul>
+  </div>
 </section>
+<section class="card">
+  <div class="card-body">
+  <h2 class="card-title">Runs</h2>
 <ul class="list">
   {% for run in runs %}
   <li><a href="/sessions/{{ session_id }}/runs/{{ run.run_id }}">{{ run.run_id }}</a><span>{{ run.analysis.status }}</span></li>
   {% endfor %}
 </ul>
+  </div>
+</section>
 {% endblock %}

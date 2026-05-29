@@ -1,10 +1,20 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Mac Helper</h1>
-<p class="muted">Optional. Linux recording, analysis, and exports keep working when disconnected.</p>
-<p class="muted">Play & Record controls are on each run detail page so playback settings are stored with the target run metadata and log.</p>
-<section>
-  <h2>Connection Status</h2>
+<section class="command-hero">
+  <div>
+    <h1>Mac Helper</h1>
+    <p>Optional playback control. Linux recording, analysis, and exports keep working when disconnected.</p>
+    <p>Play & Record controls are on each run detail page so playback settings are stored with the target run metadata and log.</p>
+    <span class="badge {% if status.connected %}badge-success{% else %}badge-warning{% endif %}">{{ "Connected" if status.connected else "Disconnected" }}</span>
+  </div>
+  <nav class="hero-actions">
+    <button id="helper-health" class="btn btn-primary" type="button">Health Check</button>
+    <button id="helper-discover" class="btn btn-outline" type="button">Auto Discover via Tailscale</button>
+  </nav>
+</section>
+<section class="card">
+  <div class="card-body">
+  <h2 class="card-title">Connection Status</h2>
   <p>
     <span class="badge">{{ "Connected" if status.connected else "Disconnected" }}</span>
     {% if status.connected %}
@@ -16,45 +26,42 @@
   {% if status.connected and status.service %}
   <p class="muted">{{ status.service }}</p>
   {% endif %}
-</section>
 {% if not status.connected %}
 <p class="warn">Mac Helper disconnected. Manual Linux-only recording and analysis remain available.</p>
 {% endif %}
 <form method="post" action="/mac-helper/config" class="form inline">
   <input name="mac_helper_url" value="{{ config.mac_helper_url }}" placeholder="http://100.x.y.z:5050">
   <input name="mac_helper_token" value="{{ config.mac_helper_token or '' }}" type="password" autocomplete="off" placeholder="optional token">
-  <button type="submit">Save Manual URL</button>
+  <button type="submit" class="btn btn-primary">Save Manual URL</button>
 </form>
-<h2>Status</h2>
-<pre>{{ status | tojson(indent=2) }}</pre>
-<section>
-  <h2>Connection</h2>
-  <nav class="actions">
-    <button id="helper-discover" type="button">Auto Discover via Tailscale</button>
-    <button id="helper-health" type="button">Health Check</button>
-  </nav>
+  <details>
+    <summary>Status JSON</summary>
+    <pre>{{ status | tojson(indent=2) }}</pre>
+  </details>
   <pre id="helper-connection-output">manual URL required when discovery is empty</pre>
+  </div>
 </section>
 <section class="grid two">
-  <div>
-    <h2>Devices</h2>
-    <button id="helper-devices" type="button">Refresh Devices</button>
+  <div class="card"><div class="card-body">
+    <h2 class="card-title">Devices</h2>
+    <button id="helper-devices" class="btn btn-outline" type="button">Refresh Devices</button>
     <label>Output device
       <select id="helper-device-select" name="device_id"></select>
     </label>
     <pre id="helper-devices-output">not loaded</pre>
-  </div>
-  <div>
-    <h2>Files</h2>
-    <button id="helper-files" type="button">Refresh Files</button>
+  </div></div>
+  <div class="card"><div class="card-body">
+    <h2 class="card-title">Files</h2>
+    <button id="helper-files" class="btn btn-outline" type="button">Refresh Files</button>
     <label>WAV file
       <select id="helper-file-select" name="file"></select>
     </label>
     <pre id="helper-files-output">not loaded</pre>
-  </div>
+  </div></div>
 </section>
-<section>
-  <h2>Playback Setup</h2>
+<section class="card">
+  <div class="card-body">
+  <h2 class="card-title">Playback Setup</h2>
   <form id="helper-playback-form" class="form grid-form">
     <label>Sample rate
       <select id="helper-sample-rate" name="sample_rate">
@@ -68,18 +75,23 @@
     <label>Channels <input name="channels" type="number" min="1" value="1"></label>
     <label>Gain <input name="gain" type="range" min="0" max="1" step="0.01" value="1.0"></label>
     <label>Delay ms <input name="delay_ms" type="number" min="0" value="500"></label>
-    <button id="helper-validate" type="button">Validate Playback</button>
-    <button id="helper-play" type="button">Play</button>
+    <div class="form-actions">
+      <button id="helper-validate" class="btn btn-outline" type="button">Validate Playback</button>
+      <button id="helper-play" class="btn btn-primary" type="button">Play</button>
+    </div>
   </form>
   <pre id="helper-playback-output">not validated</pre>
+  </div>
 </section>
-<section>
-  <h2>Playback Status</h2>
+<section class="card">
+  <div class="card-body">
+  <h2 class="card-title">Playback Status</h2>
   <nav class="actions">
-    <button id="helper-status" type="button">Refresh Status</button>
-    <button id="helper-stop" type="button">Stop Playback</button>
+    <button id="helper-status" class="btn btn-outline" type="button">Refresh Status</button>
+    <button id="helper-stop" class="btn btn-error" type="button">Stop Playback</button>
   </nav>
   <pre id="helper-status-output">not loaded</pre>
+  </div>
 </section>
 <script src="/static/js/mac_helper.js"></script>
 {% endblock %}

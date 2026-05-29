@@ -1,28 +1,39 @@
 {% extends "base.html" %}
 {% block content %}
-<h1>Live Monitor</h1>
-<p class="muted">Live preview is approximate. Final report values are recomputed from saved .bin.</p>
-<p class="warn">Preview only. Final metrics will be recomputed from saved .bin after recording.</p>
-<nav class="actions">
-  <button id="live-start">Start Mock Live</button>
-  <button id="live-stop">Stop</button>
-</nav>
-<section class="grid two">
-  <div><h2>Recording State</h2><pre id="live-state">Stopped</pre></div>
-  <div><h2>Finalization Status</h2><pre id="live-finalization">Start recording from a run page.</pre></div>
+<section class="command-hero">
   <div>
-    <h2>Latest Finalization Result</h2>
-    <pre id="live-final-run">none</pre>
-    <p><a id="live-final-run-link" href="#" hidden>Open run</a></p>
-    <p><a id="live-final-metrics-link" href="#" hidden>Download metrics JSON</a></p>
-    <p><a id="live-final-log-link" href="#" hidden>Open run log</a></p>
+    <h1>Live Monitor</h1>
+    <p>Live preview is approximate. Final report values are recomputed from saved .bin.</p>
+    <p class="warn">Preview only. Final metrics will be recomputed from saved .bin after recording.</p>
+    <span class="badge badge-warning">Preview only</span>
   </div>
-  <div><h2>RMS/Peak Meter</h2><pre id="live-levels">stopped</pre></div>
-  <div><h2>Clipping Warning</h2><pre id="live-clipping">unknown</pre></div>
-  <div><h2>Waveform</h2><canvas id="live-waveform" width="700" height="220"></canvas></div>
-  <div><h2>Live PSD</h2><canvas id="live-psd" width="700" height="220"></canvas></div>
-  <div><h2>Scrolling Spectrogram</h2><canvas id="live-spectrogram" width="700" height="220"></canvas></div>
-  <div class="wide"><h2>Status Log Tail</h2><pre id="live-log-tail">No log entries yet.</pre></div>
+  <nav class="hero-actions">
+    <button id="live-start" class="btn btn-primary">Start Mock Live</button>
+    <button id="live-stop" class="btn btn-outline">Stop</button>
+  </nav>
+</section>
+<nav class="stats">
+  <div class="stat"><span class="stat-value" id="live-state">Stopped</span><span class="stat-title">Recording State</span></div>
+  <div class="stat"><span class="stat-value" id="live-clipping">unknown</span><span class="stat-title">Clipping</span></div>
+  <div class="stat"><span class="stat-value">.bin</span><span class="stat-title">Final source</span></div>
+</nav>
+<section class="workflow-grid two-strong">
+  <div class="card"><div class="card-body"><h2 class="card-title">Waveform</h2><canvas id="live-waveform" width="700" height="220"></canvas></div></div>
+  <div class="card"><div class="card-body"><h2 class="card-title">RMS/Peak Meter</h2><pre id="live-levels">stopped</pre></div></div>
+  <div class="card"><div class="card-body"><h2 class="card-title">Live PSD</h2><canvas id="live-psd" width="700" height="220"></canvas></div></div>
+  <div class="card"><div class="card-body"><h2 class="card-title">Finalization Status</h2><pre id="live-finalization">Start recording from a run page.</pre></div></div>
+  <div class="card"><div class="card-body"><h2 class="card-title">Scrolling Spectrogram</h2><canvas id="live-spectrogram" width="700" height="220"></canvas></div></div>
+  <div class="card"><div class="card-body">
+    <h2 class="card-title">Latest Finalization Result</h2>
+    <pre id="live-final-run">none</pre>
+    <nav class="actions">
+      <a id="live-final-run-link" class="btn btn-outline" href="#" hidden>Open run</a>
+      <a id="live-final-metrics-link" class="btn btn-outline" href="#" hidden>Download metrics JSON</a>
+      <a id="live-final-log-link" class="btn btn-outline" href="#" hidden>Open run log</a>
+    </nav>
+  </div>
+  </div>
+  <div class="card"><div class="card-body"><h2 class="card-title">Status Log Tail</h2><pre id="live-log-tail">No log entries yet.</pre></div></div>
 </section>
 {% endblock %}
 {% block scripts %}<script src="/static/js/live.js"></script>{% endblock %}

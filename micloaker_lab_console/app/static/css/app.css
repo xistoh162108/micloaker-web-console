@@ -89,6 +89,13 @@ p { margin: 8px 0; }
   align-items: center;
   gap: 8px;
 }
+.actions form {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.actions label { margin: 0; }
 
 .btn, .button, button, .actions a {
   display: inline-flex;
@@ -179,6 +186,10 @@ button, .btn-primary, .button.primary, .actions a {
   border: 1px solid var(--border);
   border-radius: var(--rounded-box);
   padding: 14px;
+}
+.card > .card-body {
+  border: 0;
+  border-radius: 0;
 }
 .card-title, .panel-head {
   display: flex;
