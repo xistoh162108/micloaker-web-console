@@ -5,7 +5,7 @@ import signal
 import threading
 
 from fastapi import APIRouter, Form, HTTPException, Request
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, PlainTextResponse, RedirectResponse
 
 from ..services.lab_validation import (
     VALIDATION_GATE_EVIDENCE,
@@ -13,6 +13,7 @@ from ..services.lab_validation import (
     ensure_validation_artifacts,
     list_validation_records,
     record_lab_validation,
+    validation_evidence_template,
     validation_summary,
 )
 from ..services.readiness import lab_readiness, write_readiness_artifacts
@@ -81,6 +82,23 @@ def validation_status(request: Request):
 def validation_plan_text(request: Request):
     paths = ensure_validation_artifacts(request.app.state.settings.workspace)
     return FileResponse(paths["plan"], filename="hardware_validation_plan.txt", media_type="text/plain")
+
+
+@router.get("/validation/templates/{gate}")
+def validation_template_text(gate: str):
+    if gate not in VALIDATION_GATES:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error_code": "VALIDATION_TEMPLATE_NOT_FOUND",
+                "message": "The requested validation evidence template is not available.",
+                "suggestion": "Choose one of the validation gates listed on /ops.",
+            },
+        )
+    return PlainTextResponse(
+        validation_evidence_template(gate),
+        headers={"Content-Disposition": f'attachment; filename="{gate}_evidence_template.txt"'},
+    )
 
 
 @router.get("/validation/files/{filename}")

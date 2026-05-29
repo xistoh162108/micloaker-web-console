@@ -44,6 +44,7 @@ The `/ops` page also provides direct downloads for `hardware_validation.jsonl`, 
 The `/ops` page also provides **Download Validation Plan** as `hardware_validation_plan.txt`, matching the `scripts/lab_readiness_check.py --validation-plan` terminal output.
 The `/ops` page displays **Evidence Hints** for each validation gate so the operator can record the expected IDs, file paths, measured values, Helper/device details, and unresolved warnings consistently.
 The same table also shows structured checklist fields for each gate, such as `selected device_id`, `raw .bin path`, and expected-versus-written sample count, to reduce missing evidence in the lab notebook.
+The Evidence Hints table links gate-specific template downloads such as `/ops/validation/templates/daq_smoke`, which return fillable text notes equivalent to `--write-evidence-template`.
 The validation form has a **Use checklist draft** button that pre-fills the evidence field with gate-specific checklist labels, so the operator can fill measured values without retyping the field names.
 Terminal-only runs can append validation evidence with `scripts/lab_readiness_check.py --record-gate <gate> --record-status <pass|warn|fail|na> --record-evidence "..."`; use `--record-evidence-file evidence.txt` for longer copied lab notes. The CLI writes the same JSONL/Markdown evidence files as `/ops`.
 Run `scripts/lab_readiness_check.py --validation-plan` before a hardware session to print the ordered physical validation gates, checklist fields, next-action screens, and terminal record commands.

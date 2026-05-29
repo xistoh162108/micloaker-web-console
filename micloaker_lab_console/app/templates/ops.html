@@ -48,15 +48,17 @@ python scripts/console_control.py stop</pre>
   <h2 class="card-title">Hardware Validation Records</h2>
   <p class="muted">Record physical DAQ, Mac playback, play-and-record, attenuation-pair, and legacy-parity evidence here. Records are saved as JSONL and Markdown under <code>workspace/.micloaker/</code>.</p>
   <h3>Evidence Hints</h3>
+  <p class="muted">Template downloads use the <code>&lt;gate&gt;_evidence_template.txt</code> filename pattern.</p>
   <div class="table-scroll">
   <table class="data-table dense">
-    <thead><tr><th>Gate</th><th>Record these details</th><th>Checklist fields</th></tr></thead>
+    <thead><tr><th>Gate</th><th>Record these details</th><th>Checklist fields</th><th>Template</th></tr></thead>
     <tbody>
       {% for key, label in validation_gates.items() %}
       <tr>
         <td>{{ label }}</td>
         <td>{{ validation_evidence_hints[key] }}</td>
         <td>{{ validation.evidence_checklists[key]|join(", ") }}</td>
+        <td><a class="btn btn-outline" href="/ops/validation/templates/{{ key }}">Template</a></td>
       </tr>
       {% endfor %}
     </tbody>

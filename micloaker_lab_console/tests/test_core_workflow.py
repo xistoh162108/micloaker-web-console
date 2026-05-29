@@ -1146,6 +1146,7 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert "Checklist fields" in page.text
     assert "Checklist preview" in page.text
     assert "Use checklist draft" in page.text
+    assert "/ops/validation/templates/daq_smoke" in page.text
     assert "data-checklist=" in page.text
     assert "data-hint=" in page.text
     assert "expected vs written sample count" in page.text
@@ -1225,6 +1226,14 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert plan_file_download.status_code == 200
     assert "hardware_validation_plan.txt" in plan_file_download.headers["content-disposition"]
     assert "MiCloaker Physical Validation Plan" in plan_file_download.text
+    template_download = client.get("/ops/validation/templates/daq_smoke")
+    assert template_download.status_code == 200
+    assert "daq_smoke_evidence_template.txt" in template_download.headers["content-disposition"]
+    assert "Evidence Template: Linux DAQ smoke capture" in template_download.text
+    assert "- expected vs written sample count:" in template_download.text
+    blocked_template = client.get("/ops/validation/templates/bad_gate")
+    assert blocked_template.status_code == 404
+    assert blocked_template.json()["detail"]["error_code"] == "VALIDATION_TEMPLATE_NOT_FOUND"
     report_download = client.get("/ops/validation/files/hardware_validation_report.md")
     assert report_download.status_code == 200
     assert "MiCloaker Hardware Validation Records" in report_download.text
