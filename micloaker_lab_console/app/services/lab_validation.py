@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 from typing import Any
 
 from .text_store import append_app_event, append_jsonl, atomic_write_text, now_iso, read_jsonl
@@ -103,21 +104,20 @@ def record_lab_validation(
 
 
 def validation_evidence_completeness(gate: str, *, evidence: str = "", notes: str = "") -> dict[str, Any]:
-    """Report which gate checklist labels are visible in operator evidence text.
+    """Report which gate checklist labels have non-empty operator evidence.
 
-    The check is intentionally simple and transparent: template-generated evidence
-    lines include the checklist label before a colon, and free-form notes can also
-    satisfy a field by mentioning the same label. This does not prove hardware
-    correctness; it only helps catch missing lab notebook fields before export.
+    The check is intentionally simple and transparent: template-generated
+    evidence lines include the checklist label before a colon, and the operator
+    must fill content after that colon. This does not prove hardware correctness;
+    it only helps catch unfilled lab notebook fields before export.
     """
     if gate not in VALIDATION_GATE_CHECKLIST:
         raise ValueError(f"unknown validation gate: {gate}")
-    haystack = _normalize_evidence_text(f"{evidence}\n{notes}")
+    evidence_text = f"{evidence}\n{notes}"
     present: list[str] = []
     missing: list[str] = []
     for item in VALIDATION_GATE_CHECKLIST[gate]:
-        normalized = _normalize_evidence_text(item)
-        if normalized and normalized in haystack:
+        if _checklist_item_has_value(evidence_text, item):
             present.append(item)
         else:
             missing.append(item)
@@ -317,3 +317,20 @@ def _md(value: Any) -> str:
 
 def _normalize_evidence_text(value: str) -> str:
     return " ".join(value.lower().replace("_", " ").replace("-", " ").split())
+
+
+def _checklist_item_has_value(text: str, item: str) -> bool:
+    """Return true only when a checklist label is followed by non-empty evidence.
+
+    Templates use `label: value` lines. Requiring content after the colon keeps
+    an untouched draft from being marked complete just because labels exist.
+    """
+    normalized_item = _normalize_evidence_text(item)
+    for raw_line in text.splitlines():
+        if ":" not in raw_line:
+            continue
+        label, value = raw_line.split(":", 1)
+        label = re.sub(r"^\s*[-*]\s*", "", label)
+        if _normalize_evidence_text(label) == normalized_item and value.strip():
+            return True
+    return False

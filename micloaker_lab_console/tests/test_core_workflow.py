@@ -1312,6 +1312,29 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert "Evidence Template: Linux DAQ validation capture" in template_download.text
     assert "- expected vs written sample count:" in template_download.text
     assert "Evidence Completeness Rule" in template_download.text
+    incomplete = client.post(
+        "/ops/validation",
+        data={
+            "gate": "mac_playback",
+            "status": "warn",
+            "evidence": "\n".join([
+                "- Helper URL: ",
+                "- selected device_id: ",
+                "- WAV relative path: jamming_sound/25khz_1hr.wav",
+                "- sample rate/channels/gain: 192000 / 1 / 1.0",
+                "- validate-playback result: ok",
+                "- play/stop result: ok",
+                "- macOS default output unchanged: yes",
+            ]),
+        },
+        follow_redirects=False,
+    )
+    assert incomplete.status_code == 303
+    incomplete_record = read_jsonl(tmp_path / ".micloaker" / "hardware_validation.jsonl")[-1]
+    assert incomplete_record["checklist_complete"] is False
+    assert "Helper URL" in incomplete_record["checklist_missing"]
+    assert "selected device_id" in incomplete_record["checklist_missing"]
+    assert "WAV relative path" in incomplete_record["checklist_present"]
     blocked_template = client.get("/ops/validation/templates/bad_gate")
     assert blocked_template.status_code == 404
     assert blocked_template.json()["detail"]["error_code"] == "VALIDATION_TEMPLATE_NOT_FOUND"
@@ -1324,7 +1347,8 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert "generated_at" in readiness
     validation_check = [check for check in readiness["checks"] if check["key"] == "hardware_validation_records"][0]
     assert validation_check["level"] == "WARN"
-    assert "4 missing gate" in validation_check["message"]
+    assert "1 warn" in validation_check["message"]
+    assert "3 missing gate" in validation_check["message"]
     readiness_json_download = client.get("/ops/readiness/files/lab_readiness_report.json")
     assert readiness_json_download.status_code == 200
     assert "lab_readiness_report.json" in readiness_json_download.headers["content-disposition"]

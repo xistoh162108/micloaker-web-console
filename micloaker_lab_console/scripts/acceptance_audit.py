@@ -619,7 +619,7 @@ def main() -> int:
         "DAQ recording with real hardware",
         "Helper uses explicit `device_id` without changing system default output",
         "Hardware validation records with workflow navigation",
-        "evidence completeness records present/missing checklist labels",
+        "evidence completeness records present/missing checklist labels only when non-empty `label: value` evidence is provided",
         "cached `ImageData` spectrogram buffers",
         "hover readouts and crosshair inspection",
         "WER/CER exploratory plots marked as downstream analysis",
@@ -676,7 +676,7 @@ def main() -> int:
         "Full test suite: `142 passed`",
         "scientific instrument console",
         "hover readouts plus crosshair inspection",
-        "evidence completeness by storing present and missing checklist labels",
+        "evidence completeness by storing present and missing checklist labels only when non-empty `label: value` evidence is provided",
         "WER/CER outcome plots remain external downstream analysis",
         "float64 little-endian `.bin` handling",
     ]
