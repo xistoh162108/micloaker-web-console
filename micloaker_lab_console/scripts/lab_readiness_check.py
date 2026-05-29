@@ -338,10 +338,13 @@ def _print_validation_gate_status(workspace: Path) -> None:
         action = gate.get("action") or {}
         action_label = action.get("label") or "Open /ops"
         action_href = action.get("href") or "/ops"
+        missing = gate.get("checklist_missing") or []
+        completeness = "complete" if gate.get("checklist_complete") else "missing checklist: " + ", ".join(str(item) for item in missing)
         print(
-            "- {label}: {status}; next: {action_label} ({action_href})".format(
+            "- {label}: {status}; {completeness}; next: {action_label} ({action_href})".format(
                 label=gate.get("gate_label") or gate.get("gate"),
                 status=gate.get("status"),
+                completeness=completeness,
                 action_label=action_label,
                 action_href=action_href,
             )

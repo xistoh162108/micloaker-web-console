@@ -1206,6 +1206,7 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert "Checklist fields" in page.text
     assert "Checklist preview" in page.text
     assert "Use checklist draft" in page.text
+    assert "Evidence completeness" in page.text
     assert "/ops/validation/templates/daq_smoke" in page.text
     assert "data-checklist=" in page.text
     assert "data-hint=" in page.text
@@ -1233,7 +1234,15 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
             "operator": "lab-op",
             "session_id": "hardware_validation_20260529",
             "run_id": "260529-DAQ-smoke",
-            "evidence": "written_samples matched expected duration; no traceback",
+            "evidence": "\n".join([
+                "session_id: hardware_validation_20260529",
+                "run_id: 260529-DAQ-smoke",
+                "DAQ channel/range/input mode: channel 0 BIP10VOLTS SINGLE_ENDED",
+                "requested and actual sample rate: 8000 / 8000",
+                "expected vs written sample count: 8000 / 8000",
+                "raw .bin path: bin/260529-DAQ-smoke.bin",
+                "run log/plot status: no traceback; waveform/PSD/spectrogram generated",
+            ]),
             "notes": "DAQ channel 0 BIP10VOLTS verified.",
         },
         follow_redirects=False,
@@ -1246,16 +1255,21 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert records[-1]["gate"] == "daq_smoke"
     assert records[-1]["status"] == "pass"
     assert records[-1]["run_id"] == "260529-DAQ-smoke"
+    assert records[-1]["checklist_complete"] is True
+    assert records[-1]["checklist_missing"] == []
+    assert "expected vs written sample count" in records[-1]["checklist_present"]
     report = (tmp_path / ".micloaker" / "hardware_validation_report.md").read_text(encoding="utf-8")
     assert "MiCloaker Hardware Validation Records" in report
     assert "Gate Evidence Checklist" in report
     assert "selected device_id" in report
     assert "raw .bin path" in report
     assert "Linux DAQ smoke capture" in report
-    assert "written_samples matched expected duration" in report
+    assert "Checklist complete" in report
+    assert "raw .bin path: bin/260529-DAQ-smoke.bin" in report
     plan_artifact = (tmp_path / ".micloaker" / "hardware_validation_plan.txt").read_text(encoding="utf-8")
     assert "MiCloaker Physical Validation Plan" in plan_artifact
     assert "scripts/lab_readiness_check.py --record-gate daq_smoke" in plan_artifact
+    assert "evidence_completeness: complete" in plan_artifact
 
     status = client.get("/ops/validation").json()
     assert status["summary"]["record_count"] == 1
@@ -1266,6 +1280,8 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert "raw .bin path" in status["summary"]["evidence_checklists"]["daq_smoke"]
     assert "evidence_hint" in status["summary"]["gate_status"][0]
     assert "evidence_checklist" in status["summary"]["gate_status"][0]
+    assert status["summary"]["gate_status"][0]["checklist_complete"] is True
+    assert status["summary"]["gate_status"][0]["checklist_missing"] == []
     assert status["summary"]["gate_status"][0]["action"]["href"]
     assert status["summary"]["plan_path"].endswith("hardware_validation_plan.txt")
     assert status["summary"]["actions"]["mac_playback"]["href"] == "/mac-helper"
@@ -1291,6 +1307,7 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert "daq_smoke_evidence_template.txt" in template_download.headers["content-disposition"]
     assert "Evidence Template: Linux DAQ smoke capture" in template_download.text
     assert "- expected vs written sample count:" in template_download.text
+    assert "Evidence Completeness Rule" in template_download.text
     blocked_template = client.get("/ops/validation/templates/bad_gate")
     assert blocked_template.status_code == 404
     assert blocked_template.json()["detail"]["error_code"] == "VALIDATION_TEMPLATE_NOT_FOUND"
@@ -1316,6 +1333,8 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert "Create DAQ validation run (/runs/new)" in readiness_report_download.text
     assert "Open Mac Helper (/mac-helper)" in readiness_report_download.text
     assert "Checklist fields" in readiness_report_download.text
+    assert "Evidence completeness" in readiness_report_download.text
+    assert "complete" in readiness_report_download.text
     assert "Record command" in readiness_report_download.text
     assert "scripts/lab_readiness_check.py --record-gate daq_smoke" in readiness_report_download.text
     assert "selected device_id" in readiness_report_download.text
@@ -1363,8 +1382,10 @@ def test_lab_readiness_cli_reflects_validation_gate_status(tmp_path: Path):
     assert no_records.returncode == 0
     assert "WARN: hardware_validation_records: No physical validation records saved yet" in no_records.stdout
     assert "Hardware validation gate status:" in no_records.stdout
-    assert "Linux DAQ smoke capture: missing; next: Create DAQ validation run (/runs/new)" in no_records.stdout
-    assert "Mac Helper playback validation: missing; next: Open Mac Helper (/mac-helper)" in no_records.stdout
+    assert "Linux DAQ smoke capture: missing; missing checklist: session_id, run_id" in no_records.stdout
+    assert "next: Create DAQ validation run (/runs/new)" in no_records.stdout
+    assert "Mac Helper playback validation: missing; missing checklist: Helper URL, selected device_id" in no_records.stdout
+    assert "next: Open Mac Helper (/mac-helper)" in no_records.stdout
 
     record_lab_validation(tmp_path, gate="daq_smoke", status="pass", evidence="DAQ smoke passed")
     record_lab_validation(tmp_path, gate="mac_playback", status="fail", evidence="Mac playback failed")
@@ -1372,7 +1393,7 @@ def test_lab_readiness_cli_reflects_validation_gate_status(tmp_path: Path):
     assert failed.returncode == 1
     assert "1 pass, 0 not applicable, 0 warn, 1 fail, 3 missing gate" in failed.stdout
     assert "FAIL: validation_mac_playback" in failed.stdout
-    assert "Mac Helper playback validation: fail; next: Open Mac Helper (/mac-helper)" in failed.stdout
+    assert "Mac Helper playback validation: fail; missing checklist: Helper URL, selected device_id" in failed.stdout
 
     for gate in ["mac_playback", "play_and_record", "attenuation_pair", "legacy_parity"]:
         record_lab_validation(tmp_path, gate=gate, status="na", evidence="not applicable")
@@ -1386,6 +1407,7 @@ def test_lab_readiness_cli_reflects_validation_gate_status(tmp_path: Path):
     readiness_report = (tmp_path / ".micloaker" / "lab_readiness_report.md").read_text(encoding="utf-8")
     assert "MiCloaker Lab Readiness Report" in readiness_report
     assert "scripts/lab_readiness_check.py --record-gate daq_smoke" in readiness_report
+    assert "Evidence completeness" in readiness_report
 
     plan = subprocess.run([sys.executable, "scripts/lab_readiness_check.py", "--validation-plan"], cwd=Path(__file__).resolve().parents[1], env=env, text=True, capture_output=True, check=False)
     assert plan.returncode == 0
@@ -1462,7 +1484,8 @@ def test_lab_readiness_cli_reflects_validation_gate_status(tmp_path: Path):
     )
     assert cli_record.returncode == 0
     assert "validation record saved: attenuation_pair status=warn" in cli_record.stdout
-    assert "uj0/uj1 attenuation pair check: warn; next: Open Compare (/compare)" in cli_record.stdout
+    assert "uj0/uj1 attenuation pair check: warn; missing checklist: uj0 run_id, uj1 run_id" in cli_record.stdout
+    assert "next: Open Compare (/compare)" in cli_record.stdout
     cli_records = read_jsonl(tmp_path / ".micloaker" / "hardware_validation.jsonl")
     assert cli_records[-1]["gate"] == "attenuation_pair"
     assert cli_records[-1]["operator"] == "lab-op"

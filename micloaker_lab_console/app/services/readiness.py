@@ -131,8 +131,8 @@ def _readiness_markdown(snapshot: dict[str, Any]) -> str:
             "",
             "## Hardware Validation Gate Status",
             "",
-            "| Gate | Status | Next action | Session | Run | Checklist fields | Evidence hint | Record command |",
-            "|---|---|---|---|---|---|---|---|",
+            "| Gate | Status | Next action | Session | Run | Evidence completeness | Checklist fields | Evidence hint | Record command |",
+            "|---|---|---|---|---|---|---|---|---|",
         ])
         for gate in validation.get("gate_status", []):
             action = gate.get("action") or {}
@@ -145,12 +145,13 @@ def _readiness_markdown(snapshot: dict[str, Any]) -> str:
                 "--record-evidence-file evidence.txt"
             ).format(gate=gate_key)
             lines.append(
-                "| {gate} | {status} | {action} | {session} | {run} | {checklist} | {hint} | `{command}` |".format(
+                "| {gate} | {status} | {action} | {session} | {run} | {complete} | {checklist} | {hint} | `{command}` |".format(
                     gate=_md(gate.get("gate_label") or gate.get("gate")),
                     status=_md(gate.get("status")),
                     action=_md(action_text),
                     session=_md(gate.get("session_id")),
                     run=_md(gate.get("run_id")),
+                    complete=_md("complete" if gate.get("checklist_complete") else "missing: " + ", ".join(str(item) for item in gate.get("checklist_missing", []))),
                     checklist=_md(", ".join(str(item) for item in gate.get("evidence_checklist", []))),
                     hint=_md(gate.get("evidence_hint")),
                     command=_md(record_command),

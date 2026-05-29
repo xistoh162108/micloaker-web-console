@@ -102,7 +102,7 @@ python scripts/console_control.py stop</pre>
   <h3>Gate Status</h3>
   <div class="table-scroll">
   <table class="data-table">
-    <thead><tr><th>Gate</th><th>Status</th><th>Latest record</th><th>Session</th><th>Run</th><th>Next action</th><th>Checklist</th><th>Expected evidence</th></tr></thead>
+    <thead><tr><th>Gate</th><th>Status</th><th>Latest record</th><th>Session</th><th>Run</th><th>Next action</th><th>Evidence completeness</th><th>Checklist</th><th>Expected evidence</th></tr></thead>
     <tbody>
       {% for gate in validation.gate_status %}
       <tr>
@@ -112,6 +112,7 @@ python scripts/console_control.py stop</pre>
         <td>{{ gate.session_id }}</td>
         <td>{{ gate.run_id }}</td>
         <td><a class="btn btn-outline" href="{{ gate.action.href }}">{{ gate.action.label }}</a></td>
+        <td>{% if gate.checklist_complete %}<span class="badge badge-success">complete</span>{% else %}<span class="badge badge-warning">missing</span> {{ gate.checklist_missing|join(", ") }}{% endif %}</td>
         <td>{{ gate.evidence_checklist|join(", ") }}</td>
         <td>{{ gate.evidence_hint }}</td>
       </tr>
@@ -122,7 +123,7 @@ python scripts/console_control.py stop</pre>
   <h3>Recent Evidence</h3>
   <div class="table-scroll">
   <table class="data-table">
-    <thead><tr><th>Time</th><th>Gate</th><th>Status</th><th>Session</th><th>Run</th><th>Evidence</th></tr></thead>
+    <thead><tr><th>Time</th><th>Gate</th><th>Status</th><th>Session</th><th>Run</th><th>Evidence completeness</th><th>Evidence</th></tr></thead>
     <tbody>
       {% for record in validation.latest %}
       <tr>
@@ -131,10 +132,11 @@ python scripts/console_control.py stop</pre>
         <td><span class="badge {% if record.status in ['pass', 'na'] %}badge-success{% elif record.status == 'warn' %}badge-warning{% else %}badge-error{% endif %}">{{ record.status }}</span></td>
         <td>{{ record.session_id }}</td>
         <td>{{ record.run_id }}</td>
+        <td>{% if record.checklist_complete %}<span class="badge badge-success">complete</span>{% else %}<span class="badge badge-warning">missing</span> {{ record.checklist_missing|join(", ") }}{% endif %}</td>
         <td>{{ record.evidence }}</td>
       </tr>
       {% else %}
-      <tr><td colspan="6">No physical validation records yet.</td></tr>
+      <tr><td colspan="7">No physical validation records yet.</td></tr>
       {% endfor %}
     </tbody>
   </table>

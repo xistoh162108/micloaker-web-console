@@ -78,12 +78,17 @@ def record_lab_validation(
         raise ValueError(f"unknown validation gate: {gate}")
     if status not in VALIDATION_STATUSES:
         raise ValueError(f"unknown validation status: {status}")
+    checklist_status = validation_evidence_completeness(gate, evidence=evidence, notes=notes)
     record = {
         "event": "hardware_validation_recorded",
         "recorded_at": now_iso(),
         "gate": gate,
         "gate_label": VALIDATION_GATES[gate],
         "status": status,
+        "evidence_checklist": VALIDATION_GATE_CHECKLIST[gate],
+        "checklist_present": checklist_status["present"],
+        "checklist_missing": checklist_status["missing"],
+        "checklist_complete": checklist_status["complete"],
         "operator": operator.strip(),
         "session_id": session_id.strip(),
         "run_id": run_id.strip(),
@@ -95,6 +100,28 @@ def record_lab_validation(
     append_app_event(workspace, "hardware_validation_recorded", gate=gate, status=status, run_id=record["run_id"])
     _write_validation_report(workspace)
     return record
+
+
+def validation_evidence_completeness(gate: str, *, evidence: str = "", notes: str = "") -> dict[str, Any]:
+    """Report which gate checklist labels are visible in operator evidence text.
+
+    The check is intentionally simple and transparent: template-generated evidence
+    lines include the checklist label before a colon, and free-form notes can also
+    satisfy a field by mentioning the same label. This does not prove hardware
+    correctness; it only helps catch missing lab notebook fields before export.
+    """
+    if gate not in VALIDATION_GATE_CHECKLIST:
+        raise ValueError(f"unknown validation gate: {gate}")
+    haystack = _normalize_evidence_text(f"{evidence}\n{notes}")
+    present: list[str] = []
+    missing: list[str] = []
+    for item in VALIDATION_GATE_CHECKLIST[gate]:
+        normalized = _normalize_evidence_text(item)
+        if normalized and normalized in haystack:
+            present.append(item)
+        else:
+            missing.append(item)
+    return {"present": present, "missing": missing, "complete": not missing}
 
 
 def validation_summary(workspace: Path) -> dict[str, Any]:
@@ -120,6 +147,8 @@ def validation_summary(workspace: Path) -> dict[str, Any]:
                 "session_id": latest.get("session_id", "") if latest else "",
                 "run_id": latest.get("run_id", "") if latest else "",
                 "evidence": latest.get("evidence", "") if latest else "",
+                "checklist_complete": bool(latest.get("checklist_complete")) if latest else False,
+                "checklist_missing": latest.get("checklist_missing", VALIDATION_GATE_CHECKLIST[gate]) if latest else VALIDATION_GATE_CHECKLIST[gate],
             }
         )
     return {
@@ -162,6 +191,7 @@ def validation_plan(workspace: Path) -> str:
                 f"   current_status: {gate.get('status')}",
                 f"   next_action: {action.get('label', 'Open /ops')} {action.get('href', '/ops')}",
                 f"   checklist: {', '.join(str(item) for item in checklist)}",
+                f"   evidence_completeness: {'complete' if gate.get('checklist_complete') else 'missing fields: ' + ', '.join(str(item) for item in gate.get('checklist_missing', []))}",
                 f"   evidence_hint: {gate.get('evidence_hint', '')}",
                 "   record_command:",
                 (
@@ -207,6 +237,9 @@ def validation_evidence_template(gate: str) -> str:
             "## Evidence Hint",
             VALIDATION_GATE_EVIDENCE[gate],
             "",
+            "## Evidence Completeness Rule",
+            "Keep each checklist label in the evidence text and fill a value after the colon. The console records missing checklist labels in JSONL, Markdown, readiness reports, and exports.",
+            "",
             "## Record Command",
             (
                 "scripts/lab_readiness_check.py --record-gate {gate} --record-status <pass|warn|fail|na> "
@@ -250,18 +283,20 @@ def _write_validation_report(workspace: Path) -> None:
         "",
         "## Recorded Evidence",
         "",
-        "| Time | Gate | Status | Session | Run | Operator | Evidence | Notes |",
-        "|---|---|---|---|---|---|---|---|",
+        "| Time | Gate | Status | Session | Run | Operator | Checklist complete | Missing checklist fields | Evidence | Notes |",
+        "|---|---|---|---|---|---|---|---|---|---|",
     ])
     for row in records:
         lines.append(
-            "| {time} | {gate} | {status} | {session} | {run} | {operator} | {evidence} | {notes} |".format(
+            "| {time} | {gate} | {status} | {session} | {run} | {operator} | {complete} | {missing} | {evidence} | {notes} |".format(
                 time=_md(row.get("recorded_at") or row.get("ts")),
                 gate=_md(row.get("gate_label") or row.get("gate")),
                 status=_md(row.get("status")),
                 session=_md(row.get("session_id")),
                 run=_md(row.get("run_id")),
                 operator=_md(row.get("operator")),
+                complete=_md("yes" if row.get("checklist_complete") else "no"),
+                missing=_md(", ".join(str(item) for item in row.get("checklist_missing", []))),
                 evidence=_md(row.get("evidence")),
                 notes=_md(row.get("notes")),
             )
@@ -278,3 +313,7 @@ def _write_validation_plan(workspace: Path) -> None:
 def _md(value: Any) -> str:
     text = "" if value is None else str(value)
     return text.replace("|", "\\|").replace("\n", " ").strip()
+
+
+def _normalize_evidence_text(value: str) -> str:
+    return " ".join(value.lower().replace("_", " ").replace("-", " ").split())
