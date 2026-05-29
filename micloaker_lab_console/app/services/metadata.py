@@ -77,7 +77,7 @@ def create_run_metadata(
     mac_helper_file: str = "",
     mac_helper_device_id: int | None = None,
     mac_helper_sample_rate: int | None = None,
-    mac_helper_channels: int = 1,
+    mac_helper_channels: int = 2,
     mac_helper_gain: float = 1.0,
     mac_helper_delay_ms: int = 500,
     notes: str = "",

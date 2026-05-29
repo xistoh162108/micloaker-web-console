@@ -248,7 +248,7 @@ Edit `config.json`:
   "host": "0.0.0.0",
   "port": 5050,
   "default_sample_rate": 192000,
-  "default_channels": 1,
+  "default_channels": 2,
   "default_gain": 1.0,
   "mock_audio": false,
   "optional_token": null

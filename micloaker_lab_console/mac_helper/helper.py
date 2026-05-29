@@ -26,7 +26,7 @@ class PlaybackRequest(BaseModel):
     file: str
     device_id: int
     sample_rate: int
-    channels: int = 1
+    channels: int = 2
     gain: float = 1.0
     delay_ms: int = 0
     duration_s: float | None = None
@@ -351,19 +351,24 @@ def _play_file(path: Path, req: PlaybackRequest, play_id: str) -> None:
         import sounddevice as sd
         import soundfile as sf
 
-        data, sample_rate = sf.read(str(path), always_2d=True)
-        if data.shape[1] == 1 and req.channels > 1:
-            data = np.repeat(data, req.channels, axis=1)
-        else:
-            data = data[:, : req.channels]
-        data = data * req.gain
-        if int(sample_rate) != int(req.sample_rate):
-            data = _resample_audio(data, int(sample_rate), int(req.sample_rate))
-        if req.duration_s and req.duration_s > 0:
-            data = data[: max(1, int(round(req.duration_s * req.sample_rate)))]
-        if not _playback_still_active(play_id):
-            return
-        sd.play(data, samplerate=req.sample_rate, device=req.device_id, blocking=True)
+        max_output_frames = int(round(req.duration_s * req.sample_rate)) if req.duration_s and req.duration_s > 0 else None
+        written_output_frames = 0
+        source_rate = _soundfile_sample_rate(sf, path)
+        blocksize = 65536
+        with sd.OutputStream(samplerate=req.sample_rate, device=req.device_id, channels=req.channels, dtype="float32") as stream:
+            for block in sf.blocks(str(path), blocksize=blocksize, dtype="float32", always_2d=True):
+                if not _playback_still_active(play_id):
+                    return
+                data = _prepare_playback_block(block, req, source_rate)
+                if max_output_frames is not None:
+                    remaining = max_output_frames - written_output_frames
+                    if remaining <= 0:
+                        break
+                    data = data[:remaining]
+                if data.size == 0:
+                    continue
+                stream.write(data)
+                written_output_frames += int(data.shape[0])
         if STATE.get("current_play_id") == play_id:
             STATE["playing"] = False
     except Exception as exc:
@@ -376,6 +381,29 @@ def _effective_playback_duration(req: PlaybackRequest, source_duration_s: float)
     if req.duration_s and req.duration_s > 0:
         return min(source_duration_s, float(req.duration_s))
     return source_duration_s
+
+
+def _soundfile_sample_rate(sf_module: Any, path: Path) -> int:
+    with sf_module.SoundFile(str(path)) as wav:
+        return int(wav.samplerate)
+
+
+def _prepare_playback_block(block: Any, req: PlaybackRequest, source_rate: int) -> np.ndarray:
+    data = np.asarray(block, dtype=np.float32)
+    if data.ndim == 1:
+        data = data.reshape((-1, 1))
+    if data.shape[1] == 1 and req.channels > 1:
+        data = np.repeat(data, req.channels, axis=1)
+    else:
+        data = data[:, : req.channels]
+        if data.shape[1] < req.channels:
+            pad = np.zeros((data.shape[0], req.channels - data.shape[1]), dtype=np.float32)
+            data = np.concatenate([data, pad], axis=1)
+    if req.gain != 1.0:
+        data = data * np.float32(req.gain)
+    if int(source_rate) != int(req.sample_rate):
+        data = _resample_audio(data, int(source_rate), int(req.sample_rate))
+    return np.asarray(data, dtype=np.float32)
 
 
 def _playback_still_active(play_id: str) -> bool:

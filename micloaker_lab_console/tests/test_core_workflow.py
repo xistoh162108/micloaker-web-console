@@ -64,6 +64,14 @@ def load_lab_readiness_module():
     return module
 
 
+def load_mac_helper_module():
+    spec = importlib.util.spec_from_file_location("mac_helper_helper", Path("mac_helper/helper.py"))
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def test_atomic_json_and_index_rebuild(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     ensure_workspace(tmp_path)
     for rel in [
@@ -3396,6 +3404,60 @@ def test_mac_helper_page_contains_documented_playback_controls(tmp_path: Path, m
     assert "helperAlertMessage" in helper_js
     assert "window.alert(helperAlertMessage(data))" in helper_js
     assert "JSON.stringify(data, null, 2)" in helper_js
+
+
+def test_mac_helper_playback_streams_large_wav_blocks(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    helper = load_mac_helper_module()
+    writes: list[tuple[int, int]] = []
+    read_called = False
+
+    class FakeStream:
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def write(self, data):
+            writes.append(tuple(data.shape))
+
+    class FakeSoundFile:
+        samplerate = 48000
+
+        def __init__(self, _path):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    def fake_read(*_args, **_kwargs):
+        nonlocal read_called
+        read_called = True
+        raise AssertionError("full-file read should not be used for playback")
+
+    def fake_blocks(*_args, **_kwargs):
+        for value in [0.1, 0.2, 0.3]:
+            yield np.full((4, 1), value, dtype=np.float32)
+
+    fake_sd = types.SimpleNamespace(OutputStream=FakeStream)
+    fake_sf = types.SimpleNamespace(SoundFile=FakeSoundFile, blocks=fake_blocks, read=fake_read)
+    monkeypatch.setitem(sys.modules, "sounddevice", fake_sd)
+    monkeypatch.setitem(sys.modules, "soundfile", fake_sf)
+
+    helper.STATE.clear()
+    helper.STATE.update({"playing": True, "current_play_id": "play_stream", "last_error": None})
+    req = helper.PlaybackRequest(file="huge.wav", device_id=1, sample_rate=48000, channels=2, gain=1.0, delay_ms=0)
+    helper._play_file(tmp_path / "huge.wav", req, "play_stream")
+
+    assert read_called is False
+    assert writes == [(4, 2), (4, 2), (4, 2)]
+    assert helper.STATE["playing"] is False
 
 
 def test_mac_helper_page_displays_connected_status_and_passthrough_data(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

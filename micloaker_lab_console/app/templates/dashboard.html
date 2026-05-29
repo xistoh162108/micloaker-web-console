@@ -148,7 +148,7 @@
             <span data-helper-playing-detail>Waiting for Helper status.</span>
           </div>
           <p class="small-text">Validate playback, test playback only, stop playback, or start synchronized Play & Record from this same console.</p>
-          <form method="post" action="/mac-helper/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}/validate-playback" class="form grid-form run-helper-form" data-run-helper-form>
+          <form method="post" action="/mac-helper/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}/validate-playback" class="form grid-form run-helper-form" data-run-helper-form data-async-helper-form>
             <label>Target session
               <select name="target_session" data-session-target>
                 {% for session in sessions %}
@@ -195,7 +195,7 @@
                 {% endfor %}
               </select>
             </label>
-            <label>Channels <input name="channels" type="number" min="1" value="{{ last_run.mac_helper.planned_channels if last_run.mac_helper.planned_channels is not none else (last_run.mac_helper.channels if last_run.mac_helper.channels is not none else 1) }}"></label>
+            <label>Channels <input name="channels" type="number" min="1" value="{{ last_run.mac_helper.planned_channels if last_run.mac_helper.planned_channels is not none else (last_run.mac_helper.channels if last_run.mac_helper.channels is not none else 2) }}"></label>
             <label>Gain <input name="gain" type="number" min="0" max="1" step="0.01" value="{{ last_run.mac_helper.planned_gain if last_run.mac_helper.planned_gain is not none else (last_run.mac_helper.gain if last_run.mac_helper.gain is not none else 1.0) }}"></label>
             <label>Delay ms <input name="delay_ms" type="number" min="0" value="{{ last_run.mac_helper.planned_delay_ms if last_run.mac_helper.planned_delay_ms is not none else (last_run.mac_helper.delay_ms if last_run.mac_helper.delay_ms is not none else 500) }}"></label>
             <div class="form-actions wide">

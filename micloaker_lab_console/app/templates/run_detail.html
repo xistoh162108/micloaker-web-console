@@ -105,7 +105,7 @@
             <h4>Mac Playback</h4>
             <a class="btn btn-outline" href="/mac-helper">Connect Mac Helper</a>
           </div>
-          <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/validate-playback" class="form grid-form live-playback-form">
+          <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/validate-playback" class="form grid-form live-playback-form" data-async-helper-form>
             <label>WAV file on Mac
               <select name="file" required>
                 {% if helper_files %}
@@ -135,7 +135,7 @@
                 {% endfor %}
               </select>
             </label>
-            <label>Channels <input name="channels" type="number" min="1" value="{{ run.mac_helper.planned_channels if run.mac_helper.planned_channels is not none else (run.mac_helper.channels if run.mac_helper.channels is not none else 1) }}"></label>
+            <label>Channels <input name="channels" type="number" min="1" value="{{ run.mac_helper.planned_channels if run.mac_helper.planned_channels is not none else (run.mac_helper.channels if run.mac_helper.channels is not none else 2) }}"></label>
             <label>Gain <input name="gain" type="number" min="0" max="1" step="0.01" value="{{ run.mac_helper.planned_gain if run.mac_helper.planned_gain is not none else (run.mac_helper.gain if run.mac_helper.gain is not none else 1.0) }}"></label>
             <label>Delay ms <input name="delay_ms" type="number" min="0" value="{{ run.mac_helper.planned_delay_ms if run.mac_helper.planned_delay_ms is not none else (run.mac_helper.delay_ms if run.mac_helper.delay_ms is not none else 500) }}"></label>
             <div class="form-actions live-playback-actions">

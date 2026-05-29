@@ -37,7 +37,7 @@ Edit `config.json`:
   "host": "0.0.0.0",
   "port": 5050,
   "default_sample_rate": 192000,
-  "default_channels": 1,
+  "default_channels": 2,
   "default_gain": 1.0,
   "mock_audio": false,
   "optional_token": null
@@ -105,7 +105,8 @@ GET  /status
 - `/validate-playback` checks file readability, device existence, sample rate, channel count, gain, and delay before `/play`.
 - If Mac playback starts but Linux recording fails before capture, the Linux console sends a best-effort Helper `/stop` request and logs the stop attempt with the structured recording failure.
 - Mono WAVs may be mapped to multiple output channels only when the selected device supports them.
-- If source and requested sample rates differ, validation reports `will_resample: true`; playback resamples in memory before opening the explicit output device.
+- Playback streams WAV data in blocks instead of loading the full file into memory. This is required for long jamming files such as 1-hour multi-GB WAVs.
+- If source and requested sample rates differ, validation reports `will_resample: true`; playback resamples each streamed block before writing to the explicit output device.
 - Errors return structured JSON with `ok`, `error_code`, `message`, and `suggestion`.
 
 ## Mock Mode

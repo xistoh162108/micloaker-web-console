@@ -103,13 +103,14 @@ def validate_run_playback(
     file: str = Form(...),
     device_id: int = Form(...),
     sample_rate: int = Form(...),
-    channels: int = Form(1),
+    channels: int = Form(2),
     gain: float = Form(1.0),
 ):
     workspace = request.app.state.settings.workspace
     _require_run(workspace, session_id, run_id)
     run = load_run(workspace, session_id, run_id)
     payload = {"file": file, "device_id": device_id, "sample_rate": sample_rate, "channels": channels, "gain": gain}
+    _store_helper_plan(workspace, session_id, run_id, {**payload, "delay_ms": None})
     _reject_if_jamming_file_mismatches_run(workspace, session_id, run_id, run, payload, action="validate_playback")
     result = _client_from_config(workspace).validate_playback(payload)
     _store_helper_result(workspace, session_id, run_id, "validate_playback", payload, result)
@@ -124,7 +125,7 @@ def play_run_helper(
     file: str = Form(...),
     device_id: int = Form(...),
     sample_rate: int = Form(...),
-    channels: int = Form(1),
+    channels: int = Form(2),
     gain: float = Form(1.0),
     delay_ms: int = Form(0),
 ):
@@ -132,6 +133,7 @@ def play_run_helper(
     _require_run(workspace, session_id, run_id)
     run = load_run(workspace, session_id, run_id)
     payload = {"file": file, "device_id": device_id, "sample_rate": sample_rate, "channels": channels, "gain": gain, "delay_ms": delay_ms, "duration_s": _run_duration_s(run)}
+    _store_helper_plan(workspace, session_id, run_id, payload)
     _reject_if_jamming_file_mismatches_run(workspace, session_id, run_id, run, payload, action="play")
     result = _client_from_config(workspace).play(payload)
     _store_helper_result(workspace, session_id, run_id, "play", payload, result)
@@ -155,7 +157,7 @@ def play_and_record_mock(
     file: str = Form(...),
     device_id: int = Form(...),
     sample_rate: int = Form(...),
-    channels: int = Form(1),
+    channels: int = Form(2),
     gain: float = Form(1.0),
     delay_ms: int = Form(500),
 ):
@@ -182,7 +184,7 @@ def play_and_capture_mock(
     file: str = Form(...),
     device_id: int = Form(...),
     sample_rate: int = Form(...),
-    channels: int = Form(1),
+    channels: int = Form(2),
     gain: float = Form(1.0),
     delay_ms: int = Form(500),
 ):
@@ -209,7 +211,7 @@ def play_and_record_daq(
     file: str = Form(...),
     device_id: int = Form(...),
     sample_rate: int = Form(...),
-    channels: int = Form(1),
+    channels: int = Form(2),
     gain: float = Form(1.0),
     delay_ms: int = Form(500),
 ):
@@ -236,7 +238,7 @@ def play_and_capture_daq(
     file: str = Form(...),
     device_id: int = Form(...),
     sample_rate: int = Form(...),
-    channels: int = Form(1),
+    channels: int = Form(2),
     gain: float = Form(1.0),
     delay_ms: int = Form(500),
 ):
@@ -275,6 +277,7 @@ def _play_and_record(
     helper = run.get("mac_helper", {})
     last_request = helper.get("last_request", {})
     requested = {"file": file, "device_id": device_id, "sample_rate": sample_rate, "channels": channels, "gain": gain}
+    _store_helper_plan(workspace, session_id, run_id, {**requested, "delay_ms": delay_ms})
     _reject_if_jamming_file_mismatches_run(workspace, session_id, run_id, run, requested, action="play_and_record_rejected")
     validated = helper.get("validate_playback_ok") is True and all(last_request.get(k) == v for k, v in requested.items())
     if not validated:
@@ -519,6 +522,24 @@ def _store_helper_result(workspace, session_id: str, run_id: str, action: str, p
         ok=request_ok,
         error_code=result.get("error_code", ""),
     )
+
+
+def _store_helper_plan(workspace, session_id: str, run_id: str, payload: dict) -> None:
+    run = load_run(workspace, session_id, run_id)
+    helper = run.setdefault("mac_helper", {})
+    if payload.get("file") is not None:
+        helper["planned_file"] = payload.get("file")
+    if payload.get("device_id") is not None:
+        helper["planned_device_id"] = payload.get("device_id")
+    if payload.get("sample_rate") is not None:
+        helper["planned_sample_rate"] = payload.get("sample_rate")
+    if payload.get("channels") is not None:
+        helper["planned_channels"] = payload.get("channels")
+    if payload.get("gain") is not None:
+        helper["planned_gain"] = payload.get("gain")
+    if payload.get("delay_ms") is not None:
+        helper["planned_delay_ms"] = payload.get("delay_ms")
+    save_run(workspace, run)
 
 
 def _helper_connected_state(action: str, result: dict, helper: dict) -> bool:

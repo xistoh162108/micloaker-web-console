@@ -259,14 +259,48 @@ def test_mac_helper_stop_cancels_delayed_real_playback_before_audio_starts(tmp_p
 
 def test_mac_helper_real_playback_uses_explicit_device_without_default_output_mutation(tmp_path: Path, monkeypatch):
     _wav(tmp_path / "tone.wav")
-    play_calls = []
+    stream_calls = []
+    write_calls = []
     settings_checks = []
+    wrote = Event()
 
     class DefaultDeviceGuard:
         device = ["system-default-output", "system-default-input"]
 
         def __setattr__(self, name, value):
             raise AssertionError("Mac Helper must not mutate sounddevice.default or the macOS default output device")
+
+    class FakeOutputStream:
+        def __init__(self, **kwargs):
+            stream_calls.append(kwargs)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def write(self, data):
+            write_calls.append(data.shape)
+            wrote.set()
+
+    class FakeSoundFile:
+        samplerate = 8000
+
+        def __init__(self, _path):
+            pass
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+    def fake_read(*_args, **_kwargs):
+        raise AssertionError("Mac Helper playback must stream blocks, not read the whole WAV into memory")
+
+    def fake_blocks(*_args, **_kwargs):
+        yield np.zeros((800, 1), dtype=np.float32)
 
     fake_sounddevice = types.SimpleNamespace(
         default=DefaultDeviceGuard(),
@@ -277,12 +311,10 @@ def test_mac_helper_real_playback_uses_explicit_device_without_default_output_mu
         check_output_settings=lambda device, samplerate, channels: settings_checks.append(
             {"device": device, "samplerate": samplerate, "channels": channels}
         ),
-        play=lambda data, samplerate, device, blocking: play_calls.append(
-            {"samplerate": samplerate, "device": device, "blocking": blocking, "shape": data.shape}
-        ),
+        OutputStream=FakeOutputStream,
         stop=lambda: None,
     )
-    fake_soundfile = types.SimpleNamespace(read=lambda path, always_2d: (np.zeros((800, 1), dtype=np.float32), 8000))
+    fake_soundfile = types.SimpleNamespace(SoundFile=FakeSoundFile, blocks=fake_blocks, read=fake_read)
     monkeypatch.setitem(sys.modules, "sounddevice", fake_sounddevice)
     monkeypatch.setitem(sys.modules, "soundfile", fake_soundfile)
     client = TestClient(create_app({"wav_root": str(tmp_path), "mock_audio": False}))
@@ -293,8 +325,10 @@ def test_mac_helper_real_playback_uses_explicit_device_without_default_output_mu
     ).json()
 
     assert play["ok"] is True
+    assert wrote.wait(timeout=2.0)
     assert settings_checks == [{"device": 1, "samplerate": 8000, "channels": 1}]
-    assert play_calls == [{"samplerate": 8000, "device": 1, "blocking": True, "shape": (800, 1)}]
+    assert stream_calls == [{"samplerate": 8000, "device": 1, "channels": 1, "dtype": "float32"}]
+    assert write_calls == [(800, 1)]
     assert fake_sounddevice.default.device == ["system-default-output", "system-default-input"]
 
 

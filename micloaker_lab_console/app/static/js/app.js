@@ -90,9 +90,50 @@ document.querySelectorAll("[data-run-helper-form]").forEach((form) => {
   updateRunChoices();
 });
 
+document.querySelectorAll("[data-async-helper-form]").forEach((form) => {
+  const output = document.createElement("div");
+  output.className = "metric-readout helper-inline-result";
+  output.textContent = "Mac playback settings are kept on this page after validate/play.";
+  form.appendChild(output);
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const submitter = event.submitter;
+    const action = submitter?.getAttribute("formaction") || form.getAttribute("action") || window.location.href;
+    const body = new FormData(form);
+    const buttons = Array.from(form.querySelectorAll('button[type="submit"]'));
+    buttons.forEach((button) => {
+      button.disabled = true;
+    });
+    try {
+      const response = await fetch(action, {
+        method: "POST",
+        body,
+        headers: { Accept: "application/json" },
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok === false || data.detail?.error_code || data.error_code) {
+        const detail = data.detail || data;
+        output.textContent = structuredMessage(detail, `Mac Helper request failed (${response.status})`);
+        window.alert(output.textContent);
+        return;
+      }
+      const label = submitter?.dataset.helperAction || submitter?.textContent?.trim() || "Mac Helper action";
+      output.textContent = `${label}: ${helperPlaybackText(data).title}`;
+      document.querySelectorAll("[data-helper-playback-status]").forEach((panel) => renderHelperPlaybackStatus(panel, data));
+    } catch (error) {
+      output.textContent = `Network or server error: ${error?.message || error}`;
+      window.alert(output.textContent);
+    } finally {
+      buttons.forEach((button) => {
+        button.disabled = false;
+      });
+    }
+  });
+});
+
 document.querySelectorAll("form").forEach((form) => {
   const method = (form.getAttribute("method") || "get").toLowerCase();
-  if (method !== "post" || form.dataset.nativeSubmit === "true") return;
+  if (method !== "post" || form.dataset.nativeSubmit === "true" || form.dataset.asyncHelperForm !== undefined) return;
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     const submitter = event.submitter;
