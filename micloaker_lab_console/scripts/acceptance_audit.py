@@ -476,6 +476,7 @@ def main() -> int:
         "macOS default output did not change",
         "expected vs written sample count",
         "Gate Status",
+        "Hardware Validation Gate Status",
         "Next action",
         "Create DAQ validation run",
         "Open Mac Helper",

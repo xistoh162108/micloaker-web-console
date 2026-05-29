@@ -123,6 +123,30 @@ def _readiness_markdown(snapshot: dict[str, Any]) -> str:
     ]
     for check in snapshot.get("checks", []):
         lines.append(f"| {_md(check.get('label') or check.get('key'))} | {_md(check.get('level'))} | {_md(check.get('message'))} |")
+    validation = _validation_details(snapshot)
+    if validation:
+        lines.extend([
+            "",
+            "## Hardware Validation Gate Status",
+            "",
+            "| Gate | Status | Next action | Session | Run | Evidence hint |",
+            "|---|---|---|---|---|---|",
+        ])
+        for gate in validation.get("gate_status", []):
+            action = gate.get("action") or {}
+            action_text = str(action.get("label") or "")
+            if action.get("href"):
+                action_text = f"{action_text} ({action.get('href')})"
+            lines.append(
+                "| {gate} | {status} | {action} | {session} | {run} | {hint} |".format(
+                    gate=_md(gate.get("gate_label") or gate.get("gate")),
+                    status=_md(gate.get("status")),
+                    action=_md(action_text),
+                    session=_md(gate.get("session_id")),
+                    run=_md(gate.get("run_id")),
+                    hint=_md(gate.get("evidence_hint")),
+                )
+            )
     lines.extend([
         "",
         "## Manual Verification Required",
@@ -132,6 +156,14 @@ def _readiness_markdown(snapshot: dict[str, Any]) -> str:
         lines.append(f"- {item}")
     lines.append("")
     return "\n".join(lines)
+
+
+def _validation_details(snapshot: dict[str, Any]) -> dict[str, Any]:
+    for check in snapshot.get("checks", []):
+        if check.get("key") == "hardware_validation_records":
+            details = check.get("details")
+            return details if isinstance(details, dict) else {}
+    return {}
 
 
 def _bind_check(host: str, port: int) -> dict[str, Any]:

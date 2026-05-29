@@ -1100,6 +1100,9 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert readiness_report_download.status_code == 200
     assert "lab_readiness_report.md" in readiness_report_download.headers["content-disposition"]
     assert "MiCloaker Lab Readiness Report" in readiness_report_download.text
+    assert "Hardware Validation Gate Status" in readiness_report_download.text
+    assert "Create DAQ validation run (/runs/new)" in readiness_report_download.text
+    assert "Open Mac Helper (/mac-helper)" in readiness_report_download.text
     blocked_readiness_download = client.get("/ops/readiness/files/../app.log")
     assert blocked_readiness_download.status_code == 404
 
