@@ -379,6 +379,8 @@ def main() -> int:
     app_css = (ROOT / "app" / "static" / "css" / "app.css").read_text(encoding="utf-8")
     operator_ui_doc_path = ROOT.parent / "docs" / "OPERATOR_UI_DEPLOYMENT_REQUIREMENTS.md"
     operator_ui_doc = operator_ui_doc_path.read_text(encoding="utf-8") if operator_ui_doc_path.exists() else ""
+    hardware_protocol_path = ROOT.parent / "docs" / "HARDWARE_VALIDATION_PROTOCOL.md"
+    hardware_protocol = hardware_protocol_path.read_text(encoding="utf-8") if hardware_protocol_path.exists() else ""
     checks.append(report("uvicorn app.main:app --host 127.0.0.1 --port 8000" in readme, "README documents localhost console run command"))
     checks.append(report("Ctrl+C" in readme and "rebuilds session/run lists from workspace text files" in readme, "README documents temporary lifecycle and restart recovery"))
     checks.append(report("Live Monitor" in readme and "Live preview is approximate" in readme and "saved `.bin`" in readme, "README documents live preview-only workflow"))
@@ -397,6 +399,18 @@ def main() -> int:
     if missing_operator_terms:
         for term in missing_operator_terms:
             print(f"  missing operator UI term: {term}")
+    hardware_protocol_terms = [
+        "Linux DAQ Smoke Capture",
+        "Mac Helper Playback Validation",
+        "End-to-End Play And Record Trial",
+        "Attenuation Pair Check",
+        "Pass/Fail Decision",
+    ]
+    missing_hardware_protocol_terms = [term for term in hardware_protocol_terms if term not in hardware_protocol]
+    checks.append(report(not missing_hardware_protocol_terms, "hardware validation protocol documents physical lab gates"))
+    if missing_hardware_protocol_terms:
+        for term in missing_hardware_protocol_terms:
+            print(f"  missing hardware protocol term: {term}")
     daisy_terms = ["btn btn-primary", "btn btn-outline", "btn btn-error", "card", "card-body", "tabs", "tab-active", "stats", "stat-value", "badge-success", "badge-warning"]
     missing_daisy_terms = [term for term in daisy_terms if term not in dashboard_template]
     checks.append(report(not missing_daisy_terms and "DaisyUI component vocabulary" in app_css and "shadcn" not in app_css.lower(), "dashboard uses local DaisyUI component vocabulary"))

@@ -11,6 +11,7 @@ Run from `micloaker_lab_console/`:
 ```bash
 .venv/bin/pytest -q
 .venv/bin/python scripts/acceptance_audit.py
+.venv/bin/python scripts/lab_readiness_check.py --check-server --server-url http://100.88.179.43:8000
 for path in / /sessions /runs/new /compare /mac-helper /files /logs /daq/health /recording/status /live /live/snapshot; do
   code=$(curl -s -o /dev/null -w '%{http_code}' "http://127.0.0.1:8000$path")
   printf '%s %s\n' "$code" "$path"
@@ -62,6 +63,7 @@ Most recent observed results:
 | Linux Helper integration | Proven | Manual URL config, health/files/devices/actions, validate-before-play-and-record, disconnected-safe behavior, run JSON/log persistence. |
 | Tailscale discovery | Proven as best-effort optional | `app/services/tailscale.py` and UI route handle absent/unexpected Tailscale without breaking manual connection. |
 | README and dependency files | Proven | `README.md`, `requirements.txt`, `requirements-mac-helper.txt`, `mac_helper/README.md`. |
+| Hardware validation protocol | Proven as documented protocol | `../docs/HARDWARE_VALIDATION_PROTOCOL.md` defines the DAQ smoke capture, Mac Helper playback validation, play-and-record trial, attenuation pair check, and pass/fail evidence. Physical execution remains lab work. |
 | Safe start/stop operation | Proven for local controls | `scripts/console_control.py`, `/ops`, Linux desktop launcher installer, and Mac Helper control scripts provide explicit start/status/stop flows. |
 | Tests without DAQ/Mac Helper | Proven | Full suite passes without physical DAQ or Mac Helper service. |
 
@@ -84,6 +86,8 @@ These items are outside what the local mock/test environment can prove:
 3. Run Mac Helper on macOS with a real output device, validate a prepared WAV, play it, stop it, and confirm the selected `device_id` receives audio without changing the system default output.
 4. If real-time DAQ live monitoring is required beyond mock preview, verify or extend the live monitor to use the same DAQ acquisition source and preview buffer during recording.
 5. Compare a known legacy `.bin` sample against legacy notebook output if exact historical numeric parity is needed.
+
+Use `../docs/HARDWARE_VALIDATION_PROTOCOL.md` as the operator checklist for items 1-3 and the first attenuation pair check.
 
 ## Current Completion Assessment
 

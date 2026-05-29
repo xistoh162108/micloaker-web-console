@@ -186,8 +186,11 @@ def _print_report(findings: list[tuple[str, str, str]], workspace: Path, host: s
         print(f"{level}: {key}: {message}")
     print()
     print("Manual lab verification still required:")
+    print("- Protocol: follow ../docs/HARDWARE_VALIDATION_PROTOCOL.md before real report-grade experiments.")
     print("- Actual DAQ: run a short DAQ capture and confirm sample rate, channel, range, and saved .bin sample count.")
     print("- Mac Helper: validate/play/stop on the real macOS output device and confirm the system default output is unchanged.")
+    print("- Play & Record: run a short synchronized DAQ trial when Mac playback and Linux recording are both required.")
+    print("- Attenuation: record one finalized uj0/uj1 validation pair and inspect BIN-primary comparison output.")
     print("- Legacy parity: compare a known historical .bin against legacy notebook outputs if exact historical numeric parity is required.")
 
 

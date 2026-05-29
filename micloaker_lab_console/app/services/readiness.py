@@ -63,8 +63,11 @@ def lab_readiness(settings: Settings) -> dict[str, Any]:
         "host": settings.host,
         "port": settings.port,
         "manual_verification_required": [
+            "Follow ../docs/HARDWARE_VALIDATION_PROTOCOL.md before real report-grade experiments.",
             "Run a short DAQ capture and confirm channel/range/sample count against the saved .bin.",
             "Validate/play/stop on the real macOS output device and confirm the system default output is unchanged.",
+            "Run a short play-and-record DAQ trial when synchronized Mac playback and Linux recording are required.",
+            "Record one finalized uj0/uj1 validation pair and inspect BIN-primary attenuation output.",
             "Measure the actual acoustic path before treating attenuation numbers as report-grade.",
         ],
     }

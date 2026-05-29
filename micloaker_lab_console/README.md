@@ -326,6 +326,8 @@ The readiness check reports:
 
 See [docs_alignment_report.md](docs_alignment_report.md) for the requirement-by-requirement evidence map and remaining lab verification items.
 
+Before using real hardware for report-grade experiments, follow the lab protocol in [../docs/HARDWARE_VALIDATION_PROTOCOL.md](../docs/HARDWARE_VALIDATION_PROTOCOL.md). It covers DAQ smoke capture, Mac Helper playback validation, short play-and-record trials, and attenuation pair checks.
+
 ## Troubleshooting
 
 Tailscale URL does not open:

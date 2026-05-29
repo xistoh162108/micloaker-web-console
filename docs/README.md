@@ -37,6 +37,7 @@ Stability first. Keep the Linux recording/analysis workflow simple and reliable.
 - `MAC_AUDIO_HELPER_SPEC.md`: optional macOS playback helper specification.
 - `UI_UX_SPEC.md`: intuitive but flexible web UI design.
 - `OPERATOR_UI_DEPLOYMENT_REQUIREMENTS.md`: additional DaisyUI, command-center UI, safe start/stop, Tailscale, launcher, and GitHub delivery requirements.
+- `HARDWARE_VALIDATION_PROTOCOL.md`: lab-side DAQ, Mac Helper, play-and-record, and attenuation validation protocol before report-grade experiments.
 - `LIVE_MONITOR_V02.md`: v0.2 live waveform/spectrogram and finalize workflow.
 - `EXPORT_DOWNLOAD_SPEC.md`: file/run/session ZIP export requirements.
 - `FILE_NAMING_AND_METADATA.md`: naming and metadata schema.

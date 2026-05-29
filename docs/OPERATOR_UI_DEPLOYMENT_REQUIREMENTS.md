@@ -84,6 +84,7 @@ Documentation must be usable by another lab operator, not only the original deve
 Required documentation:
 
 - Repository root README as a GitHub landing page.
+- Hardware validation protocol for DAQ smoke capture, Mac Helper physical playback validation, short play-and-record trial, and attenuation pair check.
 - Linux console manual with:
   - install steps
   - safe start/status/stop
