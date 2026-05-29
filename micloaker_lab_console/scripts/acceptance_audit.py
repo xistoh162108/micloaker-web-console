@@ -474,6 +474,7 @@ def main() -> int:
         "/ops/validation/plan",
         "Download Validation Plan",
         "hardware_validation_plan.txt",
+        "validation.plan_path",
         "/ops/readiness/files/lab_readiness_report.json",
         "/ops/readiness/files/lab_readiness_report.md",
         "Download Readiness Report",

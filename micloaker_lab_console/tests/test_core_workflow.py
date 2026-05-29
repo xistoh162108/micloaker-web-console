@@ -1114,6 +1114,7 @@ def test_uldaq_is_lazy_and_app_routes_smoke(tmp_path: Path, monkeypatch: pytest.
     assert "Web shutdown" in ops_page.text
     assert "python scripts/console_control.py restart" in ops_page.text
     assert "Default restart reuses the last saved host, port, and web-shutdown mode." in ops_page.text
+    assert "hardware_validation_plan.txt" in ops_page.text
     assert "Lab Readiness" in ops_page.text
     assert "Workspace Text Files" in ops_page.text
     assert "disabled" in ops_page.text
@@ -1205,6 +1206,7 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert "evidence_hint" in status["summary"]["gate_status"][0]
     assert "evidence_checklist" in status["summary"]["gate_status"][0]
     assert status["summary"]["gate_status"][0]["action"]["href"]
+    assert status["summary"]["plan_path"].endswith("hardware_validation_plan.txt")
     assert status["summary"]["actions"]["mac_playback"]["href"] == "/mac-helper"
     assert status["summary"]["latest_by_gate"]["daq_smoke"]["status"] == "pass"
     assert status["summary"]["status_counts"]["pass"] == 1

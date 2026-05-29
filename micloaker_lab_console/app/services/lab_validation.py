@@ -138,6 +138,7 @@ def validation_summary(workspace: Path) -> dict[str, Any]:
         },
         "latest": records[:5],
         "report_path": str(validation_paths(workspace)["report"]),
+        "plan_path": str(validation_paths(workspace)["plan"]),
     }
 
 
