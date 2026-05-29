@@ -315,6 +315,131 @@ def daq_validation_evidence_from_run(workspace: Path, session_id: str, run_id: s
     return "\n".join(lines)
 
 
+def mac_playback_evidence_from_run(workspace: Path, session_id: str, run_id: str) -> str:
+    """Build an operator-reviewable Mac Helper playback evidence draft."""
+    run = load_run(workspace, session_id, run_id)
+    helper = run.get("mac_helper", {})
+    last_response = helper.get("last_response", {}) if isinstance(helper.get("last_response"), dict) else {}
+    lines = [
+        "# Evidence Draft: Mac Helper playback validation",
+        "# Review physical audio routing before saving this in /ops.",
+        "gate: mac_playback",
+        f"session_id: {run.get('session_id') or session_id}",
+        f"run_id: {run.get('run_id') or run_id}",
+        f"Helper URL: {helper.get('helper_url') or 'not configured'}",
+        f"selected device_id: {helper.get('device_id', helper.get('planned_device_id', 'unknown'))}",
+        f"WAV relative path: {helper.get('file') or helper.get('planned_file') or 'unknown'}",
+        (
+            "sample rate/channels/gain: "
+            f"{_first_value(helper.get('requested_sample_rate'), helper.get('planned_sample_rate'), default='unknown')} Hz / "
+            f"{_first_value(helper.get('requested_channels'), helper.get('channels'), helper.get('planned_channels'), default='unknown')} ch / "
+            f"{_first_value(helper.get('gain'), helper.get('planned_gain'), default='unknown')}"
+        ),
+        (
+            "validate-playback result: "
+            f"ok={helper.get('validate_playback_ok', 'unknown')}; "
+            f"last_action={helper.get('last_action', 'none')}; "
+            f"error={helper.get('last_error_code') or last_response.get('error_code') or 'none'}"
+        ),
+        (
+            "play/stop result: "
+            f"play_ok={helper.get('play_request_ok', 'unknown')}; "
+            f"stop_ok={helper.get('stop_request_ok', 'unknown')}; "
+            f"play_id={helper.get('play_id') or 'none'}"
+        ),
+        "macOS default output unchanged: operator must confirm on the Mac after validate/play/stop.",
+        "",
+        "operator_review: confirm selected physical output, audible/ultrasonic routing path, and macOS default-output state before recording pass/warn/fail.",
+    ]
+    return "\n".join(lines)
+
+
+def play_and_record_evidence_from_run(workspace: Path, session_id: str, run_id: str) -> str:
+    """Build an operator-reviewable play-and-record evidence draft."""
+    run = load_run(workspace, session_id, run_id)
+    base = session_dir(workspace, session_id)
+    helper = run.get("mac_helper", {})
+    files = run.get("files", {})
+    analysis = run.get("analysis", {})
+    log_path = base / "logs" / f"{safe_name(run_id)}.log"
+    log_text = log_path.read_text(encoding="utf-8", errors="replace") if log_path.is_file() else ""
+    traceback_status = "yes" if "Traceback" in log_text else "no"
+    lines = [
+        "# Evidence Draft: End-to-end play and record trial",
+        "# Review physical playback and Linux DAQ timing before saving this in /ops.",
+        "gate: play_and_record",
+        f"session_id: {run.get('session_id') or session_id}",
+        f"validation run_id: {run.get('run_id') or run_id}",
+        (
+            "Helper validation result: "
+            f"validate_ok={helper.get('validate_playback_ok', 'unknown')}; "
+            f"play_ok={helper.get('play_request_ok', 'unknown')}; "
+            f"file={helper.get('file') or helper.get('planned_file') or 'unknown'}; "
+            f"device_id={helper.get('device_id', helper.get('planned_device_id', 'unknown'))}"
+        ),
+        (
+            "Play & Record mode: "
+            f"recording_source={run.get('recording', {}).get('source', 'unknown')}; "
+            f"last_helper_action={helper.get('last_action', 'none')}; "
+            f"delay_ms={helper.get('delay_ms', 'unknown')}"
+        ),
+        f"DAQ raw .bin path: {files.get('bin', 'unknown')} ({_artifact_state(base, files.get('bin'))})",
+        (
+            "finalization result: "
+            f"analysis={analysis.get('status', 'unknown')}; "
+            f"grade={analysis.get('result_grade', 'unknown')}; "
+            f"finalized_from_saved_bin={analysis.get('finalized_from_saved_bin', 'unknown')}"
+        ),
+        (
+            "peak/range WAV presence: "
+            f"peak={_artifact_state(base, files.get('wav_peak'))}; "
+            f"range={_artifact_state(base, files.get('wav_range'))}"
+        ),
+        f"run log status: log={'present' if log_path.is_file() else 'missing'}; traceback={traceback_status}",
+        "",
+        "operator_review: confirm speaker playback and Linux capture overlapped as intended before recording pass/warn/fail.",
+    ]
+    return "\n".join(lines)
+
+
+def attenuation_pair_evidence_from_comparison(workspace: Path, session_id: str, compare_id: str) -> str:
+    """Build an operator-reviewable uj0/uj1 attenuation evidence draft."""
+    base = session_dir(workspace, session_id)
+    compare_path = base / "comparisons" / f"{safe_name(compare_id)}.json"
+    comparison = read_json_or_default(compare_path, {})
+    if not comparison:
+        raise FileNotFoundError(f"comparison {compare_id} not found")
+    actual_compare_id = str(comparison.get("compare_id") or safe_name(compare_id))
+    csv_rel = f"comparisons/{actual_compare_id}.csv"
+    json_rel = f"comparisons/{actual_compare_id}.json"
+    plots = comparison.get("plots", {}) if isinstance(comparison.get("plots"), dict) else {}
+    warnings = comparison.get("warnings", [])
+    warning_text = ", ".join(str(item) for item in warnings) if warnings else "none"
+    lines = [
+        "# Evidence Draft: uj0/uj1 attenuation pair check",
+        "# Review physical setup matching and comparison warnings before saving this in /ops.",
+        "gate: attenuation_pair",
+        f"session_id: {session_id}",
+        f"compare_id: {actual_compare_id}",
+        f"uj0 run_id: {comparison.get('uj0_run_id', 'unknown')}",
+        f"uj1 run_id: {comparison.get('uj1_run_id', 'unknown')}",
+        f"compare JSON/CSV path: {json_rel} ({_artifact_state(base, json_rel)}) / {csv_rel} ({_artifact_state(base, csv_rel)})",
+        f"source=bin: {comparison.get('source') == 'bin'}; source={comparison.get('source', 'unknown')}; grade={comparison.get('result_grade', 'unknown')}",
+        f"band and attenuation dB: band={comparison.get('band_hz', 'unknown')}; attenuation_db={comparison.get('attenuation_db', 'unknown')}; remaining_fraction={comparison.get('remaining_fraction', 'unknown')}; reduction_percent={comparison.get('reduction_percent', 'unknown')}",
+        f"mismatch warnings: {warning_text}",
+        (
+            "PSD/bar plot status: "
+            f"bar_png={_artifact_state(base, plots.get('attenuation_png'))}; "
+            f"bar_svg={_artifact_state(base, plots.get('attenuation_svg'))}; "
+            f"psd_png={_artifact_state(base, plots.get('psd_overlay_png'))}; "
+            f"psd_svg={_artifact_state(base, plots.get('psd_overlay_svg'))}"
+        ),
+        "",
+        "operator_review: confirm uj0/uj1 metadata match the physical trial and source=bin is true before recording pass/warn/fail.",
+    ]
+    return "\n".join(lines)
+
+
 def ensure_validation_artifacts(workspace: Path) -> dict[str, Path]:
     paths = validation_paths(workspace)
     paths["jsonl"].parent.mkdir(parents=True, exist_ok=True)

@@ -633,7 +633,8 @@ def main() -> int:
         "/ops/validation/templates/<gate>",
         "--record-evidence-file",
         "Use checklist draft helper",
-        "DAQ evidence drafts from saved run metadata",
+        "DAQ, Mac playback, and play-and-record evidence drafts",
+        "attenuation-pair evidence drafts from saved comparison JSON/CSV/plot state",
         "Remaining Requirements Not Yet Proved By Automation",
         "overall goal must remain open until the lab-only physical verification items",
     ]
@@ -678,7 +679,8 @@ def main() -> int:
         "scientific instrument console",
         "hover readouts plus crosshair inspection",
         "evidence completeness by storing present and missing checklist labels only when non-empty `label: value` evidence is provided",
-        "DAQ evidence drafts from saved run metadata",
+        "DAQ, Mac playback, and play-and-record evidence drafts",
+        "attenuation-pair evidence drafts from saved comparison JSON/CSV/plot state",
         "WER/CER outcome plots remain external downstream analysis",
         "float64 little-endian `.bin` handling",
     ]

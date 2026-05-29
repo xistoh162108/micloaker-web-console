@@ -69,6 +69,7 @@
       <span>
         <a class="btn btn-outline" href="/sessions/{{ session_id }}/files/{{ item.json_file }}?download=1" download>JSON</a>
         <a class="btn btn-outline" href="/sessions/{{ session_id }}/files/{{ item.csv_file }}?download=1" download>CSV</a>
+        <a class="btn btn-outline" href="/ops/validation/drafts/attenuation/{{ session_id }}/{{ item.compare_id }}">Evidence Draft</a>
         {% if item.plots %}
         <a class="btn btn-outline" href="/sessions/{{ session_id }}/files/{{ item.plots.attenuation_png }}?download=1" download>Bar PNG</a>
         <a class="btn btn-outline" href="/sessions/{{ session_id }}/files/{{ item.plots.attenuation_svg }}?download=1" download>Bar SVG</a>

@@ -22,7 +22,14 @@ from app.services.converter import PEAK_WAV_HEADROOM, convert_bin_to_wav, peak_w
 from app.main import create_app
 from app.services.export_zip import make_multi_session_zip, make_run_zip, make_session_zip
 from app.services.jobs import mark_unfinished_jobs_interrupted, run_job
-from app.services.lab_validation import daq_validation_evidence_from_run, record_lab_validation, validation_evidence_completeness
+from app.services.lab_validation import (
+    attenuation_pair_evidence_from_comparison,
+    daq_validation_evidence_from_run,
+    mac_playback_evidence_from_run,
+    play_and_record_evidence_from_run,
+    record_lab_validation,
+    validation_evidence_completeness,
+)
 from app.services.mac_helper_client import MacHelperClient
 from app.services.metadata import create_run_metadata, create_session, load_run, load_runs, rebuild_indexes, regenerate_summary, save_run
 from app.services.recorder import RecordingBusyError, _recording_lock, finalize_run, import_bin_and_finalize, record_daq_and_finalize, record_mock_and_finalize, record_mock_capture_only, recording_status, validate_raw_bin_source
@@ -1423,7 +1430,11 @@ def test_run_page_downloads_daq_validation_evidence_draft(tmp_path: Path, monkey
     page = client.get(f"/sessions/{session['session_id']}/runs/{finalized['run_id']}")
     assert page.status_code == 200
     assert "DAQ Evidence Draft" in page.text
+    assert "Mac Evidence Draft" in page.text
+    assert "Play+Record Draft" in page.text
     assert f"/ops/validation/drafts/daq/{session['session_id']}/{finalized['run_id']}" in page.text
+    assert f"/ops/validation/drafts/mac/{session['session_id']}/{finalized['run_id']}" in page.text
+    assert f"/ops/validation/drafts/play-and-record/{session['session_id']}/{finalized['run_id']}" in page.text
 
     response = client.get(f"/ops/validation/drafts/daq/{session['session_id']}/{finalized['run_id']}")
     assert response.status_code == 200
@@ -1440,6 +1451,28 @@ def test_run_page_downloads_daq_validation_evidence_draft(tmp_path: Path, monkey
     assert "run log/plot status: log=present; traceback=no;" in draft
     assert "analysis=finalized; grade=report-grade" in draft
     assert validation_evidence_completeness("daq_smoke", evidence=draft)["complete"] is True
+
+    mac_response = client.get(f"/ops/validation/drafts/mac/{session['session_id']}/{finalized['run_id']}")
+    assert mac_response.status_code == 200
+    assert "mac_playback_evidence.txt" in mac_response.headers["content-disposition"]
+    mac_draft = mac_response.text
+    assert mac_draft == mac_playback_evidence_from_run(tmp_path, session["session_id"], finalized["run_id"])
+    assert "Evidence Draft: Mac Helper playback validation" in mac_draft
+    assert "Helper URL:" in mac_draft
+    assert "selected device_id:" in mac_draft
+    assert "macOS default output unchanged: operator must confirm" in mac_draft
+    assert validation_evidence_completeness("mac_playback", evidence=mac_draft)["complete"] is True
+
+    play_record_response = client.get(f"/ops/validation/drafts/play-and-record/{session['session_id']}/{finalized['run_id']}")
+    assert play_record_response.status_code == 200
+    assert "play_and_record_evidence.txt" in play_record_response.headers["content-disposition"]
+    play_record_draft = play_record_response.text
+    assert play_record_draft == play_and_record_evidence_from_run(tmp_path, session["session_id"], finalized["run_id"])
+    assert "Evidence Draft: End-to-end play and record trial" in play_record_draft
+    assert "validation run_id:" in play_record_draft
+    assert "Helper validation result:" in play_record_draft
+    assert "peak/range WAV presence:" in play_record_draft
+    assert validation_evidence_completeness("play_and_record", evidence=play_record_draft)["complete"] is True
 
     saved = client.post(
         "/ops/validation",
@@ -1462,6 +1495,9 @@ def test_run_page_downloads_daq_validation_evidence_draft(tmp_path: Path, monkey
     missing = client.get(f"/ops/validation/drafts/daq/{session['session_id']}/missing_run")
     assert missing.status_code == 404
     assert missing.json()["detail"]["error_code"] == "RUN_NOT_FOUND"
+    missing_mac = client.get(f"/ops/validation/drafts/mac/{session['session_id']}/missing_run")
+    assert missing_mac.status_code == 404
+    assert missing_mac.json()["detail"]["error_code"] == "RUN_NOT_FOUND"
 
 
 def test_lab_readiness_cli_reflects_validation_gate_status(tmp_path: Path):
@@ -2153,6 +2189,7 @@ def test_compare_route_saves_and_renders_result(tmp_path: Path, monkeypatch: pyt
     assert "Bar SVG" in response.text
     assert "PSD PNG" in response.text
     assert "PSD SVG" in response.text
+    assert "Evidence Draft" in response.text
     assert "Attenuation bar chart" in response.text
     assert "PSD overlay" in response.text
     base = session_dir(tmp_path, session["session_id"])
@@ -2183,6 +2220,7 @@ def test_compare_route_saves_and_renders_result(tmp_path: Path, monkeypatch: pyt
     compare_csv = f"comparisons/{result['compare_id']}.csv"
     assert f'/sessions/{session["session_id"]}/files/{compare_json}?download=1' in response.text
     assert f'/sessions/{session["session_id"]}/files/{compare_csv}?download=1' in response.text
+    assert f'/ops/validation/drafts/attenuation/{session["session_id"]}/{result["compare_id"]}' in response.text
     assert f'src="/sessions/{session["session_id"]}/files/{result["plots"]["attenuation_png"]}"' in response.text
     assert f'src="/sessions/{session["session_id"]}/files/{result["plots"]["psd_overlay_png"]}"' in response.text
     assert f'/sessions/{session["session_id"]}/files/{result["plots"]["attenuation_svg"]}?download=1' in response.text
@@ -2198,6 +2236,19 @@ def test_compare_route_saves_and_renders_result(tmp_path: Path, monkeypatch: pyt
         download = client.get(f"/sessions/{session['session_id']}/files/{rel_path}?download=1")
         assert download.status_code == 200, rel_path
         assert "attachment" in download.headers["content-disposition"], rel_path
+    evidence = client.get(f"/ops/validation/drafts/attenuation/{session['session_id']}/{result['compare_id']}")
+    assert evidence.status_code == 200
+    assert "attenuation_pair_evidence.txt" in evidence.headers["content-disposition"]
+    assert evidence.text == attenuation_pair_evidence_from_comparison(tmp_path, session["session_id"], result["compare_id"])
+    assert "Evidence Draft: uj0/uj1 attenuation pair check" in evidence.text
+    assert f"uj0 run_id: {final0['run_id']}" in evidence.text
+    assert f"uj1 run_id: {final1['run_id']}" in evidence.text
+    assert "source=bin: True" in evidence.text
+    assert "PSD/bar plot status:" in evidence.text
+    assert validation_evidence_completeness("attenuation_pair", evidence=evidence.text)["complete"] is True
+    missing_evidence = client.get(f"/ops/validation/drafts/attenuation/{session['session_id']}/missing_compare")
+    assert missing_evidence.status_code == 404
+    assert missing_evidence.json()["detail"]["error_code"] == "COMPARISON_NOT_FOUND"
     report_text = (base / "session_report.md").read_text(encoding="utf-8")
     assert "## Saved Comparisons" in report_text
     assert result["compare_id"] not in report_text

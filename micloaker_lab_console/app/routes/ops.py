@@ -10,9 +10,12 @@ from fastapi.responses import FileResponse, PlainTextResponse, RedirectResponse
 from ..services.lab_validation import (
     VALIDATION_GATE_EVIDENCE,
     VALIDATION_GATES,
+    attenuation_pair_evidence_from_comparison,
     daq_validation_evidence_from_run,
     ensure_validation_artifacts,
     list_validation_records,
+    mac_playback_evidence_from_run,
+    play_and_record_evidence_from_run,
     record_lab_validation,
     validation_evidence_template,
     validation_summary,
@@ -122,6 +125,33 @@ def daq_validation_draft_text(request: Request, session_id: str, run_id: str):
     )
 
 
+@router.get("/validation/drafts/mac/{session_id}/{run_id}")
+def mac_playback_validation_draft_text(request: Request, session_id: str, run_id: str):
+    try:
+        draft = mac_playback_evidence_from_run(request.app.state.settings.workspace, session_id, run_id)
+    except FileNotFoundError as exc:
+        raise _draft_not_found("RUN_NOT_FOUND", f"Run {run_id} was not found in session {session_id}.") from exc
+    return _draft_response(draft, session_id, run_id, "mac_playback")
+
+
+@router.get("/validation/drafts/play-and-record/{session_id}/{run_id}")
+def play_and_record_validation_draft_text(request: Request, session_id: str, run_id: str):
+    try:
+        draft = play_and_record_evidence_from_run(request.app.state.settings.workspace, session_id, run_id)
+    except FileNotFoundError as exc:
+        raise _draft_not_found("RUN_NOT_FOUND", f"Run {run_id} was not found in session {session_id}.") from exc
+    return _draft_response(draft, session_id, run_id, "play_and_record")
+
+
+@router.get("/validation/drafts/attenuation/{session_id}/{compare_id}")
+def attenuation_pair_validation_draft_text(request: Request, session_id: str, compare_id: str):
+    try:
+        draft = attenuation_pair_evidence_from_comparison(request.app.state.settings.workspace, session_id, compare_id)
+    except FileNotFoundError as exc:
+        raise _draft_not_found("COMPARISON_NOT_FOUND", f"Comparison {compare_id} was not found in session {session_id}.") from exc
+    return _draft_response(draft, session_id, compare_id, "attenuation_pair")
+
+
 @router.get("/validation/files/{filename}")
 def download_validation_file(request: Request, filename: str):
     if filename not in {"hardware_validation.jsonl", "hardware_validation_report.md", "hardware_validation_plan.txt"}:
@@ -211,3 +241,19 @@ def shutdown_console(request: Request):
 
 def _signal_self() -> None:
     os.kill(os.getpid(), signal.SIGINT)
+
+
+def _draft_response(draft: str, session_id: str, object_id: str, draft_type: str) -> PlainTextResponse:
+    filename = f"{safe_name(session_id)}_{safe_name(object_id)}_{draft_type}_evidence.txt"
+    return PlainTextResponse(draft, headers={"Content-Disposition": f'attachment; filename="{filename}"'})
+
+
+def _draft_not_found(error_code: str, message: str) -> HTTPException:
+    return HTTPException(
+        status_code=404,
+        detail={
+            "error_code": error_code,
+            "message": message,
+            "suggestion": "Open an existing run or comparison page before downloading validation evidence drafts.",
+        },
+    )
