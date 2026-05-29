@@ -25,3 +25,19 @@ document.querySelectorAll("[data-tabs]").forEach((tabs) => {
     });
   });
 });
+
+document.querySelectorAll('form[action="/ops/validation"]').forEach((form) => {
+  const gate = form.querySelector('select[name="gate"]');
+  const evidence = form.querySelector('textarea[name="evidence"]');
+  const preview = form.querySelector("#validation-checklist-preview");
+  if (!gate || !evidence || !preview) return;
+  const updateValidationHint = () => {
+    const selected = gate.options[gate.selectedIndex];
+    const checklist = selected?.dataset.checklist || "";
+    const hint = selected?.dataset.hint || "";
+    preview.value = checklist ? `Checklist fields: ${checklist}` : "";
+    evidence.placeholder = hint ? `${hint} Checklist fields: ${checklist}` : evidence.placeholder;
+  };
+  gate.addEventListener("change", updateValidationHint);
+  updateValidationHint();
+});

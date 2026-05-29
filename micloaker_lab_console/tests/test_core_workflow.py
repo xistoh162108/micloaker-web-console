@@ -1035,6 +1035,9 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert "Hardware Validation Records" in page.text
     assert "Evidence Hints" in page.text
     assert "Checklist fields" in page.text
+    assert "Checklist preview" in page.text
+    assert "data-checklist=" in page.text
+    assert "data-hint=" in page.text
     assert "expected vs written sample count" in page.text
     assert "DAQ channel/range/input mode" in page.text
     assert "macOS default output did not change" in page.text
@@ -1044,6 +1047,10 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert 'href="/mac-helper"' in page.text
     assert 'href="/compare"' in page.text
     assert "No physical validation records yet." in page.text
+    app_js = client.get("/static/js/app.js").text
+    assert "validation-checklist-preview" in app_js
+    assert "updateValidationHint" in app_js
+    assert "selected?.dataset.checklist" in app_js
 
     response = client.post(
         "/ops/validation",

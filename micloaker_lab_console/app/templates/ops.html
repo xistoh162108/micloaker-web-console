@@ -63,7 +63,7 @@ python scripts/console_control.py stop</pre>
     <label>Gate
       <select name="gate" required>
         {% for key, label in validation_gates.items() %}
-        <option value="{{ key }}">{{ label }}</option>
+        <option value="{{ key }}" data-hint="{{ validation_evidence_hints[key] }}" data-checklist="{{ validation.evidence_checklists[key]|join('; ') }}">{{ label }}</option>
         {% endfor %}
       </select>
     </label>
@@ -79,6 +79,7 @@ python scripts/console_control.py stop</pre>
     <label>Session ID <input name="session_id" placeholder="hardware_validation_YYYYMMDD"></label>
     <label>Run ID <input name="run_id" placeholder="optional run id"></label>
     <label>Helper URL <input name="helper_url" placeholder="http://100.x.y.z:5050"></label>
+    <label class="wide">Checklist preview <textarea id="validation-checklist-preview" rows="2" readonly></textarea></label>
     <label class="wide">Evidence <textarea name="evidence" rows="3" placeholder="Use the gate-specific evidence hints above. Include paths, IDs, measured values, and unresolved warnings."></textarea></label>
     <label class="wide">Notes <textarea name="notes" rows="3" placeholder="What was physically checked, what remains uncertain, or why this is only a warning."></textarea></label>
     <button class="btn btn-primary" type="submit">Save Validation Record</button>

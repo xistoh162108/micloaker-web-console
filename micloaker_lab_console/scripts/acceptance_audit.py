@@ -475,6 +475,8 @@ def main() -> int:
         "Evidence Hints",
         "Gate Evidence Checklist",
         "Checklist fields",
+        "Checklist preview",
+        "validation-checklist-preview",
         "selected device_id",
         "macOS default output did not change",
         "expected vs written sample count",
