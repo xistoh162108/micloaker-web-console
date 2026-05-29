@@ -47,12 +47,13 @@ python scripts/console_control.py stop</pre>
   <h3>Evidence Hints</h3>
   <div class="table-scroll">
   <table class="data-table dense">
-    <thead><tr><th>Gate</th><th>Record these details</th></tr></thead>
+    <thead><tr><th>Gate</th><th>Record these details</th><th>Checklist fields</th></tr></thead>
     <tbody>
       {% for key, label in validation_gates.items() %}
       <tr>
         <td>{{ label }}</td>
         <td>{{ validation_evidence_hints[key] }}</td>
+        <td>{{ validation.evidence_checklists[key]|join(", ") }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -91,7 +92,7 @@ python scripts/console_control.py stop</pre>
   <h3>Gate Status</h3>
   <div class="table-scroll">
   <table class="data-table">
-    <thead><tr><th>Gate</th><th>Status</th><th>Latest record</th><th>Session</th><th>Run</th><th>Next action</th><th>Expected evidence</th></tr></thead>
+    <thead><tr><th>Gate</th><th>Status</th><th>Latest record</th><th>Session</th><th>Run</th><th>Next action</th><th>Checklist</th><th>Expected evidence</th></tr></thead>
     <tbody>
       {% for gate in validation.gate_status %}
       <tr>
@@ -101,6 +102,7 @@ python scripts/console_control.py stop</pre>
         <td>{{ gate.session_id }}</td>
         <td>{{ gate.run_id }}</td>
         <td><a class="btn btn-outline" href="{{ gate.action.href }}">{{ gate.action.label }}</a></td>
+        <td>{{ gate.evidence_checklist|join(", ") }}</td>
         <td>{{ gate.evidence_hint }}</td>
       </tr>
       {% endfor %}

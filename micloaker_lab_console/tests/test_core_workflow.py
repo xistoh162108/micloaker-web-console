@@ -1032,8 +1032,11 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert page.status_code == 200
     assert "Hardware Validation Records" in page.text
     assert "Evidence Hints" in page.text
+    assert "Checklist fields" in page.text
     assert "expected vs written sample count" in page.text
+    assert "DAQ channel/range/input mode" in page.text
     assert "macOS default output did not change" in page.text
+    assert "selected device_id" in page.text
     assert "Next action" in page.text
     assert "Create DAQ validation run" in page.text
     assert 'href="/mac-helper"' in page.text
@@ -1070,8 +1073,11 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert status["summary"]["record_count"] == 1
     assert "evidence_hints" in status
     assert "evidence_hints" in status["summary"]
+    assert "evidence_checklists" in status["summary"]
     assert "expected vs written sample count" in status["summary"]["evidence_hints"]["daq_smoke"]
+    assert "raw .bin path" in status["summary"]["evidence_checklists"]["daq_smoke"]
     assert "evidence_hint" in status["summary"]["gate_status"][0]
+    assert "evidence_checklist" in status["summary"]["gate_status"][0]
     assert status["summary"]["gate_status"][0]["action"]["href"]
     assert status["summary"]["actions"]["mac_playback"]["href"] == "/mac-helper"
     assert status["summary"]["latest_by_gate"]["daq_smoke"]["status"] == "pass"

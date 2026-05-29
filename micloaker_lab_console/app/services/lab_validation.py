@@ -20,6 +20,13 @@ VALIDATION_GATE_EVIDENCE = {
     "attenuation_pair": "Record uj0/uj1 run IDs, compare JSON/CSV path, source=bin, band, attenuation dB, mismatch warnings, and PSD/bar plot status.",
     "legacy_parity": "Record legacy .bin fixture path, notebook/reference output, current metrics/plots, tolerance, and pass/not-applicable decision.",
 }
+VALIDATION_GATE_CHECKLIST = {
+    "daq_smoke": ["session_id", "run_id", "DAQ channel/range/input mode", "requested and actual sample rate", "expected vs written sample count", "raw .bin path", "run log/plot status"],
+    "mac_playback": ["Helper URL", "selected device_id", "WAV relative path", "sample rate/channels/gain", "validate-playback result", "play/stop result", "macOS default output unchanged"],
+    "play_and_record": ["validation run_id", "Helper validation result", "Play & Record mode", "DAQ raw .bin path", "finalization result", "peak/range WAV presence", "run log status"],
+    "attenuation_pair": ["uj0 run_id", "uj1 run_id", "compare JSON/CSV path", "source=bin", "band and attenuation dB", "mismatch warnings", "PSD/bar plot status"],
+    "legacy_parity": ["legacy .bin fixture path", "notebook/reference output", "current metrics/plots", "tolerance", "pass/not-applicable decision"],
+}
 VALIDATION_GATE_ACTIONS = {
     "daq_smoke": {"label": "Create DAQ validation run", "href": "/runs/new"},
     "mac_playback": {"label": "Open Mac Helper", "href": "/mac-helper"},
@@ -106,6 +113,7 @@ def validation_summary(workspace: Path) -> dict[str, Any]:
                 "gate_label": label,
                 "status": status,
                 "evidence_hint": VALIDATION_GATE_EVIDENCE[gate],
+                "evidence_checklist": VALIDATION_GATE_CHECKLIST[gate],
                 "action": VALIDATION_GATE_ACTIONS[gate],
                 "recorded_at": latest.get("recorded_at") or latest.get("ts") if latest else "",
                 "session_id": latest.get("session_id", "") if latest else "",
@@ -116,6 +124,7 @@ def validation_summary(workspace: Path) -> dict[str, Any]:
     return {
         "record_count": len(records),
         "evidence_hints": VALIDATION_GATE_EVIDENCE,
+        "evidence_checklists": VALIDATION_GATE_CHECKLIST,
         "actions": VALIDATION_GATE_ACTIONS,
         "latest_by_gate": latest_by_gate,
         "gate_status": gate_status,
