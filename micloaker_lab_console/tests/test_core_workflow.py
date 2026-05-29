@@ -1109,6 +1109,9 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert "Hardware Validation Gate Status" in readiness_report_download.text
     assert "Create DAQ validation run (/runs/new)" in readiness_report_download.text
     assert "Open Mac Helper (/mac-helper)" in readiness_report_download.text
+    assert "Checklist fields" in readiness_report_download.text
+    assert "selected device_id" in readiness_report_download.text
+    assert "raw .bin path" in readiness_report_download.text
     blocked_readiness_download = client.get("/ops/readiness/files/../app.log")
     assert blocked_readiness_download.status_code == 404
 

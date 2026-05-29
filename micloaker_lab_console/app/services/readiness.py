@@ -129,8 +129,8 @@ def _readiness_markdown(snapshot: dict[str, Any]) -> str:
             "",
             "## Hardware Validation Gate Status",
             "",
-            "| Gate | Status | Next action | Session | Run | Evidence hint |",
-            "|---|---|---|---|---|---|",
+            "| Gate | Status | Next action | Session | Run | Checklist fields | Evidence hint |",
+            "|---|---|---|---|---|---|---|",
         ])
         for gate in validation.get("gate_status", []):
             action = gate.get("action") or {}
@@ -138,12 +138,13 @@ def _readiness_markdown(snapshot: dict[str, Any]) -> str:
             if action.get("href"):
                 action_text = f"{action_text} ({action.get('href')})"
             lines.append(
-                "| {gate} | {status} | {action} | {session} | {run} | {hint} |".format(
+                "| {gate} | {status} | {action} | {session} | {run} | {checklist} | {hint} |".format(
                     gate=_md(gate.get("gate_label") or gate.get("gate")),
                     status=_md(gate.get("status")),
                     action=_md(action_text),
                     session=_md(gate.get("session_id")),
                     run=_md(gate.get("run_id")),
+                    checklist=_md(", ".join(str(item) for item in gate.get("evidence_checklist", []))),
                     hint=_md(gate.get("evidence_hint")),
                 )
             )
