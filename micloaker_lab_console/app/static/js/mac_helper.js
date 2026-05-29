@@ -1,19 +1,64 @@
 async function helperGet(path, targetId) {
   const output = document.getElementById(targetId);
-  const res = await fetch(path);
-  const data = await res.json();
-  output.textContent = JSON.stringify(data, null, 2);
-  return data;
+  try {
+    const res = await fetch(path);
+    const data = await res.json();
+    renderHelperResult(output, data, res.ok);
+    return data;
+  } catch (error) {
+    const data = { ok: false, error_code: "HELPER_REQUEST_FAILED", message: error?.message || String(error), suggestion: "Check the Helper URL and Tailscale/Mac Helper process, then retry." };
+    renderHelperResult(output, data, false);
+    return data;
+  }
 }
 
 async function helperPost(path, targetId, formData) {
   const output = document.getElementById(targetId);
   const options = { method: "POST" };
   if (formData) options.body = formData;
-  const res = await fetch(path, options);
-  const data = await res.json();
-  output.textContent = JSON.stringify(data, null, 2);
-  return data;
+  try {
+    const res = await fetch(path, options);
+    const data = await res.json();
+    renderHelperResult(output, data, res.ok);
+    return data;
+  } catch (error) {
+    const data = { ok: false, error_code: "HELPER_REQUEST_FAILED", message: error?.message || String(error), suggestion: "Check the Helper URL and Tailscale/Mac Helper process, then retry." };
+    renderHelperResult(output, data, false);
+    return data;
+  }
+}
+
+function renderHelperResult(output, data, httpOk) {
+  if (output) output.textContent = helperSummary(data);
+  if (!httpOk || data?.ok === false || data?.error_code || data?.detail?.error_code) {
+    window.alert(helperAlertMessage(data));
+  }
+}
+
+function helperSummary(data) {
+  if (!data) return "No response.";
+  const detail = data.detail || data;
+  const lines = [];
+  if (detail.ok !== undefined) lines.push(`Status: ${detail.ok ? "OK" : "Failed"}`);
+  if (detail.connected !== undefined) lines.push(`Connected: ${detail.connected ? "yes" : "no"}`);
+  if (detail.playing !== undefined) lines.push(`Playing: ${detail.playing ? "yes" : "no"}`);
+  if (detail.hostname) lines.push(`Host: ${detail.hostname}`);
+  if (detail.service) lines.push(`Service: ${detail.service}`);
+  if (detail.message) lines.push(`Message: ${detail.message}`);
+  if (detail.suggestion) lines.push(`Suggestion: ${detail.suggestion}`);
+  if (Array.isArray(detail.output_devices)) lines.push(`Output devices: ${detail.output_devices.length}`);
+  if (Array.isArray(detail.files)) lines.push(`Files: ${detail.files.length}`);
+  if (detail.file) lines.push(`File: ${detail.file}`);
+  if (detail.device_id !== undefined) lines.push(`Device ID: ${detail.device_id}`);
+  if (detail.sample_rate !== undefined) lines.push(`Sample rate: ${detail.sample_rate}`);
+  if (detail.play_id) lines.push(`Play ID: ${detail.play_id}`);
+  return lines.length ? lines.join("\n") : JSON.stringify(data, null, 2);
+}
+
+function helperAlertMessage(data) {
+  const detail = data?.detail || data || {};
+  const parts = [detail.error_code, detail.message, detail.suggestion].filter(Boolean);
+  return parts.join("\n\n") || "Mac Helper request failed.";
 }
 
 function setOptions(selectId, rows, valueKey, labelFn) {

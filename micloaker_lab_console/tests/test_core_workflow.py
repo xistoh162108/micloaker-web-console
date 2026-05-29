@@ -1249,6 +1249,13 @@ def test_uldaq_is_lazy_and_app_routes_smoke(tmp_path: Path, monkeypatch: pytest.
     assert "Lab Readiness" in ops_page.text
     assert "Workspace Text Files" in ops_page.text
     assert "disabled" in ops_page.text
+    assert "data-daq-health-alert" in ops_page.text
+    dashboard_page = client.get("/").text
+    assert "data-daq-health-alert" in dashboard_page
+    app_js = client.get("/static/js/app.js").text
+    assert 'fetch("/daq/health"' in app_js
+    assert "DAQ_UNAVAILABLE" in app_js
+    assert "window.alert(message)" in app_js
     readiness = client.get("/ops/readiness").json()
     assert readiness["ok"] is True
     assert readiness["summary"]["fail"] == 0
@@ -3212,6 +3219,11 @@ def test_mac_helper_page_contains_documented_playback_controls(tmp_path: Path, m
         "Mac Helper disconnected. Manual Linux-only recording and analysis remain available.",
     ]:
         assert text in page.text
+    helper_js = client.get("/static/js/mac_helper.js").text
+    assert "helperSummary" in helper_js
+    assert "helperAlertMessage" in helper_js
+    assert "window.alert(helperAlertMessage(data))" in helper_js
+    assert "JSON.stringify(data, null, 2)" in helper_js
 
 
 def test_mac_helper_page_displays_connected_status_and_passthrough_data(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

@@ -100,6 +100,42 @@ document.querySelectorAll('form[action="/ops/validation"]').forEach((form) => {
   updateValidationHint();
 });
 
+function structuredMessage(detail, fallback) {
+  let message = fallback || "Request failed";
+  if (typeof detail === "string") {
+    message = detail;
+  } else if (detail) {
+    const parts = [detail.error_code, detail.message, detail.suggestion].filter(Boolean);
+    message = parts.join("\n\n") || message;
+  }
+  return message;
+}
+
+document.querySelectorAll("[data-daq-health-alert]").forEach((button) => {
+  button.addEventListener("click", async () => {
+    button.disabled = true;
+    try {
+      const response = await fetch("/daq/health", { headers: { Accept: "application/json" } });
+      const data = await response.json();
+      const message = data.available
+        ? `DAQ ready\n\nBackend: ${data.backend || "unknown"}\n${data.message || ""}`.trim()
+        : structuredMessage(
+            {
+              error_code: data.error_code || "DAQ_UNAVAILABLE",
+              message: data.message || "DAQ hardware or driver is not available.",
+              suggestion: "Connect/configure DAQ hardware before real recording, or import a saved raw .bin file.",
+            },
+            "DAQ unavailable",
+          );
+      window.alert(message);
+    } catch (error) {
+      window.alert(`DAQ health check failed.\n\n${error?.message || error}`);
+    } finally {
+      button.disabled = false;
+    }
+  });
+});
+
 const plotDialog = document.createElement("div");
 plotDialog.className = "plot-modal";
 plotDialog.hidden = true;

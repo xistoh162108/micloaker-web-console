@@ -57,7 +57,7 @@
             <p><span class="badge {{ 'badge-success' if daq_status.available else 'badge-warning' }}">{{ "ready" if daq_status.available else "not connected" }}</span></p>
             <p>{{ daq_status.message or daq_status.backend }}</p>
             <div class="button-row">
-              <a class="btn btn-outline" href="/daq/health">DAQ Health</a>
+              <button class="btn btn-outline" type="button" data-daq-health-alert>DAQ Health</button>
               <a class="btn btn-outline" href="/runs/new{% if active_session %}?session_id={{ active_session.session_id }}{% endif %}">Edit Run Metadata</a>
             </div>
           </div>
