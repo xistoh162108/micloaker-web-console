@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import csv
+import importlib.util
 import json
 import os
 import subprocess
@@ -37,6 +38,14 @@ import app.routes.live as live_routes
 import app.routes.mac_helper as mac_helper_routes
 import app.services.tailscale as tailscale_module
 import app.services.daq as daq_module
+
+
+def load_console_control_module():
+    spec = importlib.util.spec_from_file_location("console_control", Path("scripts/console_control.py"))
+    assert spec and spec.loader
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def test_atomic_json_and_index_rebuild(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -121,6 +130,85 @@ def test_jsonl_reads_ignore_malformed_append_only_lines_and_startup_recovers(tmp
     assert load_run(tmp_path, session["session_id"], run["run_id"])["run_id"] == run["run_id"]
     jobs = read_jsonl(jobs_path)
     assert any(row.get("event") == "job_interrupted" and row.get("job_id") == "job_valid" for row in jobs)
+
+
+def test_console_control_restart_stops_then_starts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    console_control = load_console_control_module()
+    calls = []
+
+    def fake_stop(workspace: Path, *, timeout_s: float) -> int:
+        calls.append(("stop", workspace, timeout_s))
+        return 0
+
+    def fake_start(workspace: Path, host: str, port: int, *, allow_web_shutdown: bool, reload: bool) -> int:
+        calls.append(("start", workspace, host, port, allow_web_shutdown, reload))
+        return 0
+
+    monkeypatch.setattr(console_control, "stop_console", fake_stop)
+    monkeypatch.setattr(console_control, "start_console", fake_start)
+
+    result = console_control.restart_console(tmp_path, "100.88.179.43", 8000, allow_web_shutdown=True, reload=False, timeout_s=3.0)
+
+    assert result == 0
+    assert calls == [
+        ("stop", tmp_path, 3.0),
+        ("start", tmp_path, "100.88.179.43", 8000, True, False),
+    ]
+
+
+def test_console_control_restart_aborts_if_stop_fails(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    console_control = load_console_control_module()
+    calls = []
+
+    def fake_stop(workspace: Path, *, timeout_s: float) -> int:
+        calls.append(("stop", workspace, timeout_s))
+        return 1
+
+    def fake_start(*args, **kwargs) -> int:
+        calls.append(("start", args, kwargs))
+        return 0
+
+    monkeypatch.setattr(console_control, "stop_console", fake_stop)
+    monkeypatch.setattr(console_control, "start_console", fake_start)
+
+    result = console_control.restart_console(tmp_path, "127.0.0.1", 8000, allow_web_shutdown=False, reload=False, timeout_s=0.1)
+
+    assert result == 1
+    assert calls == [("stop", tmp_path, 0.1)]
+
+
+def test_console_control_restart_preserves_saved_mode_by_default(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    console_control = load_console_control_module()
+    calls = []
+    state_dir = tmp_path / ".micloaker"
+    state_dir.mkdir()
+    console_control._write_console_state(
+        state_dir / "console_state.json",
+        host="100.88.179.43",
+        port=9000,
+        workspace=tmp_path,
+        log_file=state_dir / "console_server.log",
+        allow_web_shutdown=True,
+        reload=False,
+    )
+
+    def fake_stop(workspace: Path, *, timeout_s: float) -> int:
+        calls.append(("stop", workspace, timeout_s))
+        return 0
+
+    def fake_start(workspace: Path, host: str, port: int, *, allow_web_shutdown: bool, reload: bool) -> int:
+        calls.append(("start", workspace, host, port, allow_web_shutdown, reload))
+        return 0
+
+    monkeypatch.setattr(console_control, "stop_console", fake_stop)
+    monkeypatch.setattr(console_control, "start_console", fake_start)
+    monkeypatch.setattr(console_control.sys, "argv", ["console_control.py", "restart", "--workspace", str(tmp_path)])
+
+    assert console_control.main() == 0
+    assert calls == [
+        ("stop", tmp_path, 10.0),
+        ("start", tmp_path, "100.88.179.43", 9000, True, False),
+    ]
 
 
 def test_startup_rebuild_skips_malformed_scanned_json_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

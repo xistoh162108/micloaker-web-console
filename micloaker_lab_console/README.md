@@ -124,6 +124,7 @@ Use this when you will connect by SSH port forwarding:
 ```bash
 .venv/bin/python scripts/console_control.py start
 .venv/bin/python scripts/console_control.py status
+.venv/bin/python scripts/console_control.py restart
 .venv/bin/python scripts/console_control.py stop
 ```
 
@@ -145,6 +146,7 @@ Use this only on a trusted Tailnet:
 
 ```bash
 .venv/bin/python scripts/console_control.py start --tailscale --allow-web-shutdown
+.venv/bin/python scripts/console_control.py restart --tailscale --allow-web-shutdown
 ```
 
 This binds to the Linux `tailscale0` IPv4 address. Example:
@@ -161,7 +163,7 @@ ip -br addr show tailscale0
 .venv/bin/python scripts/console_control.py status --tailscale
 ```
 
-If the server is listening on `127.0.0.1:8000`, Tailscale direct access will not work. Restart with `--tailscale`.
+If the server is listening on `127.0.0.1:8000`, Tailscale direct access will not work. Restart with `scripts/console_control.py restart --tailscale --allow-web-shutdown`.
 
 ### Linux desktop launchers
 
@@ -173,7 +175,7 @@ Install Start/Stop/Status launchers on `~/Desktop`:
 
 The launchers use the same safe control script. The Start launcher uses Tailscale mode.
 
-Stop a foreground console with `Ctrl+C`. On restart, the app rebuilds session/run lists from workspace text files.
+Stop a foreground console with `Ctrl+C`. Use `scripts/console_control.py restart` after code changes; by default it reuses the last saved host, port, and web-shutdown mode. On restart, the app rebuilds session/run lists from workspace text files.
 
 ### Ops page
 

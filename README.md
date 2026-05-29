@@ -65,6 +65,7 @@ Safe localhost mode:
 ```bash
 .venv/bin/python scripts/console_control.py start
 .venv/bin/python scripts/console_control.py status
+.venv/bin/python scripts/console_control.py restart
 .venv/bin/python scripts/console_control.py stop
 ```
 
@@ -72,6 +73,7 @@ Trusted Tailscale mode:
 
 ```bash
 .venv/bin/python scripts/console_control.py start --tailscale --allow-web-shutdown
+.venv/bin/python scripts/console_control.py restart --tailscale --allow-web-shutdown
 ```
 
 Example URL:

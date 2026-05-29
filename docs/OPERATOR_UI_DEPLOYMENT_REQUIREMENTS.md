@@ -49,7 +49,7 @@ The app is a temporary lab tool, not an always-on daemon. It must be easy and sa
 
 Required Linux controls:
 
-- Command-line start/status/stop script.
+- Command-line start/status/restart/stop script.
 - PID file and server log under `workspace/.micloaker/`.
 - Default safe local mode remains `127.0.0.1`.
 - Explicit Tailscale mode must bind to the `tailscale0` IPv4 address for direct Tailnet browser access.
@@ -62,7 +62,7 @@ Required Linux controls:
 
 Required Mac Helper controls:
 
-- Command-line start/status/stop script.
+- Command-line start/status/restart/stop script.
 - Finder double-click launchers:
   - Start
   - Status

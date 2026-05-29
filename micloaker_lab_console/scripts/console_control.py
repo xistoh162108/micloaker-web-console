@@ -23,7 +23,7 @@ DEFAULT_PORT = 8000
 def main() -> int:
     parser = argparse.ArgumentParser(description="Manage the local MiCloaker Lab Console server.")
     sub = parser.add_subparsers(dest="command", required=True)
-    for name in ["start", "status", "stop"]:
+    for name in ["start", "status", "stop", "restart"]:
         p = sub.add_parser(name)
         p.add_argument("--workspace", default="workspace")
         p.add_argument("--host", default=DEFAULT_HOST)
@@ -33,18 +33,26 @@ def main() -> int:
     start.add_argument("--allow-web-shutdown", action="store_true", help="Enable the /ops Stop Console button for this process.")
     start.add_argument("--reload", action="store_true", help="Start uvicorn with reload for development only.")
     sub.choices["stop"].add_argument("--timeout", type=float, default=10.0)
+    restart = sub.choices["restart"]
+    restart.add_argument("--allow-web-shutdown", action=argparse.BooleanOptionalAction, default=None, help="Enable or disable the /ops Stop Console button after restart.")
+    restart.add_argument("--reload", action=argparse.BooleanOptionalAction, default=None, help="Restart uvicorn with reload for development only.")
+    restart.add_argument("--timeout", type=float, default=10.0)
     args = parser.parse_args()
 
     workspace = (ROOT / args.workspace).resolve() if not Path(args.workspace).is_absolute() else Path(args.workspace).resolve()
+    saved = _read_console_state(workspace)
     host = _tailscale_ipv4() if args.tailscale else args.host
-    if args.command == "status" and not args.tailscale and args.host == DEFAULT_HOST and args.port == DEFAULT_PORT:
-        saved = _read_console_state(workspace)
+    if args.command in {"status", "restart"} and not args.tailscale and args.host == DEFAULT_HOST and args.port == DEFAULT_PORT:
         host = str(saved.get("host", host))
         args.port = int(saved.get("port", args.port))
     if args.command == "start":
         return start_console(workspace, host, args.port, allow_web_shutdown=args.allow_web_shutdown, reload=args.reload)
     if args.command == "stop":
         return stop_console(workspace, timeout_s=args.timeout)
+    if args.command == "restart":
+        allow_web_shutdown = bool(saved.get("allow_web_shutdown", False)) if args.allow_web_shutdown is None else args.allow_web_shutdown
+        reload = bool(saved.get("reload", False)) if args.reload is None else args.reload
+        return restart_console(workspace, host, args.port, allow_web_shutdown=allow_web_shutdown, reload=reload, timeout_s=args.timeout)
     return status_console(workspace, host, args.port)
 
 
@@ -75,12 +83,28 @@ def start_console(workspace: Path, host: str, port: int, *, allow_web_shutdown: 
     with log_file.open("ab") as log:
         proc = subprocess.Popen(cmd, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
     pid_file.write_text(str(proc.pid) + "\n", encoding="utf-8")
-    _write_console_state(micloaker / "console_state.json", host=host, port=port, workspace=workspace, log_file=log_file)
+    _write_console_state(
+        micloaker / "console_state.json",
+        host=host,
+        port=port,
+        workspace=workspace,
+        log_file=log_file,
+        allow_web_shutdown=allow_web_shutdown,
+        reload=reload,
+    )
     print(f"Started MiCloaker Lab Console PID {proc.pid}")
     print(f"URL: http://{host}:{port}")
     print(f"Workspace: {workspace}")
     print(f"Log: {log_file}")
     return 0
+
+
+def restart_console(workspace: Path, host: str, port: int, *, allow_web_shutdown: bool, reload: bool, timeout_s: float) -> int:
+    stop_status = stop_console(workspace, timeout_s=timeout_s)
+    if stop_status != 0:
+        print("Restart aborted because the previous console process did not stop cleanly.")
+        return stop_status
+    return start_console(workspace, host, port, allow_web_shutdown=allow_web_shutdown, reload=reload)
 
 
 def stop_console(workspace: Path, *, timeout_s: float) -> int:
@@ -102,6 +126,11 @@ def stop_console(workspace: Path, *, timeout_s: float) -> int:
             return 0
         time.sleep(0.2)
     os.kill(pid, signal.SIGTERM)
+    time.sleep(0.5)
+    if not _process_alive(pid):
+        pid_file.unlink(missing_ok=True)
+        print(f"Stopped MiCloaker Lab Console PID {pid} after SIGTERM.")
+        return 0
     print(f"Console PID {pid} did not stop after {timeout_s:g}s; sent SIGTERM.")
     return 1
 
@@ -136,13 +165,24 @@ def _read_console_state(workspace: Path) -> dict[str, object]:
         return {}
 
 
-def _write_console_state(path: Path, *, host: str, port: int, workspace: Path, log_file: Path) -> None:
+def _write_console_state(
+    path: Path,
+    *,
+    host: str,
+    port: int,
+    workspace: Path,
+    log_file: Path,
+    allow_web_shutdown: bool,
+    reload: bool,
+) -> None:
     state = {
         "host": host,
         "port": port,
         "url": f"http://{host}:{port}",
         "workspace": str(workspace),
         "log_file": str(log_file),
+        "allow_web_shutdown": allow_web_shutdown,
+        "reload": reload,
         "updated_at_epoch": time.time(),
     }
     tmp = path.with_suffix(".json.tmp")
