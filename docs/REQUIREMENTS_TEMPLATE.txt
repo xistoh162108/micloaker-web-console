@@ -10,6 +10,10 @@ soundfile
 pydantic
 pytest
 httpx
+playwright
+
+# Browser install for visual UI smoke checks:
+# python -m playwright install chromium
 
 # Optional real DAQ dependency; install only on the DAQ Linux machine if needed.
 # uldaq
