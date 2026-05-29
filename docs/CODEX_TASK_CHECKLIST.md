@@ -31,6 +31,7 @@ Status language:
 - [x] Implement Linux Mac Helper client and UI. Automated evidence complete.
 - [x] Add tests. Automated evidence complete.
 - [x] Run tests. Latest recorded result: `146 passed`.
+- [x] Run Playwright UI smoke. Latest recorded scope covers dashboard, sessions, new-run, compare, Mac Helper, Ops, and Live screens at desktop/mobile viewports for horizontal overflow and control overlap.
 
 ## Do not forget
 

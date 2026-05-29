@@ -12,12 +12,14 @@ Run from `micloaker_lab_console/`:
 .venv/bin/pytest -q
 .venv/bin/python scripts/acceptance_audit.py
 .venv/bin/python scripts/lab_readiness_check.py --check-server --server-url http://100.88.179.43:8000 --write-report
+.venv/bin/python scripts/playwright_ui_smoke.py http://100.88.179.43:8000
 ```
 
 Expected automated state as of this audit:
 
 - Full test suite: `146 passed`
 - Acceptance audit: `PASS`
+- Playwright UI smoke: dashboard, sessions, new-run, compare, Mac Helper, Ops, and Live screens pass desktop/mobile horizontal overflow and control-overlap checks.
 - Tailscale lab console validation route: `http://100.88.179.43:8000` returns HTTP 200 when started explicitly with `--tailscale`
 - Default configured bind remains `127.0.0.1`
 
