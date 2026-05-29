@@ -45,6 +45,7 @@ The Linux Dashboard is the primary one-screen command center. Routine experiment
 - Capture And Live Preview: quick run metadata, mock/DAQ capture buttons, waveform, RMS/peak, clipping, PSD, spectrogram, and finalization status.
 - Results, Compare, Export: latest run, latest comparison, latest finalized plots/audio/metrics, and ZIP exports.
 - Recent Runs and Operations: fast run access, readiness checks, logs, and safe stop controls.
+- Hardware Validation Records: operator-entered DAQ/Mac/play-and-record/attenuation evidence saved under `workspace/.micloaker/`.
 
 ## Quick Linux Console Setup
 

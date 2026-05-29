@@ -40,6 +40,7 @@ REQUIRED_PATHS = [
     "app/services/text_store.py",
     "app/services/export_zip.py",
     "app/services/jobs.py",
+    "app/services/lab_validation.py",
     "app/services/live_monitor.py",
     "app/services/mac_helper_client.py",
     "app/services/readiness.py",
@@ -396,6 +397,7 @@ def main() -> int:
         "Linux desktop launcher",
         "Finder double-click launchers",
         "/ops/readiness",
+        "Hardware Validation Records",
         "GitHub Delivery",
     ]
     missing_operator_terms = [term for term in operator_terms if term not in operator_ui_doc]
@@ -409,6 +411,7 @@ def main() -> int:
         "End-to-End Play And Record Trial",
         "Attenuation Pair Check",
         "Pass/Fail Decision",
+        "hardware_validation.jsonl",
     ]
     missing_hardware_protocol_terms = [term for term in hardware_protocol_terms if term not in hardware_protocol]
     checks.append(report(not missing_hardware_protocol_terms, "hardware validation protocol documents physical lab gates"))
@@ -489,7 +492,8 @@ def main() -> int:
 
             readiness_response = TestClient(app).get("/ops/readiness")
             readiness = readiness_response.json()
-            checks.append(report(readiness_response.status_code == 200 and readiness.get("summary", {}).get("fail") == 0 and any(row.get("key") == "workspace_text_files" for row in readiness.get("checks", [])), "Ops readiness JSON reports lab pre-checks"))
+            readiness_keys = {row.get("key") for row in readiness.get("checks", [])}
+            checks.append(report(readiness_response.status_code == 200 and readiness.get("summary", {}).get("fail") == 0 and {"workspace_text_files", "hardware_validation_records"} <= readiness_keys, "Ops readiness JSON reports lab pre-checks"))
             ok, failures = audit_mock_workflow(temp_root)
             checks.append(report(ok, "mock workflow records, finalizes, labels, plots, and exports"))
             for failure in failures:

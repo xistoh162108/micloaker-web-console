@@ -4,9 +4,10 @@ import os
 import signal
 import threading
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
+from ..services.lab_validation import VALIDATION_GATES, list_validation_records, record_lab_validation, validation_summary
 from ..services.readiness import lab_readiness
 from ..services.recorder import recording_status
 from ..services.text_store import append_app_event
@@ -18,6 +19,7 @@ router = APIRouter(prefix="/ops", tags=["ops"])
 def ops_page(request: Request):
     settings = request.app.state.settings
     readiness = lab_readiness(settings)
+    validation = validation_summary(settings.workspace)
     return request.app.state.templates.TemplateResponse(
         name="ops.html",
         request=request,
@@ -28,6 +30,8 @@ def ops_page(request: Request):
             "allow_web_shutdown": settings.allow_web_shutdown,
             "recording_status": recording_status(),
             "readiness": readiness,
+            "validation_gates": VALIDATION_GATES,
+            "validation": validation,
         },
     )
 
@@ -35,6 +39,53 @@ def ops_page(request: Request):
 @router.get("/readiness")
 def readiness_status(request: Request):
     return lab_readiness(request.app.state.settings)
+
+
+@router.get("/validation")
+def validation_status(request: Request):
+    workspace = request.app.state.settings.workspace
+    return {
+        "ok": True,
+        "gates": VALIDATION_GATES,
+        "summary": validation_summary(workspace),
+        "records": list_validation_records(workspace),
+    }
+
+
+@router.post("/validation")
+def save_validation_record(
+    request: Request,
+    gate: str = Form(...),
+    status: str = Form(...),
+    operator: str = Form(""),
+    session_id: str = Form(""),
+    run_id: str = Form(""),
+    helper_url: str = Form(""),
+    evidence: str = Form(""),
+    notes: str = Form(""),
+):
+    try:
+        record_lab_validation(
+            request.app.state.settings.workspace,
+            gate=gate,
+            status=status,
+            operator=operator,
+            session_id=session_id,
+            run_id=run_id,
+            helper_url=helper_url,
+            evidence=evidence,
+            notes=notes,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "error_code": "INVALID_VALIDATION_RECORD",
+                "message": str(exc),
+                "suggestion": "Choose one of the listed validation gates and pass/warn/fail statuses.",
+            },
+        ) from exc
+    return RedirectResponse("/ops#hardware-validation", status_code=303)
 
 
 @router.post("/shutdown")

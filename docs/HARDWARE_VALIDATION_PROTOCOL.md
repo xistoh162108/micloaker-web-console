@@ -28,6 +28,15 @@ Required evidence:
 - Mac Helper warning is understood if Linux-only workflow is planned.
 - Server is reachable through the intended access path: SSH tunnel or explicit Tailscale bind.
 
+Record physical validation evidence in `/ops` under **Hardware Validation Records**. The console saves these operator-entered records to:
+
+```text
+workspace/.micloaker/hardware_validation.jsonl
+workspace/.micloaker/hardware_validation_report.md
+```
+
+Use one record per gate: DAQ smoke capture, Mac Helper playback validation, play-and-record trial, attenuation pair check, and optional legacy notebook parity check.
+
 ## 2. Linux DAQ Smoke Capture
 
 Use a short, low-risk DAQ run before the real experiment.
@@ -46,6 +55,7 @@ Required evidence:
 - DAQ channel/range/input mode in run JSON match the physical wiring.
 - Run log has no traceback.
 - Waveform, PSD, and spectrogram plots are present as PNG/SVG.
+- `/ops` Hardware Validation Records contains a DAQ smoke entry with the session/run IDs and sample-count evidence.
 
 Do not reuse a failed raw `.bin` filename. Create a new run after DAQ wiring or driver changes.
 
@@ -71,6 +81,7 @@ Required evidence:
 - Playback uses the selected `device_id`.
 - Helper status shows playback start/stop state correctly.
 - The run JSON/log records Helper validation or playback details when using run-level controls.
+- `/ops` Hardware Validation Records contains a Mac playback entry with the selected `device_id`, Helper URL, validation result, and physical routing notes.
 
 ## 4. End-to-End Play And Record Trial
 
@@ -91,6 +102,7 @@ Required evidence:
 - Peak WAV is labeled listening preview only.
 - Range WAV is labeled cross-check only.
 - Log files show play, record, finalization, and stop/failure state clearly.
+- `/ops` Hardware Validation Records contains a play-and-record entry with the run ID and finalization evidence.
 
 ## 5. Attenuation Pair Check
 
@@ -108,6 +120,7 @@ Required evidence:
 - `source = "bin"` and result grade is report-grade.
 - The attenuation formula and band are visible in the saved result.
 - Any acquisition mismatch warning is understood before proceeding.
+- `/ops` Hardware Validation Records contains an attenuation-pair entry with the comparison file path and pass/warn/fail decision.
 
 ## 6. Pass/Fail Decision
 

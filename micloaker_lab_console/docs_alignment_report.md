@@ -66,6 +66,7 @@ Most recent observed results:
 | README and dependency files | Proven | `README.md`, `requirements.txt`, `requirements-mac-helper.txt`, `mac_helper/README.md`. |
 | Hardware validation protocol | Proven as documented protocol | `../docs/HARDWARE_VALIDATION_PROTOCOL.md` defines the DAQ smoke capture, Mac Helper playback validation, play-and-record trial, attenuation pair check, and pass/fail evidence. Physical execution remains lab work. |
 | Safe start/stop operation | Proven for local controls | `scripts/console_control.py`, `/ops`, Linux desktop launcher installer, and Mac Helper control scripts provide explicit start/status/stop flows. |
+| Hardware validation evidence capture | Proven for text persistence | `/ops` records operator-entered DAQ/Mac/play-and-record/attenuation validation evidence to `workspace/.micloaker/hardware_validation.jsonl` and `hardware_validation_report.md`; physical execution remains lab work. |
 | Tests without DAQ/Mac Helper | Proven | Full suite passes without physical DAQ or Mac Helper service. |
 
 ## Legacy Reference Alignment

@@ -5,6 +5,7 @@ from typing import Any
 
 from ..config import DEFAULT_HOST, Settings
 from .daq import daq_health
+from .lab_validation import validation_summary
 from .mac_helper_client import MacHelperClient
 from .recorder import recording_status
 from .text_store import read_json_or_default
@@ -24,6 +25,7 @@ def lab_readiness(settings: Settings) -> dict[str, Any]:
     daq = daq_health()
     recording = recording_status()
     helper = MacHelperClient(mac_helper_url, mac_helper_token, timeout_s=1.5).health()
+    validation = validation_summary(workspace)
     checks = [
         _bind_check(settings.host, settings.port),
         _workspace_check(workspace),
@@ -52,6 +54,15 @@ def lab_readiness(settings: Settings) -> dict[str, Any]:
             "label": "Web Shutdown",
             "level": "PASS" if settings.allow_web_shutdown else "WARN",
             "message": "Enabled for this trusted lab process." if settings.allow_web_shutdown else "Disabled; use scripts/console_control.py stop.",
+        },
+        {
+            "key": "hardware_validation_records",
+            "label": "Hardware Validation Records",
+            "level": "PASS" if validation["record_count"] else "WARN",
+            "message": f"{validation['record_count']} physical validation record(s) saved in workspace/.micloaker/."
+            if validation["record_count"]
+            else "No physical validation records saved yet; use /ops before report-grade hardware experiments.",
+            "details": validation,
         },
     ]
     summary = _summary(checks)

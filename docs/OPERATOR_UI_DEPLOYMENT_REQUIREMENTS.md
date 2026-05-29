@@ -55,6 +55,7 @@ Required Linux controls:
 - `/ops` must show bind address, workspace, recording state, and shutdown availability.
 - `/ops` must show Lab Readiness checks for bind mode, workspace text files, recording lock, DAQ backend, Mac Helper, and web shutdown.
 - `/ops/readiness` must expose the same readiness summary as JSON for quick Tailnet/CLI checks.
+- `/ops` must provide Hardware Validation Records so physical DAQ, Mac playback, play-and-record, attenuation-pair, and legacy-parity evidence can be saved as workspace text files.
 - Linux desktop launcher installation should provide Start/Status/Stop launchers for GUI use.
 
 Required Mac Helper controls:

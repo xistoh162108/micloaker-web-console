@@ -979,6 +979,54 @@ def test_uldaq_is_lazy_and_app_routes_smoke(tmp_path: Path, monkeypatch: pytest.
     assert client.get("/recording/status").json()["active"] is False
 
 
+def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("MICLOAKER_WORKSPACE", str(tmp_path))
+    app = create_app()
+    client = TestClient(app)
+
+    page = client.get("/ops")
+    assert page.status_code == 200
+    assert "Hardware Validation Records" in page.text
+    assert "No physical validation records yet." in page.text
+
+    response = client.post(
+        "/ops/validation",
+        data={
+            "gate": "daq_smoke",
+            "status": "pass",
+            "operator": "lab-op",
+            "session_id": "hardware_validation_20260529",
+            "run_id": "260529-DAQ-smoke",
+            "evidence": "written_samples matched expected duration; no traceback",
+            "notes": "DAQ channel 0 BIP10VOLTS verified.",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    assert response.headers["location"] == "/ops#hardware-validation"
+
+    records = read_jsonl(tmp_path / ".micloaker" / "hardware_validation.jsonl")
+    assert records[-1]["event"] == "hardware_validation_recorded"
+    assert records[-1]["gate"] == "daq_smoke"
+    assert records[-1]["status"] == "pass"
+    assert records[-1]["run_id"] == "260529-DAQ-smoke"
+    report = (tmp_path / ".micloaker" / "hardware_validation_report.md").read_text(encoding="utf-8")
+    assert "MiCloaker Hardware Validation Records" in report
+    assert "Linux DAQ smoke capture" in report
+    assert "written_samples matched expected duration" in report
+
+    status = client.get("/ops/validation").json()
+    assert status["summary"]["record_count"] == 1
+    assert status["summary"]["latest_by_gate"]["daq_smoke"]["status"] == "pass"
+    readiness = client.get("/ops/readiness").json()
+    validation_check = [check for check in readiness["checks"] if check["key"] == "hardware_validation_records"][0]
+    assert validation_check["level"] == "PASS"
+
+    bad = client.post("/ops/validation", data={"gate": "bad_gate", "status": "pass"})
+    assert bad.status_code == 400
+    assert bad.json()["detail"]["error_code"] == "INVALID_VALIDATION_RECORD"
+
+
 def test_new_run_page_can_create_and_record_daq_failure_metadata(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("MICLOAKER_WORKSPACE", str(tmp_path))
     ensure_workspace(tmp_path)

@@ -180,10 +180,18 @@ Open `/ops` in the web UI to see:
 - recording state
 - whether web shutdown is enabled
 - Lab Readiness checks for bind mode, workspace text files, recording lock, DAQ backend, Mac Helper, and web shutdown
+- Hardware Validation Records for physical DAQ, Mac playback, play-and-record, attenuation-pair, and legacy-parity evidence
 
 The Stop Console button is only enabled when the process was started with `--allow-web-shutdown`. It refuses shutdown while recording is active.
 
 `/ops/readiness` returns the same readiness summary as JSON for quick checks from another Tailnet device.
+
+Hardware validation records are saved as text files:
+
+```text
+workspace/.micloaker/hardware_validation.jsonl
+workspace/.micloaker/hardware_validation_report.md
+```
 
 ## Live Monitor
 

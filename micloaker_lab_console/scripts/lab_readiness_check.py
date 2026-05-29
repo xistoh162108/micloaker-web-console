@@ -17,6 +17,7 @@ if str(ROOT) not in sys.path:
 
 from app.config import DEFAULT_HOST, DEFAULT_PORT, get_settings  # noqa: E402
 from app.services.daq import daq_health  # noqa: E402
+from app.services.lab_validation import validation_summary  # noqa: E402
 from app.services.mac_helper_client import MacHelperClient  # noqa: E402
 from app.services.text_store import read_json_or_default  # noqa: E402
 
@@ -39,6 +40,7 @@ def main() -> int:
     _check_default_bind(findings, settings.host)
     _check_no_database(findings)
     _check_workspace(findings, settings.workspace)
+    _check_validation_records(findings, settings.workspace)
     _check_daq(findings)
     helper_config = _check_helper_config(findings, settings.workspace)
     if args.check_helper:
@@ -95,6 +97,15 @@ def _check_workspace(findings: list[tuple[str, str, str]], workspace: Path) -> N
         findings.append(("WARN", "workspace_initialized", "Workspace is not fully initialized yet: " + ", ".join(rel)))
     else:
         findings.append(("PASS", "workspace_initialized", f"Workspace text-file structure exists at {workspace}."))
+
+
+def _check_validation_records(findings: list[tuple[str, str, str]], workspace: Path) -> None:
+    summary = validation_summary(workspace)
+    count = summary["record_count"]
+    if count:
+        findings.append(("PASS", "hardware_validation_records", f"{count} physical validation record(s) saved."))
+    else:
+        findings.append(("WARN", "hardware_validation_records", "No physical validation records saved yet; record evidence in /ops before report-grade hardware experiments."))
 
 
 def _check_daq(findings: list[tuple[str, str, str]]) -> None:

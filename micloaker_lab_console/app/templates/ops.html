@@ -40,6 +40,56 @@ python scripts/console_control.py stop</pre>
   </div>
   </div>
 </section>
+<section id="hardware-validation" class="card">
+  <div class="card-body">
+  <h2 class="card-title">Hardware Validation Records</h2>
+  <p class="muted">Record physical DAQ, Mac playback, play-and-record, attenuation-pair, and legacy-parity evidence here. Records are saved as JSONL and Markdown under <code>workspace/.micloaker/</code>.</p>
+  <form method="post" action="/ops/validation" class="grid-form">
+    <label>Gate
+      <select name="gate" required>
+        {% for key, label in validation_gates.items() %}
+        <option value="{{ key }}">{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Status
+      <select name="status" required>
+        <option value="pass">pass</option>
+        <option value="warn">warn</option>
+        <option value="fail">fail</option>
+      </select>
+    </label>
+    <label>Operator <input name="operator" placeholder="name or initials"></label>
+    <label>Session ID <input name="session_id" placeholder="hardware_validation_YYYYMMDD"></label>
+    <label>Run ID <input name="run_id" placeholder="optional run id"></label>
+    <label>Helper URL <input name="helper_url" placeholder="http://100.x.y.z:5050"></label>
+    <label class="wide">Evidence <textarea name="evidence" rows="3" placeholder="DAQ sample count, device_id, validate-playback response, compare JSON path, exported ZIP path"></textarea></label>
+    <label class="wide">Notes <textarea name="notes" rows="3" placeholder="What was physically checked, what remains uncertain, or why this is only a warning."></textarea></label>
+    <button class="btn btn-primary" type="submit">Save Validation Record</button>
+  </form>
+  <div class="button-row">
+    <a class="btn btn-outline" href="/ops/validation">Validation JSON</a>
+  </div>
+  <p class="muted">Markdown report: <code>{{ validation.report_path }}</code></p>
+  <table class="data-table">
+    <thead><tr><th>Time</th><th>Gate</th><th>Status</th><th>Session</th><th>Run</th><th>Evidence</th></tr></thead>
+    <tbody>
+      {% for record in validation.latest %}
+      <tr>
+        <td>{{ record.recorded_at or record.ts }}</td>
+        <td>{{ record.gate_label }}</td>
+        <td><span class="badge {% if record.status == 'pass' %}badge-success{% elif record.status == 'warn' %}badge-warning{% else %}badge-error{% endif %}">{{ record.status }}</span></td>
+        <td>{{ record.session_id }}</td>
+        <td>{{ record.run_id }}</td>
+        <td>{{ record.evidence }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">No physical validation records yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</section>
 <section class="card">
   <div class="card-body">
   <h2 class="card-title">Lab Readiness</h2>
