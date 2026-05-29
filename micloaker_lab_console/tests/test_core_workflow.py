@@ -15,6 +15,7 @@ import numpy as np
 import pytest
 from fastapi.testclient import TestClient
 
+from app.config import Settings
 from app.services.analyzer import analyze_bin, auto_pair_runs, compare_metrics, compare_runs
 from app.services.converter import PEAK_WAV_HEADROOM, convert_bin_to_wav, peak_wav_name, range_wav_name
 from app.main import create_app
@@ -24,6 +25,7 @@ from app.services.lab_validation import record_lab_validation
 from app.services.mac_helper_client import MacHelperClient
 from app.services.metadata import create_run_metadata, create_session, load_run, load_runs, rebuild_indexes, regenerate_summary, save_run
 from app.services.recorder import RecordingBusyError, _recording_lock, finalize_run, import_bin_and_finalize, record_daq_and_finalize, record_mock_and_finalize, recording_status, validate_raw_bin_source
+from app.services.readiness import write_readiness_artifacts
 from app.services.tailscale import discover_helpers
 from app.services.text_store import append_app_event, append_jsonl, atomic_write_json, atomic_write_text, ensure_workspace, read_json, read_jsonl, session_dir, write_csv
 import app.main as main_module
@@ -718,6 +720,7 @@ def test_session_zip_includes_hardware_validation_records(tmp_path: Path):
         run_id="daq_smoke_run",
         evidence="DAQ sample count and channel verified.",
     )
+    write_readiness_artifacts(Settings(workspace=tmp_path))
 
     session_zip = make_session_zip(tmp_path, session["session_id"], tmp_path / "validation_session.zip")
     with zipfile.ZipFile(session_zip) as zf:
@@ -725,11 +728,16 @@ def test_session_zip_includes_hardware_validation_records(tmp_path: Path):
         manifest = json.loads(zf.read(f"{session['session_id']}/export_manifest.json"))
         records = zf.read(f"{session['session_id']}/ops_validation/hardware_validation.jsonl").decode("utf-8")
         report = zf.read(f"{session['session_id']}/ops_validation/hardware_validation_report.md").decode("utf-8")
+        readiness_report = zf.read(f"{session['session_id']}/ops_validation/lab_readiness_report.md").decode("utf-8")
     assert f"{session['session_id']}/ops_validation/hardware_validation.jsonl" in names
     assert f"{session['session_id']}/ops_validation/hardware_validation_report.md" in names
+    assert f"{session['session_id']}/ops_validation/lab_readiness_report.json" in names
+    assert f"{session['session_id']}/ops_validation/lab_readiness_report.md" in names
     assert f"{session['session_id']}/ops_validation/hardware_validation.jsonl" in manifest["included_files"]
+    assert f"{session['session_id']}/ops_validation/lab_readiness_report.json" in manifest["included_files"]
     assert "daq_smoke" in records
     assert "DAQ sample count and channel verified." in report
+    assert "MiCloaker Lab Readiness Report" in readiness_report
 
 
 def test_multi_session_zip_and_no_database_files(tmp_path: Path):
@@ -737,6 +745,7 @@ def test_multi_session_zip_and_no_database_files(tmp_path: Path):
     s1 = create_session(tmp_path, "one")
     s2 = create_session(tmp_path, "two")
     record_lab_validation(tmp_path, gate="attenuation_pair", status="warn", session_id=s1["session_id"], evidence="comparison pending")
+    write_readiness_artifacts(Settings(workspace=tmp_path))
     out = make_multi_session_zip(tmp_path, [s1["session_id"], s2["session_id"]], tmp_path / "multi.zip")
     with zipfile.ZipFile(out) as zf:
         names = zf.namelist()
@@ -748,7 +757,9 @@ def test_multi_session_zip_and_no_database_files(tmp_path: Path):
     assert f"{s2['session_id']}/export_manifest.json" in names
     assert f"{s1['session_id']}/session.json" in session_manifest["included_files"]
     assert f"{s1['session_id']}/ops_validation/hardware_validation.jsonl" in session_manifest["included_files"]
+    assert f"{s1['session_id']}/ops_validation/lab_readiness_report.json" in session_manifest["included_files"]
     assert f"{s1['session_id']}/ops_validation/hardware_validation.jsonl" in names
+    assert f"{s1['session_id']}/ops_validation/lab_readiness_report.json" in names
     assert session_manifest["missing_files"] == []
     assert session_manifest["unsafe_files"] == []
     assert manifest["missing_files"] == []
@@ -1071,9 +1082,20 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     blocked_download = client.get("/ops/validation/files/../app.log")
     assert blocked_download.status_code == 404
     readiness = client.get("/ops/readiness").json()
+    assert "generated_at" in readiness
     validation_check = [check for check in readiness["checks"] if check["key"] == "hardware_validation_records"][0]
     assert validation_check["level"] == "WARN"
     assert "4 missing gate" in validation_check["message"]
+    readiness_json_download = client.get("/ops/readiness/files/lab_readiness_report.json")
+    assert readiness_json_download.status_code == 200
+    assert "lab_readiness_report.json" in readiness_json_download.headers["content-disposition"]
+    assert readiness_json_download.json()["summary"]["fail"] == readiness["summary"]["fail"]
+    readiness_report_download = client.get("/ops/readiness/files/lab_readiness_report.md")
+    assert readiness_report_download.status_code == 200
+    assert "lab_readiness_report.md" in readiness_report_download.headers["content-disposition"]
+    assert "MiCloaker Lab Readiness Report" in readiness_report_download.text
+    blocked_readiness_download = client.get("/ops/readiness/files/../app.log")
+    assert blocked_readiness_download.status_code == 404
 
     fail_response = client.post(
         "/ops/validation",
@@ -1127,6 +1149,11 @@ def test_lab_readiness_cli_reflects_validation_gate_status(tmp_path: Path):
     passed = subprocess.run([sys.executable, "scripts/lab_readiness_check.py"], cwd=Path(__file__).resolve().parents[1], env=env, text=True, capture_output=True, check=False)
     assert passed.returncode == 0
     assert "1 pass, 4 not applicable, 0 warn, 0 fail, 0 missing gate" in passed.stdout
+    written = subprocess.run([sys.executable, "scripts/lab_readiness_check.py", "--write-report"], cwd=Path(__file__).resolve().parents[1], env=env, text=True, capture_output=True, check=False)
+    assert written.returncode == 0
+    assert "readiness reports written:" in written.stdout
+    assert (tmp_path / ".micloaker" / "lab_readiness_report.json").is_file()
+    assert "MiCloaker Lab Readiness Report" in (tmp_path / ".micloaker" / "lab_readiness_report.md").read_text(encoding="utf-8")
 
 
 def test_new_run_page_can_create_and_record_daq_failure_metadata(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -2059,6 +2086,9 @@ def test_live_snapshot_contains_preview_psd_and_spectrogram(tmp_path: Path, monk
     assert "recommended_update_rates_hz" in live_js
     assert "client_poll_intervals_ms" in live_js
     assert "scheduleRefresh" in live_js
+    assert "requestAnimationFrame(renderCharts)" in live_js
+    assert "function renderCharts()" in live_js
+    assert "rows.flat()" not in live_js
     assert "setInterval(refresh, nextInterval)" in live_js
     assert "?download=1" in live_js
     stopped_initial = client.get("/live/snapshot").json()
@@ -4023,6 +4053,9 @@ def test_dashboard_shows_lab_status_cards_and_shortcuts(tmp_path: Path, monkeypa
     assert ".live-command-card .capture-actions" in css
     assert ".operator-action-bar" in css
     assert ".live-primary" in css
+    assert "content-visibility: auto" in css
+    assert "aspect-ratio: 16 / 9" in css
+    assert 'decoding="async"' in page.text
     assert ".quick-capture-form" in css
     assert "data-recording-submit" in page.text
     js = client.get("/static/js/live.js").text

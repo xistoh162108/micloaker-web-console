@@ -72,13 +72,13 @@
       <div class="plots">
         {% if item.plots.attenuation_png %}
         <figure>
-          <img src="/sessions/{{ session_id }}/files/{{ item.plots.attenuation_png }}" alt="Attenuation bar chart for {{ item.uj0_run_id }} vs {{ item.uj1_run_id }}">
+          <img src="/sessions/{{ session_id }}/files/{{ item.plots.attenuation_png }}" alt="Attenuation bar chart for {{ item.uj0_run_id }} vs {{ item.uj1_run_id }}" loading="lazy" decoding="async">
           <figcaption>Attenuation bar chart</figcaption>
         </figure>
         {% endif %}
         {% if item.plots.psd_overlay_png %}
         <figure>
-          <img src="/sessions/{{ session_id }}/files/{{ item.plots.psd_overlay_png }}" alt="PSD overlay for {{ item.uj0_run_id }} vs {{ item.uj1_run_id }}">
+          <img src="/sessions/{{ session_id }}/files/{{ item.plots.psd_overlay_png }}" alt="PSD overlay for {{ item.uj0_run_id }} vs {{ item.uj1_run_id }}" loading="lazy" decoding="async">
           <figcaption>PSD overlay</figcaption>
         </figure>
         {% endif %}

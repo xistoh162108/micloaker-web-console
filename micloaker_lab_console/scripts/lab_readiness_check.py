@@ -19,6 +19,7 @@ from app.config import DEFAULT_HOST, DEFAULT_PORT, get_settings  # noqa: E402
 from app.services.daq import daq_health  # noqa: E402
 from app.services.lab_validation import validation_summary  # noqa: E402
 from app.services.mac_helper_client import MacHelperClient  # noqa: E402
+from app.services.readiness import write_readiness_artifacts  # noqa: E402
 from app.services.text_store import read_json_or_default  # noqa: E402
 
 
@@ -33,6 +34,7 @@ def main() -> int:
     parser.add_argument("--check-server", action="store_true", help="Check the running console HTTP routes.")
     parser.add_argument("--server-url", default=None, help="Console URL for --check-server. Defaults to configured host/port.")
     parser.add_argument("--check-helper", action="store_true", help="Call configured Mac Helper health/devices/files/status endpoints.")
+    parser.add_argument("--write-report", action="store_true", help="Write lab_readiness_report.json and .md under workspace/.micloaker.")
     args = parser.parse_args()
 
     findings: list[tuple[str, str, str]] = []
@@ -51,6 +53,9 @@ def main() -> int:
         _check_server_routes(findings, server_url)
 
     _print_report(findings, settings.workspace, settings.host, settings.port, server_url=server_url)
+    if args.write_report:
+        paths = write_readiness_artifacts(settings)
+        print(f"readiness reports written: {paths['json']} and {paths['report']}")
     return 1 if any(level == "FAIL" for level, _, _ in findings) else 0
 
 

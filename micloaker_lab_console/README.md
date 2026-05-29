@@ -194,12 +194,14 @@ Hardware validation records are saved as text files:
 ```text
 workspace/.micloaker/hardware_validation.jsonl
 workspace/.micloaker/hardware_validation_report.md
+workspace/.micloaker/lab_readiness_report.json
+workspace/.micloaker/lab_readiness_report.md
 ```
 
-Session ZIP and multi-session ZIP exports include these files under `ops_validation/` when validation records exist.
-The `/ops` page also provides direct JSONL and Markdown report downloads for these validation records.
+Session ZIP and multi-session ZIP exports include these files under `ops_validation/` when validation/readiness records exist.
+The `/ops` page also provides direct JSONL/Markdown downloads for validation records and point-in-time readiness snapshots.
 Readiness treats the latest record for each validation gate as the active state: any `fail` gate makes readiness fail, any `warn` or missing gate keeps readiness in warning state, and each gate must be `pass` or explicitly marked `not applicable` before the hardware validation section is green.
-The same gate status logic is used by `scripts/lab_readiness_check.py`; a failed validation gate makes the CLI exit non-zero.
+The same gate status logic is used by `scripts/lab_readiness_check.py`; a failed validation gate makes the CLI exit non-zero. Add `--write-report` to save the readiness JSON/Markdown snapshot for the lab notebook or exported session package.
 
 ## Live Monitor
 

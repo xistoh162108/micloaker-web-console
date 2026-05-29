@@ -16,6 +16,8 @@ const specCtx = specCanvas ? specCanvas.getContext("2d") : null;
 const recordingGuardMessage = document.getElementById("recording-guard-message");
 let timer = null;
 let currentIntervalMs = null;
+let pendingChartFrame = false;
+let latestChartData = null;
 
 async function post(url, data) {
   const options = { method: "POST" };
@@ -46,11 +48,24 @@ async function refresh() {
     payload_limits: data.payload_limits,
     preview: data.preview_label,
   }, null, 2);
+  scheduleChartRender(data);
+  updateRecordingGuard(data);
+  scheduleRefresh(data);
+}
+
+function scheduleChartRender(data) {
+  latestChartData = data;
+  if (pendingChartFrame) return;
+  pendingChartFrame = true;
+  requestAnimationFrame(renderCharts);
+}
+
+function renderCharts() {
+  pendingChartFrame = false;
+  const data = latestChartData || {};
   if (waveformCtx && data.waveform) drawLine(waveformCtx, waveformCanvas, data.waveform, "#245b63", "bipolar");
   if (psdCtx && data.psd) drawLine(psdCtx, psdCanvas, data.psd.map(v => Math.log10(v + 1e-18)), "#6b4e16", "auto");
   if (specCtx && data.spectrogram) drawSpectrogram(data.spectrogram);
-  updateRecordingGuard(data);
-  scheduleRefresh(data);
 }
 
 function updateRecordingGuard(data) {
@@ -155,9 +170,14 @@ function drawSpectrogram(rows) {
   specCtx.clearRect(0, 0, width, height);
   const cols = rows.length;
   const bins = rows[0].length;
-  const values = rows.flat();
-  const min = Math.min(...values);
-  const max = Math.max(...values);
+  let min = Infinity;
+  let max = -Infinity;
+  rows.forEach((row) => {
+    row.forEach((v) => {
+      if (v < min) min = v;
+      if (v > max) max = v;
+    });
+  });
   const span = Math.max(1e-12, max - min);
   rows.forEach((row, xIdx) => {
     row.forEach((v, yIdx) => {

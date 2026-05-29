@@ -9,7 +9,7 @@ Run these from the Linux console computer:
 ```bash
 cd micloaker_lab_console
 .venv/bin/python scripts/console_control.py status
-.venv/bin/python scripts/lab_readiness_check.py --check-server --server-url http://100.x.y.z:8000
+.venv/bin/python scripts/lab_readiness_check.py --check-server --server-url http://100.x.y.z:8000 --write-report
 ```
 
 Also open:
@@ -33,11 +33,13 @@ Record physical validation evidence in `/ops` under **Hardware Validation Record
 ```text
 workspace/.micloaker/hardware_validation.jsonl
 workspace/.micloaker/hardware_validation_report.md
+workspace/.micloaker/lab_readiness_report.json
+workspace/.micloaker/lab_readiness_report.md
 ```
 
 Use one record per gate: DAQ smoke capture, Mac Helper playback validation, play-and-record trial, attenuation pair check, and optional legacy notebook parity check.
-Session ZIP and multi-session ZIP exports include these records under `ops_validation/` when records exist.
-The `/ops` page also provides direct downloads for `hardware_validation.jsonl` and `hardware_validation_report.md`.
+Session ZIP and multi-session ZIP exports include these records and readiness snapshots under `ops_validation/` when they exist.
+The `/ops` page also provides direct downloads for `hardware_validation.jsonl`, `hardware_validation_report.md`, `lab_readiness_report.json`, and `lab_readiness_report.md`.
 The `/ops` page displays **Evidence Hints** for each validation gate so the operator can record the expected IDs, file paths, measured values, Helper/device details, and unresolved warnings consistently.
 The latest record for each gate controls the readiness status: any `fail` gate makes readiness fail, any `warn` or missing gate keeps readiness in warning state, and each gate must be `pass` or explicitly marked `not applicable` before the hardware validation section is green.
 The same gate status logic is used by `scripts/lab_readiness_check.py`; a failed validation gate makes the CLI exit non-zero.

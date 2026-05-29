@@ -381,7 +381,19 @@ pre {
 }
 .compact-pre { max-height: 180px; }
 .plots { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
-.plots img { width: 100%; border: 1px solid var(--border); background: white; border-radius: var(--rounded-btn); }
+.plots figure, .dashboard-artifacts figure {
+  content-visibility: auto;
+  contain-intrinsic-size: 240px;
+}
+.plots img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+  border: 1px solid var(--border);
+  background: white;
+  border-radius: var(--rounded-btn);
+}
 .dashboard-artifacts {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -391,6 +403,7 @@ pre {
 .dashboard-artifacts img {
   display: block;
   width: 100%;
+  aspect-ratio: 16 / 9;
   max-height: 230px;
   object-fit: contain;
   border: 1px solid var(--border);

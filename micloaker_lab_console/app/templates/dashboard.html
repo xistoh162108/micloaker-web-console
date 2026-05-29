@@ -198,19 +198,19 @@
           <div class="dashboard-artifacts">
             {% if last_run_artifacts.waveform_png %}
             <figure>
-              <img src="/sessions/{{ last_run.session_id }}/files/{{ last_run_artifacts.waveform_png }}" alt="Latest finalized waveform">
+              <img src="/sessions/{{ last_run.session_id }}/files/{{ last_run_artifacts.waveform_png }}" alt="Latest finalized waveform" loading="lazy" decoding="async">
               <figcaption>Waveform</figcaption>
             </figure>
             {% endif %}
             {% if last_run_artifacts.psd_png %}
             <figure>
-              <img src="/sessions/{{ last_run.session_id }}/files/{{ last_run_artifacts.psd_png }}" alt="Latest finalized PSD">
+              <img src="/sessions/{{ last_run.session_id }}/files/{{ last_run_artifacts.psd_png }}" alt="Latest finalized PSD" loading="lazy" decoding="async">
               <figcaption>PSD</figcaption>
             </figure>
             {% endif %}
             {% if last_run_artifacts.spectrogram_png %}
             <figure>
-              <img src="/sessions/{{ last_run.session_id }}/files/{{ last_run_artifacts.spectrogram_png }}" alt="Latest finalized spectrogram">
+              <img src="/sessions/{{ last_run.session_id }}/files/{{ last_run_artifacts.spectrogram_png }}" alt="Latest finalized spectrogram" loading="lazy" decoding="async">
               <figcaption>Spectrogram</figcaption>
             </figure>
             {% endif %}

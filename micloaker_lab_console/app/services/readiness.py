@@ -8,7 +8,15 @@ from .daq import daq_health
 from .lab_validation import validation_summary
 from .mac_helper_client import MacHelperClient
 from .recorder import recording_status
-from .text_store import read_json_or_default
+from .text_store import atomic_write_json, atomic_write_text, now_iso, read_json_or_default
+
+
+def readiness_paths(workspace: Path) -> dict[str, Path]:
+    root = workspace / ".micloaker"
+    return {
+        "json": root / "lab_readiness_report.json",
+        "report": root / "lab_readiness_report.md",
+    }
 
 
 def lab_readiness(settings: Settings) -> dict[str, Any]:
@@ -65,6 +73,7 @@ def lab_readiness(settings: Settings) -> dict[str, Any]:
     ]
     summary = _summary(checks)
     return {
+        "generated_at": now_iso(),
         "ok": summary["fail"] == 0,
         "summary": summary,
         "checks": checks,
@@ -80,6 +89,49 @@ def lab_readiness(settings: Settings) -> dict[str, Any]:
             "Measure the actual acoustic path before treating attenuation numbers as report-grade.",
         ],
     }
+
+
+def write_readiness_artifacts(settings: Settings) -> dict[str, Path]:
+    """Persist a point-in-time readiness snapshot for lab validation evidence."""
+    snapshot = lab_readiness(settings)
+    paths = readiness_paths(settings.workspace)
+    paths["json"].parent.mkdir(parents=True, exist_ok=True)
+    atomic_write_json(paths["json"], snapshot)
+    atomic_write_text(paths["report"], _readiness_markdown(snapshot))
+    return paths
+
+
+def _readiness_markdown(snapshot: dict[str, Any]) -> str:
+    lines = [
+        "# MiCloaker Lab Readiness Report",
+        "",
+        f"Generated at: {snapshot.get('generated_at', '')}",
+        f"Workspace: `{snapshot.get('workspace', '')}`",
+        f"Console: `{snapshot.get('host', '')}:{snapshot.get('port', '')}`",
+        "",
+        "## Summary",
+        "",
+        f"- Pass: {snapshot.get('summary', {}).get('pass', 0)}",
+        f"- Warn: {snapshot.get('summary', {}).get('warn', 0)}",
+        f"- Fail: {snapshot.get('summary', {}).get('fail', 0)}",
+        f"- OK: {snapshot.get('ok')}",
+        "",
+        "## Checks",
+        "",
+        "| Check | Level | Message |",
+        "|---|---|---|",
+    ]
+    for check in snapshot.get("checks", []):
+        lines.append(f"| {_md(check.get('label') or check.get('key'))} | {_md(check.get('level'))} | {_md(check.get('message'))} |")
+    lines.extend([
+        "",
+        "## Manual Verification Required",
+        "",
+    ])
+    for item in snapshot.get("manual_verification_required", []):
+        lines.append(f"- {item}")
+    lines.append("")
+    return "\n".join(lines)
 
 
 def _bind_check(host: str, port: int) -> dict[str, Any]:
@@ -160,3 +212,8 @@ def _summary(checks: list[dict[str, Any]]) -> dict[str, int]:
         "warn": sum(1 for check in checks if check["level"] == "WARN"),
         "fail": sum(1 for check in checks if check["level"] == "FAIL"),
     }
+
+
+def _md(value: Any) -> str:
+    text = "" if value is None else str(value)
+    return text.replace("|", "\\|").replace("\n", " ").strip()

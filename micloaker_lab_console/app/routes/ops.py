@@ -15,7 +15,7 @@ from ..services.lab_validation import (
     record_lab_validation,
     validation_summary,
 )
-from ..services.readiness import lab_readiness
+from ..services.readiness import lab_readiness, write_readiness_artifacts
 from ..services.recorder import recording_status
 from ..services.text_store import append_app_event
 
@@ -47,6 +47,22 @@ def ops_page(request: Request):
 @router.get("/readiness")
 def readiness_status(request: Request):
     return lab_readiness(request.app.state.settings)
+
+
+@router.get("/readiness/files/{filename}")
+def download_readiness_file(request: Request, filename: str):
+    if filename not in {"lab_readiness_report.json", "lab_readiness_report.md"}:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error_code": "READINESS_FILE_NOT_FOUND",
+                "message": "The requested readiness evidence file is not available.",
+                "suggestion": "Download lab_readiness_report.json or lab_readiness_report.md.",
+            },
+        )
+    paths = write_readiness_artifacts(request.app.state.settings)
+    path = paths["json"] if filename.endswith(".json") else paths["report"]
+    return FileResponse(path, filename=filename, media_type="application/json" if filename.endswith(".json") else "text/markdown")
 
 
 @router.get("/validation")

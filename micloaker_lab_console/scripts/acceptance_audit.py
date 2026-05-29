@@ -131,10 +131,12 @@ def audit_mock_workflow(workspace: Path) -> tuple[bool, list[str]]:
     failures: list[str] = []
     from fastapi.testclient import TestClient
 
+    from app.config import Settings
     from app.main import create_app
     from app.services.export_zip import make_run_zip, make_session_zip
     from app.services.lab_validation import record_lab_validation
     from app.services.metadata import create_run_metadata, create_session, load_runs, load_sessions
+    from app.services.readiness import write_readiness_artifacts
     from app.services.recorder import record_mock_and_finalize
     from app.services.text_store import read_json, read_jsonl, session_dir
 
@@ -280,6 +282,7 @@ def audit_mock_workflow(workspace: Path) -> tuple[bool, list[str]]:
         run_id=finalized1["run_id"],
         evidence="acceptance audit validation evidence",
     )
+    write_readiness_artifacts(Settings(workspace=workspace))
     run_zip = make_run_zip(workspace, session["session_id"], finalized["run_id"], workspace / "run_audit.zip")
     session_zip = make_session_zip(workspace, session["session_id"], workspace / "session_audit.zip")
     with zipfile.ZipFile(run_zip) as zf:
@@ -303,8 +306,12 @@ def audit_mock_workflow(workspace: Path) -> tuple[bool, list[str]]:
             failures.append("session ZIP missing saved comparison JSON")
         validation_jsonl = f"{session['session_id']}/ops_validation/hardware_validation.jsonl"
         validation_report = f"{session['session_id']}/ops_validation/hardware_validation_report.md"
+        readiness_json = f"{session['session_id']}/ops_validation/lab_readiness_report.json"
+        readiness_report = f"{session['session_id']}/ops_validation/lab_readiness_report.md"
         if validation_jsonl not in session_names or validation_report not in session_names:
             failures.append("session ZIP missing hardware validation evidence files")
+        if readiness_json not in session_names or readiness_report not in session_names:
+            failures.append("session ZIP missing lab readiness evidence files")
 
     try:
         record_mock_and_finalize(workspace, finalized)
@@ -435,8 +442,11 @@ def main() -> int:
     missing_daisy_terms = [term for term in daisy_terms if term not in dashboard_template]
     hidden_tab_dashboard = "tab-panel" in dashboard_template or "data-tabs" in dashboard_template
     wrapping_layout_terms = ["repeat(auto-fit, minmax(min(100%, 170px), 1fr))", "operator-action-bar", "live-primary", "dashboard-artifacts", "overflow-wrap: anywhere"]
+    chart_perf_terms = ["content-visibility: auto", "aspect-ratio: 16 / 9"]
     missing_wrapping_terms = [term for term in wrapping_layout_terms if term not in app_css]
-    checks.append(report(not missing_daisy_terms and not hidden_tab_dashboard and not missing_wrapping_terms and "DaisyUI component vocabulary" in app_css and "shadcn" not in app_css.lower(), "dashboard uses local DaisyUI command console vocabulary without hidden workflow tabs"))
+    missing_chart_perf_terms = [term for term in chart_perf_terms if term not in app_css]
+    live_js = (ROOT / "app" / "static" / "js" / "live.js").read_text(encoding="utf-8")
+    checks.append(report(not missing_daisy_terms and not hidden_tab_dashboard and not missing_wrapping_terms and not missing_chart_perf_terms and "requestAnimationFrame(renderCharts)" in live_js and "rows.flat()" not in live_js and 'decoding="async"' in dashboard_template and "DaisyUI component vocabulary" in app_css and "shadcn" not in app_css.lower(), "dashboard uses local DaisyUI command console vocabulary without hidden workflow tabs"))
     if missing_daisy_terms:
         for term in missing_daisy_terms:
             print(f"  missing DaisyUI dashboard term: {term}")
@@ -445,9 +455,15 @@ def main() -> int:
     if missing_wrapping_terms:
         for term in missing_wrapping_terms:
             print(f"  missing responsive wrapping term: {term}")
+    if missing_chart_perf_terms:
+        for term in missing_chart_perf_terms:
+            print(f"  missing chart performance term: {term}")
     validation_download_terms = [
         "/ops/validation/files/hardware_validation.jsonl",
         "/ops/validation/files/hardware_validation_report.md",
+        "/ops/readiness/files/lab_readiness_report.json",
+        "/ops/readiness/files/lab_readiness_report.md",
+        "Download Readiness Report",
         "Evidence Hints",
         "macOS default output did not change",
         "expected vs written sample count",
@@ -457,6 +473,7 @@ def main() -> int:
     validation_sources = (
         (ROOT / "app" / "templates" / "ops.html").read_text(encoding="utf-8")
         + (ROOT / "app" / "services" / "lab_validation.py").read_text(encoding="utf-8")
+        + (ROOT / "app" / "services" / "readiness.py").read_text(encoding="utf-8")
     )
     missing_validation_download_terms = [term for term in validation_download_terms if term not in validation_sources]
     checks.append(report(not missing_validation_download_terms, "Ops page exposes validation evidence downloads and gate-specific hints"))

@@ -218,7 +218,7 @@
   <div class="plots">
     {% if run.files.get("waveform_png") in file_set %}
     <figure>
-      <img src="/sessions/{{ session_id }}/files/{{ run.files.waveform_png }}" alt="Final waveform plot">
+      <img src="/sessions/{{ session_id }}/files/{{ run.files.waveform_png }}" alt="Final waveform plot" loading="lazy" decoding="async">
       <figcaption>
         Final waveform
         <a href="/sessions/{{ session_id }}/files/{{ run.files.waveform_png }}">PNG</a>
@@ -228,7 +228,7 @@
     {% endif %}
     {% if run.files.get("psd_png") in file_set %}
     <figure>
-      <img src="/sessions/{{ session_id }}/files/{{ run.files.psd_png }}" alt="Final PSD plot">
+      <img src="/sessions/{{ session_id }}/files/{{ run.files.psd_png }}" alt="Final PSD plot" loading="lazy" decoding="async">
       <figcaption>
         Final PSD
         <a href="/sessions/{{ session_id }}/files/{{ run.files.psd_png }}">PNG</a>
@@ -238,7 +238,7 @@
     {% endif %}
     {% if run.files.get("spectrogram_png") in file_set %}
     <figure>
-      <img src="/sessions/{{ session_id }}/files/{{ run.files.spectrogram_png }}" alt="Final spectrogram plot">
+      <img src="/sessions/{{ session_id }}/files/{{ run.files.spectrogram_png }}" alt="Final spectrogram plot" loading="lazy" decoding="async">
       <figcaption>
         Final spectrogram
         <a href="/sessions/{{ session_id }}/files/{{ run.files.spectrogram_png }}">PNG</a>

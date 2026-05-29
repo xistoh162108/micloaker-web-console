@@ -18,7 +18,7 @@
 - Run detail page shows metadata, files, audio player, plots, metrics, and logs.
 - Run ZIP contains expected files and manifest.
 - Session ZIP contains runs, metadata, results, plots, logs, and manifest.
-- Session and multi-session ZIPs include hardware validation JSONL/Markdown evidence when records exist.
+- Session and multi-session ZIPs include hardware validation JSONL/Markdown evidence and lab readiness JSON/Markdown snapshots when records exist.
 - App restart reloads sessions/runs by scanning text files.
 
 ## 2. Text-file storage tests
@@ -74,3 +74,4 @@
 - Unfinished jobs are marked interrupted/unknown after restart scan.
 - `/ops` can record hardware validation evidence as JSONL and Markdown.
 - `/ops/readiness` and `scripts/lab_readiness_check.py` reflect validation gate status: fail is failing, warn/missing is warning, and pass/not-applicable closes the gate.
+- `/ops` and `scripts/lab_readiness_check.py --write-report` can persist `lab_readiness_report.json` and `lab_readiness_report.md` for experiment evidence packages.
