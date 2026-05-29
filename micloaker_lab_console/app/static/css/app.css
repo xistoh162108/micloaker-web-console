@@ -88,6 +88,7 @@ p { margin: 8px 0; }
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 .capture-actions {
   display: flex;
@@ -119,6 +120,7 @@ p { margin: 8px 0; }
   font-weight: 650;
   cursor: pointer;
   white-space: nowrap;
+  max-width: 100%;
 }
 button, .btn-primary, .button.primary, .actions a {
   background: var(--primary);
@@ -199,6 +201,7 @@ button, .btn-primary, .button.primary, .actions a {
   gap: 14px;
   min-width: 0;
 }
+.console-main > *, .console-side > *, .workflow-grid > *, .live-console-grid > * { min-width: 0; }
 .priority-card { overflow: visible; }
 .live-console-grid {
   display: grid;
@@ -213,6 +216,7 @@ button, .btn-primary, .button.primary, .actions a {
   border: 1px solid var(--border);
   border-radius: var(--rounded-box);
   padding: 14px;
+  overflow: hidden;
 }
 .card > .card-body {
   border: 0;
@@ -290,6 +294,10 @@ textarea { resize: vertical; }
   padding: 10px 0;
   border-bottom: 1px solid var(--border);
 }
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
 .data-table {
   width: 100%;
   border-collapse: collapse;
@@ -321,7 +329,7 @@ pre {
 .compact-pre { max-height: 180px; }
 .plots { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 14px; }
 .plots img { width: 100%; border: 1px solid var(--border); background: white; border-radius: var(--rounded-btn); }
-canvas { width: 100%; max-width: 100%; background: white; border: 1px solid var(--border); border-radius: var(--rounded-btn); }
+canvas { display: block; width: 100%; max-width: 100%; background: white; border: 1px solid var(--border); border-radius: var(--rounded-btn); }
 
 @media (max-width: 980px) {
   .topbar, .command-hero, .workflow-grid.two-strong, .grid.two, .command-console, .live-console-grid { grid-template-columns: 1fr; }
@@ -332,6 +340,7 @@ canvas { width: 100%; max-width: 100%; background: white; border: 1px solid var(
   .page { padding: 10px; }
   .metric-strip, .workflow-grid, .status-grid, .grid-form { grid-template-columns: 1fr; }
   .grid-form .wide { grid-column: auto; }
-  .hero-actions .button, .hero-actions .btn, .button-row .button, .button-row .btn, .capture-actions .btn, .capture-actions button, button { width: 100%; }
+  .hero-actions .button, .hero-actions .btn, .button-row .button, .button-row .btn, .capture-actions .btn, .capture-actions button, button { width: 100%; white-space: normal; }
   .tab-button { min-width: 92px; }
+  .stat-value, .metric-strip span, .result-number { font-size: 1.15rem; overflow-wrap: anywhere; }
 }
