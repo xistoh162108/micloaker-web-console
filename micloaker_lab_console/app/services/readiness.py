@@ -46,7 +46,7 @@ def lab_readiness(settings: Settings, *, extra_checks: list[dict[str, Any]] | No
         {
             "key": "daq_backend",
             "label": "DAQ Backend",
-            "level": "PASS" if daq.get("ok") else "WARN",
+            "level": "PASS" if daq.get("available") else "WARN",
             "message": str(daq.get("message", "DAQ health unknown.")),
             "details": daq,
         },

@@ -1260,6 +1260,9 @@ def test_uldaq_is_lazy_and_app_routes_smoke(tmp_path: Path, monkeypatch: pytest.
     assert readiness["ok"] is True
     assert readiness["summary"]["fail"] == 0
     assert any(check["key"] == "daq_backend" for check in readiness["checks"])
+    daq_check = [check for check in readiness["checks"] if check["key"] == "daq_backend"][0]
+    assert daq_check["level"] == "WARN"
+    assert daq_check["details"]["available"] is False
     assert "HARDWARE_VALIDATION_PROTOCOL" in readiness["manual_verification_required"][0]
     assert any("DAQ" in item for item in readiness["manual_verification_required"])
     shutdown = client.post("/ops/shutdown")
@@ -1647,6 +1650,7 @@ def test_lab_readiness_cli_reflects_validation_gate_status(tmp_path: Path):
     no_records = subprocess.run([sys.executable, "scripts/lab_readiness_check.py"], cwd=Path(__file__).resolve().parents[1], env=env, text=True, capture_output=True, check=False)
     assert no_records.returncode == 0
     assert "WARN: hardware_validation_records: No physical validation records saved yet" in no_records.stdout
+    assert "WARN: daq_backend: uldaq is unavailable" in no_records.stdout
     assert "Hardware validation gate status:" in no_records.stdout
     assert "Linux DAQ validation capture: missing; missing checklist: session_id, run_id" in no_records.stdout
     assert "next: Create DAQ validation run (/runs/new)" in no_records.stdout

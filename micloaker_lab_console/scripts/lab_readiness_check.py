@@ -262,7 +262,7 @@ def _check_validation_records(findings: list[tuple[str, str, str]], workspace: P
 
 def _check_daq(findings: list[tuple[str, str, str]]) -> None:
     health = daq_health()
-    if health.get("ok"):
+    if health.get("available"):
         findings.append(("PASS", "daq_backend", str(health.get("message", "DAQ backend appears available."))))
     else:
         findings.append(("WARN", "daq_backend", str(health.get("message", "DAQ unavailable; offline developer validation remains available."))))
