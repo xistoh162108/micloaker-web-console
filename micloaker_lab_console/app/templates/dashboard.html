@@ -77,7 +77,7 @@
       </div>
     </div>
 
-    <div class="card priority-card live-command-card">
+    <div id="capture" class="card priority-card live-command-card">
       <div class="card-body">
         <div class="card-title">
           <h2>2. Capture And Live Preview</h2>
@@ -110,6 +110,7 @@
           <label>Sample rate <input name="sample_rate_hz" type="number" min="1" value="8000"></label>
           <input name="scale_mode" type="hidden" value="both">
           <input name="remove_dc" type="hidden" value="true">
+          <input name="return_to_dashboard" type="hidden" value="true">
           <button class="btn btn-primary" type="submit" name="record_after_create" value="true" data-recording-submit {% if recording_status.active %}disabled{% endif %}>Create + Record Mock</button>
           <button class="btn btn-primary" type="submit" name="record_after_create_source" value="daq" data-recording-submit {% if recording_status.active %}disabled{% endif %}>Create + Record DAQ</button>
           <a class="btn btn-outline" href="/runs/new?session_id={{ active_session.session_id }}">Advanced Metadata</a>

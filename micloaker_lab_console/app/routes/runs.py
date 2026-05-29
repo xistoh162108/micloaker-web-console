@@ -68,6 +68,7 @@ def create_run(
     mac_helper_delay_ms: int = Form(500),
     record_after_create: bool = Form(False),
     record_after_create_source: str = Form(""),
+    return_to_dashboard: bool = Form(False),
     notes: str = Form(""),
 ):
     workspace = request.app.state.settings.workspace
@@ -141,6 +142,8 @@ def create_run(
             raise HTTPException(status_code=503, detail=_daq_unavailable_error(str(exc))) from exc
         except DaqNotConfiguredError as exc:
             raise HTTPException(status_code=501, detail=_daq_not_configured_error(str(exc))) from exc
+    if return_to_dashboard:
+        return RedirectResponse("/#capture", status_code=303)
     return RedirectResponse(f"/sessions/{session_id}/runs/{run['run_id']}", status_code=303)
 
 

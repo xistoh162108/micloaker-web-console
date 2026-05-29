@@ -3162,6 +3162,35 @@ def test_create_run_form_can_record_mock_immediately(tmp_path: Path, monkeypatch
     assert (session_dir(tmp_path, session["session_id"]) / saved["files"]["bin"]).exists()
 
 
+def test_dashboard_quick_capture_returns_to_command_console(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("MICLOAKER_WORKSPACE", str(tmp_path))
+    ensure_workspace(tmp_path)
+    session = create_session(tmp_path, "dashboard quick capture")
+    client = TestClient(create_app())
+    page = client.get("/")
+    assert 'name="return_to_dashboard" type="hidden" value="true"' in page.text
+    assert 'id="capture"' in page.text
+
+    response = client.post(
+        f"/sessions/{session['session_id']}/runs",
+        data={
+            "carrier_freq_khz": "25",
+            "uj": "uj0",
+            "sound_condition": "sound1",
+            "sample_rate_hz": "8000",
+            "duration_s": "0.1",
+            "record_after_create": "true",
+            "return_to_dashboard": "true",
+        },
+        follow_redirects=False,
+    )
+    assert response.status_code == 303
+    assert response.headers["location"] == "/#capture"
+    saved = read_json(next((session_dir(tmp_path, session["session_id"]) / "metadata").glob("*.json")))
+    assert saved["analysis"]["status"] == "finalized"
+    assert saved["condition"]["sound_condition"] == "sound1"
+
+
 def test_mock_recording_overrides_planned_source_in_metadata(tmp_path: Path):
     ensure_workspace(tmp_path)
     session = create_session(tmp_path, "mock source override")
