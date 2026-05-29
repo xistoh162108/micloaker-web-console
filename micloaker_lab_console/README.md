@@ -194,6 +194,7 @@ workspace/.micloaker/hardware_validation_report.md
 ```
 
 Session ZIP and multi-session ZIP exports include these files under `ops_validation/` when validation records exist.
+The `/ops` page also provides direct JSONL and Markdown report downloads for these validation records.
 
 ## Live Monitor
 

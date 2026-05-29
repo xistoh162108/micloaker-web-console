@@ -1048,6 +1048,15 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     status = client.get("/ops/validation").json()
     assert status["summary"]["record_count"] == 1
     assert status["summary"]["latest_by_gate"]["daq_smoke"]["status"] == "pass"
+    jsonl_download = client.get("/ops/validation/files/hardware_validation.jsonl")
+    assert jsonl_download.status_code == 200
+    assert "hardware_validation.jsonl" in jsonl_download.headers["content-disposition"]
+    assert "daq_smoke" in jsonl_download.text
+    report_download = client.get("/ops/validation/files/hardware_validation_report.md")
+    assert report_download.status_code == 200
+    assert "MiCloaker Hardware Validation Records" in report_download.text
+    blocked_download = client.get("/ops/validation/files/../app.log")
+    assert blocked_download.status_code == 404
     readiness = client.get("/ops/readiness").json()
     validation_check = [check for check in readiness["checks"] if check["key"] == "hardware_validation_records"][0]
     assert validation_check["level"] == "PASS"

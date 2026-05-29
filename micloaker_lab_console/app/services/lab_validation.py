@@ -87,6 +87,14 @@ def validation_summary(workspace: Path) -> dict[str, Any]:
     }
 
 
+def ensure_validation_artifacts(workspace: Path) -> dict[str, Path]:
+    paths = validation_paths(workspace)
+    paths["jsonl"].parent.mkdir(parents=True, exist_ok=True)
+    paths["jsonl"].touch(exist_ok=True)
+    _write_validation_report(workspace)
+    return paths
+
+
 def _write_validation_report(workspace: Path) -> None:
     records = list_validation_records(workspace)
     lines = [

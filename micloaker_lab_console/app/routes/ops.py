@@ -5,9 +5,9 @@ import signal
 import threading
 
 from fastapi import APIRouter, Form, HTTPException, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 
-from ..services.lab_validation import VALIDATION_GATES, list_validation_records, record_lab_validation, validation_summary
+from ..services.lab_validation import VALIDATION_GATES, ensure_validation_artifacts, list_validation_records, record_lab_validation, validation_summary
 from ..services.readiness import lab_readiness
 from ..services.recorder import recording_status
 from ..services.text_store import append_app_event
@@ -50,6 +50,22 @@ def validation_status(request: Request):
         "summary": validation_summary(workspace),
         "records": list_validation_records(workspace),
     }
+
+
+@router.get("/validation/files/{filename}")
+def download_validation_file(request: Request, filename: str):
+    if filename not in {"hardware_validation.jsonl", "hardware_validation_report.md"}:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error_code": "VALIDATION_FILE_NOT_FOUND",
+                "message": "The requested validation evidence file is not available.",
+                "suggestion": "Download hardware_validation.jsonl or hardware_validation_report.md.",
+            },
+        )
+    paths = ensure_validation_artifacts(request.app.state.settings.workspace)
+    path = paths["jsonl"] if filename.endswith(".jsonl") else paths["report"]
+    return FileResponse(path, filename=filename, media_type="text/markdown" if filename.endswith(".md") else "application/jsonl")
 
 
 @router.post("/validation")

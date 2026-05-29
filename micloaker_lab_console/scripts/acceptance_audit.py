@@ -445,6 +445,15 @@ def main() -> int:
     if missing_wrapping_terms:
         for term in missing_wrapping_terms:
             print(f"  missing responsive wrapping term: {term}")
+    validation_download_terms = [
+        "/ops/validation/files/hardware_validation.jsonl",
+        "/ops/validation/files/hardware_validation_report.md",
+    ]
+    missing_validation_download_terms = [term for term in validation_download_terms if term not in (ROOT / "app" / "templates" / "ops.html").read_text(encoding="utf-8")]
+    checks.append(report(not missing_validation_download_terms, "Ops page exposes validation evidence downloads"))
+    if missing_validation_download_terms:
+        for term in missing_validation_download_terms:
+            print(f"  missing validation download term: {term}")
     command_center_terms = [
         "Dashboard Command Center",
         "Do not hide core experiment controls behind Dashboard tabs",
