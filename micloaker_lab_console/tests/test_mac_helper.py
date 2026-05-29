@@ -257,6 +257,47 @@ def test_mac_helper_stop_cancels_delayed_real_playback_before_audio_starts(tmp_p
     assert status["stopped_play_id"] == play["play_id"]
 
 
+def test_mac_helper_real_playback_uses_explicit_device_without_default_output_mutation(tmp_path: Path, monkeypatch):
+    _wav(tmp_path / "tone.wav")
+    play_calls = []
+    settings_checks = []
+
+    class DefaultDeviceGuard:
+        device = ["system-default-output", "system-default-input"]
+
+        def __setattr__(self, name, value):
+            raise AssertionError("Mac Helper must not mutate sounddevice.default or the macOS default output device")
+
+    fake_sounddevice = types.SimpleNamespace(
+        default=DefaultDeviceGuard(),
+        query_devices=lambda: [
+            {"name": "Built-in Output", "max_output_channels": 2, "default_samplerate": 48000.0, "hostapi": "Core Audio"},
+            {"name": "USB Ultrasonic DAC", "max_output_channels": 2, "default_samplerate": 192000.0, "hostapi": "Core Audio"},
+        ],
+        check_output_settings=lambda device, samplerate, channels: settings_checks.append(
+            {"device": device, "samplerate": samplerate, "channels": channels}
+        ),
+        play=lambda data, samplerate, device, blocking: play_calls.append(
+            {"samplerate": samplerate, "device": device, "blocking": blocking, "shape": data.shape}
+        ),
+        stop=lambda: None,
+    )
+    fake_soundfile = types.SimpleNamespace(read=lambda path, always_2d: (np.zeros((800, 1), dtype=np.float32), 8000))
+    monkeypatch.setitem(sys.modules, "sounddevice", fake_sounddevice)
+    monkeypatch.setitem(sys.modules, "soundfile", fake_soundfile)
+    client = TestClient(create_app({"wav_root": str(tmp_path), "mock_audio": False}))
+
+    play = client.post(
+        "/play",
+        json={"file": "tone.wav", "device_id": 1, "sample_rate": 8000, "channels": 1, "gain": 0.5, "delay_ms": 0},
+    ).json()
+
+    assert play["ok"] is True
+    assert settings_checks == [{"device": 1, "samplerate": 8000, "channels": 1}]
+    assert play_calls == [{"samplerate": 8000, "device": 1, "blocking": True, "shape": (800, 1)}]
+    assert fake_sounddevice.default.device == ["system-default-output", "system-default-input"]
+
+
 def test_mac_helper_numpy_resampler_preserves_channels_and_duration():
     data = np.column_stack([np.linspace(-1, 1, 8), np.linspace(1, -1, 8)]).astype(np.float32)
     upsampled = _resample_audio(data, 8000, 16000)

@@ -20,7 +20,7 @@ done
 
 Most recent observed results:
 
-- Full test suite: `132 passed`
+- Full test suite: `133 passed`
 - Acceptance audit: `PASS`
 - Smoke routes: all listed routes returned `200`
 
@@ -60,7 +60,7 @@ Most recent observed results:
 | Post-record finalization | Proven | Recording/import flows finalize from saved `.bin`; live snapshot surfaces latest finalized report-grade run and artifacts. |
 | Optional Mac Helper APIs | Proven in mock/test mode | `/health`, `/devices`, `/files`, `/validate-playback`, `/play`, `/stop`, `/status`; standalone tests cover structured responses. |
 | Mac Helper path safety | Proven | Relative-only `wav_root` validation, traversal rejection, symlink-outside exclusion, optional bearer token tests. |
-| Mac Helper explicit device use | Proven in code/test | Playback uses `sd.play(..., device=req.device_id, ...)` and never changes system defaults. Physical output routing needs Mac lab verification. |
+| Mac Helper explicit device use | Proven in code/test | Playback validation checks the selected device, playback uses `sd.play(..., device=req.device_id, ...)`, and tests guard against mutating `sounddevice.default`. Physical output routing still needs Mac lab verification. |
 | Linux Helper integration | Proven | Manual URL config, health/files/devices/actions, validate-before-play-and-record, disconnected-safe behavior, run JSON/log persistence. |
 | Tailscale discovery | Proven as best-effort optional | `app/services/tailscale.py` and UI route handle absent/unexpected Tailscale without breaking manual connection. |
 | README and dependency files | Proven | `README.md`, `requirements.txt`, `requirements-mac-helper.txt`, `mac_helper/README.md`. |
