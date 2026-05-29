@@ -46,6 +46,27 @@
 {% if selected_session_id %}
 <section class="card">
   <div class="card-body">
+    <div class="card-title">
+      <h2>Existing Runs</h2>
+      <span class="badge">{{ selected_runs|length }} runs</span>
+    </div>
+    {% if selected_runs %}
+    <label class="filter-box">Filter runs <input type="search" data-filter-input data-filter-target="#selected-run-list" placeholder="run id, uj, status"></label>
+    <div id="selected-run-list" class="scroll-list session-scroll-list">
+      {% for run in selected_runs %}
+      <a class="session-row" href="/sessions/{{ selected_session_id }}/runs/{{ run.run_id }}" data-filter-item="{{ run.run_id }} {{ run.condition.uj }} {{ run.analysis.status }} {{ run.condition.carrier_freq_khz }}">
+        <span>{{ run.run_id }}</span>
+        <small>{{ run.condition.uj }} / {{ run.condition.carrier_freq_khz }} kHz / {{ run.analysis.status }}</small>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="muted">No runs in this session yet.</p>
+    {% endif %}
+  </div>
+</section>
+<section class="card">
+  <div class="card-body">
   <h2 class="card-title">Run Metadata</h2>
   <details open>
     <summary>Simple</summary>

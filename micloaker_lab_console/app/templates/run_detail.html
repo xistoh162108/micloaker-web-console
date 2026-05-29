@@ -18,6 +18,8 @@
 <p class="warn">DAQ unavailable - connect/configure DAQ hardware or import a saved raw .bin file.</p>
 {% endif %}
 <nav class="actions">
+  <button id="live-start-daq" class="btn btn-outline" type="button" data-live-start data-live-source="daq" data-live-sample-rate="{{ run.recording.sample_rate_hz }}" data-live-channel="{{ run.recording.channel }}" data-live-input-mode="{{ run.recording.input_mode }}" data-live-ai-range="{{ run.recording.ai_range }}">Start DAQ Live Preview</button>
+  <button id="live-stop" class="btn btn-outline" type="button">Stop Live Preview</button>
   {% if enable_dev_mock_ui %}
   <form method="post" action="/sessions/{{ session_id }}/runs/{{ run.run_id }}/record-mock-capture"><button type="submit" class="btn btn-outline">Record Dev Capture Only</button></form>
   {% endif %}
@@ -316,8 +318,9 @@
 </section>
 <section class="card">
   <div class="card-body">
-  <h2 class="card-title">Log</h2>
+  <h2 class="card-title">Run Log / Traceback</h2>
   <pre class="scroll-pre">{{ log_text }}</pre>
   </div>
 </section>
 {% endblock %}
+{% block scripts %}<script src="/static/js/live.js"></script>{% endblock %}

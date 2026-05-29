@@ -27,10 +27,17 @@ def new_run_page(request: Request):
         selected_session_id = ""
     if not selected_session_id and sessions:
         selected_session_id = sessions[0]["session_id"]
+    selected_runs = load_runs(workspace, selected_session_id) if selected_session_id else []
+    selected_runs = sorted(selected_runs, key=lambda run: run.get("created_at", ""), reverse=True)
     return request.app.state.templates.TemplateResponse(
         name="new_run.html",
         request=request,
-        context={"sessions": sessions, "selected_session_id": selected_session_id, "enable_dev_mock_ui": request.app.state.settings.enable_dev_mock_ui},
+        context={
+            "sessions": sessions,
+            "selected_session_id": selected_session_id,
+            "selected_runs": selected_runs,
+            "enable_dev_mock_ui": request.app.state.settings.enable_dev_mock_ui,
+        },
     )
 
 

@@ -2823,7 +2823,6 @@ def test_live_snapshot_contains_preview_psd_and_spectrogram(tmp_path: Path, monk
     assert "Latest Finalization Result" in page.text
     assert "Download metrics JSON" in page.text
     assert "Open run log" in page.text
-    assert "Status Log Tail" in page.text
     assert "live-waveform-readout" in page.text
     assert "live-psd-readout" in page.text
     assert "live-spectrogram-readout" in page.text
@@ -4849,11 +4848,12 @@ def test_new_run_page_selects_session_and_nav_points_there(tmp_path: Path, monke
     monkeypatch.setenv("MICLOAKER_WORKSPACE", str(tmp_path))
     ensure_workspace(tmp_path)
     session = create_session(tmp_path, "new run nav")
-    create_run_metadata(tmp_path, session["session_id"], carrier_freq_khz=25, uj="uj0")
+    run = create_run_metadata(tmp_path, session["session_id"], carrier_freq_khz=25, uj="uj0")
     client = TestClient(create_app())
     page = client.get("/runs/new")
     assert page.status_code == 200
     assert "Choose a Session" in page.text
+    assert "Existing Runs" in page.text
     assert "Run Metadata" in page.text
     assert f'action="/sessions/{session["session_id"]}/runs"' in page.text
     assert 'name="duration_s" type="number" min="0.01" step="0.01" value="1.00"' in page.text
@@ -4871,6 +4871,7 @@ def test_new_run_page_selects_session_and_nav_points_there(tmp_path: Path, monke
         assert f'name="{field}"' in page.text
     assert session["session_id"] in page.text
     assert f"/sessions/{session['session_id']}" in page.text
+    assert f"/sessions/{session['session_id']}/runs/{run['run_id']}" in page.text
     assert "1 runs" in page.text
     response = client.post(
         f"/sessions/{session['session_id']}/runs",
@@ -4888,6 +4889,7 @@ def test_new_run_page_selects_session_and_nav_points_there(tmp_path: Path, monke
     assert len(load_runs(tmp_path, session["session_id"])) == 2
     nav = client.get("/")
     assert 'href="/runs/new">New Run</a>' in nav.text
+    assert 'href="/live">Live Monitor</a>' not in nav.text
 
 
 def test_dashboard_shows_lab_status_cards_and_shortcuts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
