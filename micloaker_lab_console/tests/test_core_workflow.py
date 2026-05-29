@@ -1019,6 +1019,9 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     page = client.get("/ops")
     assert page.status_code == 200
     assert "Hardware Validation Records" in page.text
+    assert "Evidence Hints" in page.text
+    assert "expected vs written sample count" in page.text
+    assert "macOS default output did not change" in page.text
     assert "No physical validation records yet." in page.text
 
     response = client.post(
@@ -1049,6 +1052,10 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
 
     status = client.get("/ops/validation").json()
     assert status["summary"]["record_count"] == 1
+    assert "evidence_hints" in status
+    assert "evidence_hints" in status["summary"]
+    assert "expected vs written sample count" in status["summary"]["evidence_hints"]["daq_smoke"]
+    assert "evidence_hint" in status["summary"]["gate_status"][0]
     assert status["summary"]["latest_by_gate"]["daq_smoke"]["status"] == "pass"
     assert status["summary"]["status_counts"]["pass"] == 1
     assert status["summary"]["status_counts"]["na"] == 0
@@ -3908,6 +3915,8 @@ def test_dashboard_shows_lab_status_cards_and_shortcuts(tmp_path: Path, monkeypa
         "Capture And Live Preview",
         "RMS/Peak Meter",
         "Scrolling Spectrogram",
+        "Live monitor",
+        "Detailed Live Page",
         "Create + Record Mock",
         "Create + Record DAQ",
         "Advanced Metadata",
@@ -3930,8 +3939,9 @@ def test_dashboard_shows_lab_status_cards_and_shortcuts(tmp_path: Path, monkeypa
     assert 'action="/sessions/' in page.text and '/runs"' in page.text
     css = client.get("/static/css/app.css").text
     assert ".live-command-card .capture-actions" in css
+    assert ".operator-action-bar" in css
+    assert ".live-primary" in css
     assert ".quick-capture-form" in css
-    assert "position: sticky" in css
     assert "data-recording-submit" in page.text
     js = client.get("/static/js/live.js").text
     assert "updateRecordingGuard" in js

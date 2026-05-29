@@ -434,7 +434,7 @@ def main() -> int:
     daisy_terms = ["btn btn-primary", "btn btn-outline", "btn btn-error", "card", "card-body", "stats", "stat-value", "badge-success", "badge-warning", "Capture And Live Preview", "live-waveform", "live-psd", "live-spectrogram"]
     missing_daisy_terms = [term for term in daisy_terms if term not in dashboard_template]
     hidden_tab_dashboard = "tab-panel" in dashboard_template or "data-tabs" in dashboard_template
-    wrapping_layout_terms = ["repeat(auto-fit, minmax(140px, 1fr))", "dashboard-artifacts", "overflow-wrap: anywhere"]
+    wrapping_layout_terms = ["repeat(auto-fit, minmax(min(100%, 170px), 1fr))", "operator-action-bar", "live-primary", "dashboard-artifacts", "overflow-wrap: anywhere"]
     missing_wrapping_terms = [term for term in wrapping_layout_terms if term not in app_css]
     checks.append(report(not missing_daisy_terms and not hidden_tab_dashboard and not missing_wrapping_terms and "DaisyUI component vocabulary" in app_css and "shadcn" not in app_css.lower(), "dashboard uses local DaisyUI command console vocabulary without hidden workflow tabs"))
     if missing_daisy_terms:
@@ -448,11 +448,18 @@ def main() -> int:
     validation_download_terms = [
         "/ops/validation/files/hardware_validation.jsonl",
         "/ops/validation/files/hardware_validation_report.md",
+        "Evidence Hints",
+        "macOS default output did not change",
+        "expected vs written sample count",
         "Gate Status",
         "not applicable",
     ]
-    missing_validation_download_terms = [term for term in validation_download_terms if term not in (ROOT / "app" / "templates" / "ops.html").read_text(encoding="utf-8")]
-    checks.append(report(not missing_validation_download_terms, "Ops page exposes validation evidence downloads"))
+    validation_sources = (
+        (ROOT / "app" / "templates" / "ops.html").read_text(encoding="utf-8")
+        + (ROOT / "app" / "services" / "lab_validation.py").read_text(encoding="utf-8")
+    )
+    missing_validation_download_terms = [term for term in validation_download_terms if term not in validation_sources]
+    checks.append(report(not missing_validation_download_terms, "Ops page exposes validation evidence downloads and gate-specific hints"))
     if missing_validation_download_terms:
         for term in missing_validation_download_terms:
             print(f"  missing validation download term: {term}")

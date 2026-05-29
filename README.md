@@ -47,6 +47,8 @@ The Linux Dashboard is the primary one-screen command center. Routine experiment
 - Recent Runs and Operations: fast run access, readiness checks, logs, and safe stop controls.
 - Hardware Validation Records: operator-entered DAQ/Mac/play-and-record/attenuation evidence saved under `workspace/.micloaker/`.
 
+The Dashboard layout is intentionally prioritized over decorative UI: the live monitor and capture controls stay in the main flow, controls wrap instead of overlapping, and detailed live/log pages remain secondary while the experiment is running.
+
 ## Quick Linux Console Setup
 
 ```bash

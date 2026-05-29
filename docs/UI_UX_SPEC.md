@@ -34,6 +34,8 @@ Always-visible state:
 
 Do not hide core experiment controls behind Dashboard tabs. The operator should be able to start live preview, create and record a run, watch live plots, see finalization status, and open the latest finalized artifacts from the same screen.
 
+The command center layout must avoid fixed-width operator controls. Capture buttons, metadata fields, status badges, and plot panels must wrap cleanly without overlapping on Linux lab desktops, laptop screens, and narrow browser windows. Live waveform and finalization status are primary operator surfaces; logs are secondary diagnostic material and should not dominate the first screen.
+
 Show warnings clearly:
 
 ```text

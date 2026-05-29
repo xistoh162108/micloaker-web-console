@@ -13,6 +13,13 @@ VALIDATION_GATES = {
     "attenuation_pair": "uj0/uj1 attenuation pair check",
     "legacy_parity": "Legacy notebook numeric parity check",
 }
+VALIDATION_GATE_EVIDENCE = {
+    "daq_smoke": "Record session/run IDs, DAQ channel/range/input mode, requested and actual sample rate, expected vs written sample count, raw .bin path, and run log/plot status.",
+    "mac_playback": "Record Helper URL, selected device_id, WAV path, sample rate, channels, validation result, play/stop result, and confirmation that macOS default output did not change.",
+    "play_and_record": "Record validation run ID, Helper validation result, Play & Record mode, DAQ raw .bin path, finalization result, peak/range WAV presence, and run log status.",
+    "attenuation_pair": "Record uj0/uj1 run IDs, compare JSON/CSV path, source=bin, band, attenuation dB, mismatch warnings, and PSD/bar plot status.",
+    "legacy_parity": "Record legacy .bin fixture path, notebook/reference output, current metrics/plots, tolerance, and pass/not-applicable decision.",
+}
 VALIDATION_STATUSES = {"pass", "warn", "fail", "na"}
 
 
@@ -91,6 +98,7 @@ def validation_summary(workspace: Path) -> dict[str, Any]:
                 "gate": gate,
                 "gate_label": label,
                 "status": status,
+                "evidence_hint": VALIDATION_GATE_EVIDENCE[gate],
                 "recorded_at": latest.get("recorded_at") or latest.get("ts") if latest else "",
                 "session_id": latest.get("session_id", "") if latest else "",
                 "run_id": latest.get("run_id", "") if latest else "",
@@ -99,6 +107,7 @@ def validation_summary(workspace: Path) -> dict[str, Any]:
         )
     return {
         "record_count": len(records),
+        "evidence_hints": VALIDATION_GATE_EVIDENCE,
         "latest_by_gate": latest_by_gate,
         "gate_status": gate_status,
         "status_counts": {

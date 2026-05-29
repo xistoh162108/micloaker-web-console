@@ -44,6 +44,20 @@ python scripts/console_control.py stop</pre>
   <div class="card-body">
   <h2 class="card-title">Hardware Validation Records</h2>
   <p class="muted">Record physical DAQ, Mac playback, play-and-record, attenuation-pair, and legacy-parity evidence here. Records are saved as JSONL and Markdown under <code>workspace/.micloaker/</code>.</p>
+  <h3>Evidence Hints</h3>
+  <div class="table-scroll">
+  <table class="data-table dense">
+    <thead><tr><th>Gate</th><th>Record these details</th></tr></thead>
+    <tbody>
+      {% for key, label in validation_gates.items() %}
+      <tr>
+        <td>{{ label }}</td>
+        <td>{{ validation_evidence_hints[key] }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
   <form method="post" action="/ops/validation" class="grid-form">
     <label>Gate
       <select name="gate" required>
@@ -64,7 +78,7 @@ python scripts/console_control.py stop</pre>
     <label>Session ID <input name="session_id" placeholder="hardware_validation_YYYYMMDD"></label>
     <label>Run ID <input name="run_id" placeholder="optional run id"></label>
     <label>Helper URL <input name="helper_url" placeholder="http://100.x.y.z:5050"></label>
-    <label class="wide">Evidence <textarea name="evidence" rows="3" placeholder="DAQ sample count, device_id, validate-playback response, compare JSON path, exported ZIP path"></textarea></label>
+    <label class="wide">Evidence <textarea name="evidence" rows="3" placeholder="Use the gate-specific evidence hints above. Include paths, IDs, measured values, and unresolved warnings."></textarea></label>
     <label class="wide">Notes <textarea name="notes" rows="3" placeholder="What was physically checked, what remains uncertain, or why this is only a warning."></textarea></label>
     <button class="btn btn-primary" type="submit">Save Validation Record</button>
   </form>
@@ -75,8 +89,9 @@ python scripts/console_control.py stop</pre>
   </div>
   <p class="muted">Markdown report: <code>{{ validation.report_path }}</code></p>
   <h3>Gate Status</h3>
+  <div class="table-scroll">
   <table class="data-table">
-    <thead><tr><th>Gate</th><th>Status</th><th>Latest record</th><th>Session</th><th>Run</th></tr></thead>
+    <thead><tr><th>Gate</th><th>Status</th><th>Latest record</th><th>Session</th><th>Run</th><th>Expected evidence</th></tr></thead>
     <tbody>
       {% for gate in validation.gate_status %}
       <tr>
@@ -85,11 +100,14 @@ python scripts/console_control.py stop</pre>
         <td>{{ gate.recorded_at }}</td>
         <td>{{ gate.session_id }}</td>
         <td>{{ gate.run_id }}</td>
+        <td>{{ gate.evidence_hint }}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
+  </div>
   <h3>Recent Evidence</h3>
+  <div class="table-scroll">
   <table class="data-table">
     <thead><tr><th>Time</th><th>Gate</th><th>Status</th><th>Session</th><th>Run</th><th>Evidence</th></tr></thead>
     <tbody>
@@ -107,6 +125,7 @@ python scripts/console_control.py stop</pre>
       {% endfor %}
     </tbody>
   </table>
+  </div>
   </div>
 </section>
 <section class="card">

@@ -35,7 +35,7 @@
           {% if active_session %}<span class="badge badge-success">session ready</span>{% else %}<span class="badge badge-warning">session needed</span>{% endif %}
         </div>
         <div class="workflow-grid">
-          <div class="panel">
+          <div class="panel operator-panel">
             <h3>Session</h3>
             {% if active_session %}
             <p class="strong"><a href="/sessions/{{ active_session.session_id }}">{{ active_session.session_id }}</a></p>
@@ -52,7 +52,7 @@
             </form>
             {% endif %}
           </div>
-          <div class="panel">
+          <div class="panel operator-panel">
             <h3>Acquisition</h3>
             <p><span class="badge {{ 'badge-success' if daq_status.available else 'badge-warning' }}">{{ daq_status.mode }}</span></p>
             <p>{{ daq_status.message or daq_status.backend }}</p>
@@ -61,7 +61,7 @@
               <a class="btn btn-outline" href="/runs/new{% if active_session %}?session_id={{ active_session.session_id }}{% endif %}">Edit Run Metadata</a>
             </div>
           </div>
-          <div class="panel">
+          <div class="panel operator-panel">
             <h3>Mac Playback</h3>
             <p><span class="badge {{ 'badge-success' if mac_status.connected else 'badge-warning' }}">{{ "connected" if mac_status.connected else "optional" }}</span></p>
             {% if not mac_status.connected %}
@@ -83,10 +83,16 @@
           <h2>2. Capture And Live Preview</h2>
           <span class="badge badge-warning">preview only</span>
         </div>
-        <div class="capture-actions">
-          <button id="live-start" class="btn btn-primary" type="button">Start Mock Live</button>
-          <button id="live-stop" class="btn btn-outline" type="button">Stop Live</button>
-          <a class="btn btn-outline" href="/live">Full Live View</a>
+        <div class="capture-actions operator-action-bar">
+          <div>
+            <p class="action-label">Live monitor</p>
+            <p class="muted">Keep this dashboard open during the run.</p>
+          </div>
+          <div class="button-row">
+            <button id="live-start" class="btn btn-primary" type="button">Start Mock Live</button>
+            <button id="live-stop" class="btn btn-outline" type="button">Stop Live</button>
+            <a class="btn btn-outline" href="/live">Detailed Live Page</a>
+          </div>
         </div>
         {% if active_session %}
         <form method="post" action="/sessions/{{ active_session.session_id }}/runs" class="quick-capture-form" data-recording-guard>
@@ -120,11 +126,11 @@
         <p class="warn">Create a session before recording.</p>
         {% endif %}
         <div class="live-console-grid">
-          <div class="panel live-plot-panel">
+          <div class="panel live-plot-panel live-primary">
             <div class="card-title"><h3>Waveform</h3><span id="live-state" class="badge">Stopped</span></div>
             <canvas id="live-waveform" width="700" height="220"></canvas>
           </div>
-          <div class="panel">
+          <div class="panel live-meter-panel">
             <h3>RMS/Peak Meter</h3>
             <pre id="live-levels" class="compact-pre">stopped</pre>
           </div>
@@ -137,7 +143,7 @@
             <canvas id="live-spectrogram" width="700" height="220"></canvas>
           </div>
         </div>
-        <div class="panel">
+        <div class="panel finalization-panel">
           <div class="card-title"><h3>Finalization Status</h3><span class="badge {{ 'badge-warning' if recording_status.active else 'badge-success' }}">{{ "recording" if recording_status.active else "stopped" }}</span></div>
           <pre id="live-finalization" class="compact-pre">Start recording from this console or a run page.</pre>
           <nav class="actions">
@@ -156,8 +162,8 @@
           <h2>3. Results, Compare, Export</h2>
           {% if last_comparison %}<span class="badge badge-success">comparison ready</span>{% else %}<span class="badge badge-warning">needs pair</span>{% endif %}
         </div>
-        <div class="workflow-grid two-strong">
-          <div class="panel">
+        <div class="workflow-grid result-grid">
+          <div class="panel operator-panel">
             <h3>Latest Run</h3>
             {% if last_run %}
             <p class="strong"><a href="/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}">{{ last_run.run_id }}</a></p>
@@ -170,7 +176,7 @@
             <p>No runs yet.</p>
             {% endif %}
           </div>
-          <div class="panel">
+          <div class="panel operator-panel">
             <h3>Latest Comparison</h3>
             {% if last_comparison %}
             <p class="result-number">{{ "%.2f"|format(last_comparison.attenuation_db) }} dB</p>
@@ -183,7 +189,7 @@
           </div>
         </div>
         {% if last_run and last_run_artifacts %}
-        <div class="panel">
+        <div class="panel visual-results-panel">
           <div class="card-title">
             <h3>Latest Visual Artifacts</h3>
             <span class="badge {{ 'badge-success' if last_run.analysis.status == 'finalized' else 'badge-warning' }}">{{ last_run.analysis.status }}</span>

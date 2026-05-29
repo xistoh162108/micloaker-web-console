@@ -28,6 +28,8 @@ The Dashboard is the primary experiment console. It is organized by operating pr
 
 Use the detailed pages when you need advanced metadata, file browsing, full logs, or per-run playback details. During an experiment, the Dashboard should remain usable as the one-screen command center.
 
+The Dashboard favors stable operator controls over visual decoration: capture buttons and fields wrap cleanly, live waveform/finalization status remain in the main flow, and logs stay available without taking over the primary experiment view.
+
 ## System Layout
 
 Recommended lab layout:

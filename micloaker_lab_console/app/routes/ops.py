@@ -7,7 +7,14 @@ import threading
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse
 
-from ..services.lab_validation import VALIDATION_GATES, ensure_validation_artifacts, list_validation_records, record_lab_validation, validation_summary
+from ..services.lab_validation import (
+    VALIDATION_GATE_EVIDENCE,
+    VALIDATION_GATES,
+    ensure_validation_artifacts,
+    list_validation_records,
+    record_lab_validation,
+    validation_summary,
+)
 from ..services.readiness import lab_readiness
 from ..services.recorder import recording_status
 from ..services.text_store import append_app_event
@@ -31,6 +38,7 @@ def ops_page(request: Request):
             "recording_status": recording_status(),
             "readiness": readiness,
             "validation_gates": VALIDATION_GATES,
+            "validation_evidence_hints": VALIDATION_GATE_EVIDENCE,
             "validation": validation,
         },
     )
@@ -47,6 +55,7 @@ def validation_status(request: Request):
     return {
         "ok": True,
         "gates": VALIDATION_GATES,
+        "evidence_hints": VALIDATION_GATE_EVIDENCE,
         "summary": validation_summary(workspace),
         "records": list_validation_records(workspace),
     }
