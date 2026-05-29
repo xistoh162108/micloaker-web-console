@@ -406,6 +406,8 @@ def main() -> int:
     ui_ux_doc = ui_ux_path.read_text(encoding="utf-8") if ui_ux_path.exists() else ""
     legacy_alignment_path = ROOT.parent / "docs" / "LEGACY_NOTEBOOK_ALIGNMENT.md"
     legacy_alignment_doc = legacy_alignment_path.read_text(encoding="utf-8") if legacy_alignment_path.exists() else ""
+    checklist_path = ROOT.parent / "docs" / "CODEX_TASK_CHECKLIST.md"
+    checklist_doc = checklist_path.read_text(encoding="utf-8") if checklist_path.exists() else ""
     checks.append(report("uvicorn app.main:app --host 127.0.0.1 --port 8000" in readme, "README documents localhost console run command"))
     checks.append(report("Ctrl+C" in readme and "rebuilds session/run lists from workspace text files" in readme, "README documents temporary lifecycle and restart recovery"))
     checks.append(report("Live Monitor" in readme and "Live preview is approximate" in readme and "saved `.bin`" in readme, "README documents live preview-only workflow"))
@@ -505,6 +507,20 @@ def main() -> int:
     if missing_legacy_terms:
         for term in missing_legacy_terms:
             print(f"  missing legacy alignment term: {term}")
+    checklist_terms = [
+        "Automated evidence complete",
+        "Lab verification required",
+        "Latest recorded result: `133 passed`",
+        "Run a short real DAQ smoke capture",
+        "Run explicit DAQ live preview on the real DAQ",
+        "Run Mac Helper on the actual macOS playback machine",
+        "Record one finalized real `uj0`/`uj1` attenuation pair",
+    ]
+    missing_checklist_terms = [term for term in checklist_terms if term not in checklist_doc]
+    checks.append(report(not missing_checklist_terms, "Codex checklist reflects automated completion and remaining lab validation"))
+    if missing_checklist_terms:
+        for term in missing_checklist_terms:
+            print(f"  missing checklist term: {term}")
     helper_doc_terms = [
         "cp config.example.json config.json",
         "python helper.py --config config.json",
