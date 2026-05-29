@@ -74,6 +74,7 @@ REQUIRED_PATHS = [
     "mac_helper/README.md",
     "tests/test_core_workflow.py",
     "tests/test_mac_helper.py",
+    "../docs/COMPLETION_AUDIT.md",
     "README.md",
     "requirements.txt",
     "requirements-mac-helper.txt",
@@ -408,6 +409,8 @@ def main() -> int:
     legacy_alignment_doc = legacy_alignment_path.read_text(encoding="utf-8") if legacy_alignment_path.exists() else ""
     checklist_path = ROOT.parent / "docs" / "CODEX_TASK_CHECKLIST.md"
     checklist_doc = checklist_path.read_text(encoding="utf-8") if checklist_path.exists() else ""
+    completion_audit_path = ROOT.parent / "docs" / "COMPLETION_AUDIT.md"
+    completion_audit_doc = completion_audit_path.read_text(encoding="utf-8") if completion_audit_path.exists() else ""
     checks.append(report("uvicorn app.main:app --host 127.0.0.1 --port 8000" in readme, "README documents localhost console run command"))
     checks.append(report("Ctrl+C" in readme and "rebuilds session/run lists from workspace text files" in readme, "README documents temporary lifecycle and restart recovery"))
     checks.append(report("Live Monitor" in readme and "Live preview is approximate" in readme and "saved `.bin`" in readme, "README documents live preview-only workflow"))
@@ -521,6 +524,21 @@ def main() -> int:
     if missing_checklist_terms:
         for term in missing_checklist_terms:
             print(f"  missing checklist term: {term}")
+    completion_audit_terms = [
+        "Goal Requirement Audit",
+        "Stable local Linux web app, not always-on production service",
+        "Plain text persistence only",
+        "Raw `.bin` float64 voltage is saved and primary quantitative source",
+        "DAQ recording with real hardware",
+        "Helper uses explicit `device_id` without changing system default output",
+        "Remaining Requirements Not Yet Proved By Automation",
+        "overall goal must remain open until the lab-only physical verification items",
+    ]
+    missing_completion_terms = [term for term in completion_audit_terms if term not in completion_audit_doc]
+    checks.append(report(not missing_completion_terms, "completion audit maps goal requirements to evidence and lab-only gaps"))
+    if missing_completion_terms:
+        for term in missing_completion_terms:
+            print(f"  missing completion audit term: {term}")
     helper_doc_terms = [
         "cp config.example.json config.json",
         "python helper.py --config config.json",
