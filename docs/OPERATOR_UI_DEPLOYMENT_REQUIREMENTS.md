@@ -40,6 +40,8 @@ Required characteristics:
 - Controls must have consistent size, alignment, spacing, and visual weight.
 - UI elements must not overlap on desktop or mobile.
 - Logs are secondary diagnostic tools; visual artifacts and experiment progress are primary.
+- Live charts must use bounded payloads and browser-friendly canvas rendering so waveform, PSD, and spectrogram remain responsive during operation.
+- Finalized plot previews should favor fast browser inspection with lazy image decoding and simplified/rasterized SVG output where appropriate; raw `.bin` and metrics JSON remain the quantitative source of truth.
 
 ## 3. Safe Start/Stop Operation
 

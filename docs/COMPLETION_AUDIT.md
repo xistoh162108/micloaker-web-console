@@ -50,13 +50,13 @@ Expected automated state as of this audit:
 | Never silently overwrite raw `.bin` | Proven | Recorder/finalization conflict tests reject existing raw `.bin`. |
 | Metadata forms include experiment and safety fields | Proven | New-run/session forms and tests cover acquisition, condition, analysis, conversion, safety, and Mac Helper planning fields. |
 | File browser and audio preview | Proven | `/files`, run detail artifact links, audio element, and route tests. |
-| Waveform, PSD, spectrogram, PSD overlay, attenuation plots | Proven | Plotting service, compare artifacts, acceptance workflow, and ZIP tests. |
+| Waveform, PSD, spectrogram, PSD overlay, attenuation plots | Proven | Plotting service, compare artifacts, acceptance workflow, and ZIP tests; report plot previews use bounded waveform/PSD rendering and rasterized spectrogram SVG output for faster browser inspection. |
 | RMS, Welch PSD, band powers, dominant tone, clipping/DC/sample-count flags | Proven | Analyzer service and synthetic tests. |
 | `uj0`/`uj1` attenuation, remaining fraction, reduction percent | Proven | Compare service and tests. |
 | Individual, run, session, and multi-session ZIP downloads | Proven | Export service, route tests, and acceptance audit. |
 | ZIP manifests and safe relative archive paths | Proven | Export tests and acceptance audit. |
 | Debug/log console with tracebacks | Proven | Logs route/template and traceback tests. |
-| Live Monitor waveform/RMS/peak/clipping/PSD/spectrogram | Proven for mock source | `/live`, `/live/snapshot`, live monitor service, and tests. |
+| Live Monitor waveform/RMS/peak/clipping/PSD/spectrogram | Proven for mock source | `/live`, `/live/snapshot`, live monitor service, and tests; live charts use `requestAnimationFrame`, display-size canvas rendering, and `ImageData` spectrogram updates. |
 | Live values are preview-only | Proven | Live UI text, JSON payload labels, docs, and tests. |
 | DAQ live preview | Code proven, lab verification required | Explicit DAQ preview route uses lazy DAQ scan and structured errors; physical DAQ waveform/PSD quality must be validated in lab. |
 | DAQ recording with real hardware | Code proven, lab verification required | DAQ code path and fake-`uldaq` tests exist; actual sample rate, channel, range, and saved `.bin` count need physical DAQ evidence. |

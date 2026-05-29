@@ -49,6 +49,7 @@ The Linux Dashboard is the primary one-screen command center. Routine experiment
 - Hardware Validation Records: operator-entered DAQ/Mac/play-and-record/attenuation evidence saved under `workspace/.micloaker/`.
 
 The Dashboard layout is intentionally prioritized over decorative UI: the live monitor and capture controls stay in the main flow, controls wrap instead of overlapping, and detailed live/log pages remain secondary while the experiment is running.
+Live charts render through `requestAnimationFrame`, fixed-size canvas surfaces, and bounded preview payloads. Finalized plot images use lazy async decoding, and report SVGs are simplified/rasterized where appropriate so large recordings remain practical to inspect in the browser.
 
 ## Quick Linux Console Setup
 

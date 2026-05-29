@@ -12,6 +12,18 @@ import numpy as np
 
 from .raw_bin import read_raw_float64_bin
 
+plt.rcParams.update(
+    {
+        "path.simplify": True,
+        "path.simplify_threshold": 0.8,
+        "agg.path.chunksize": 10000,
+        "svg.fonttype": "none",
+    }
+)
+
+MAX_WAVEFORM_PLOT_POINTS = 12000
+MAX_PSD_PLOT_BINS = 2048
+
 
 def plot_run(
     bin_path: Path,
@@ -103,7 +115,7 @@ def plot_psd_overlay(
 
 
 def _waveform(data: np.ndarray, fs: float, png: Path, svg: Path) -> None:
-    t = np.arange(data.size) / float(fs)
+    t, data = _waveform_plot_series(data, fs, MAX_WAVEFORM_PLOT_POINTS)
     fig, ax = plt.subplots(figsize=(8, 3), constrained_layout=True)
     ax.plot(t, data, linewidth=0.8, color="#1f4e79")
     ax.set_xlabel("Time (s)")
@@ -119,6 +131,7 @@ def _psd(data: np.ndarray, fs: float, png: Path, svg: Path, band_hz: tuple[float
     x = data - np.mean(data) if remove_dc and data.size else data
     nperseg = min(4096, max(256, x.size // 4)) if x.size >= 256 else max(8, x.size)
     freqs, psd = _welch_psd(x, fs, nperseg=nperseg, detrend=False) if x.size else (np.array([]), np.array([]))
+    freqs, psd = _thin_xy(freqs, psd, MAX_PSD_PLOT_BINS)
     fig, ax = plt.subplots(figsize=(8, 3), constrained_layout=True)
     if freqs.size:
         ax.semilogy(freqs, psd, color="#6b4e16", linewidth=1.0)
@@ -152,7 +165,8 @@ def _spectrogram(data: np.ndarray, fs: float, png: Path, svg: Path, *, remove_dc
         if remove_dc:
             data = data - np.mean(data)
         nperseg = min(512, max(64, data.size // 8))
-        ax.specgram(data, NFFT=nperseg, Fs=fs, noverlap=nperseg // 2, cmap="viridis")
+        _, _, _, image = ax.specgram(data, NFFT=nperseg, Fs=fs, noverlap=nperseg // 2, cmap="viridis")
+        image.set_rasterized(True)
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Frequency (Hz)")
     ax.set_title("Spectrogram")
@@ -167,3 +181,47 @@ def _welch_psd(x: np.ndarray, sample_rate_hz: float, *, nperseg: int, detrend: b
     except ImportError as exc:
         raise RuntimeError("SciPy is required for report PSD plots. Metrics may still be available in the run results.") from exc
     return signal.welch(x, fs=sample_rate_hz, nperseg=nperseg, detrend=detrend)
+
+
+def _waveform_plot_series(data: np.ndarray, fs: float, max_points: int) -> tuple[np.ndarray, np.ndarray]:
+    """Preserve local extrema while limiting report plot point count."""
+    if data.size <= max_points or max_points < 4:
+        return np.arange(data.size) / float(fs), data
+    bucket_count = max(1, max_points // 2)
+    bucket_size = int(np.ceil(data.size / bucket_count))
+    trimmed_size = (data.size // bucket_size) * bucket_size
+    if trimmed_size < bucket_size:
+        stride = max(1, data.size // max_points)
+        idx = np.arange(0, data.size, stride)
+        return idx / float(fs), data[idx]
+    core = data[:trimmed_size].reshape(-1, bucket_size)
+    mins = core.min(axis=1)
+    maxs = core.max(axis=1)
+    min_pos = core.argmin(axis=1) + np.arange(core.shape[0]) * bucket_size
+    max_pos = core.argmax(axis=1) + np.arange(core.shape[0]) * bucket_size
+    times = np.empty(mins.size * 2, dtype=float)
+    envelope = np.empty(mins.size * 2, dtype=data.dtype)
+    times[0::2] = min_pos / float(fs)
+    times[1::2] = max_pos / float(fs)
+    envelope[0::2] = mins
+    envelope[1::2] = maxs
+    order = np.argsort(times, kind="stable")
+    times = times[order]
+    envelope = envelope[order]
+    if trimmed_size < data.size:
+        tail = data[trimmed_size:]
+        tail_min_pos = int(tail.argmin()) + trimmed_size
+        tail_max_pos = int(tail.argmax()) + trimmed_size
+        tail_times = np.array([tail_min_pos, tail_max_pos], dtype=float) / float(fs)
+        tail_values = np.array([tail.min(), tail.max()], dtype=data.dtype)
+        tail_order = np.argsort(tail_times, kind="stable")
+        times = np.concatenate([times, tail_times[tail_order]])
+        envelope = np.concatenate([envelope, tail_values[tail_order]])
+    return times, envelope
+
+
+def _thin_xy(x: np.ndarray, y: np.ndarray, max_points: int) -> tuple[np.ndarray, np.ndarray]:
+    if x.size <= max_points or y.size <= max_points or max_points < 2:
+        return x, y
+    idx = np.linspace(0, min(x.size, y.size) - 1, max_points, dtype=int)
+    return x[idx], y[idx]

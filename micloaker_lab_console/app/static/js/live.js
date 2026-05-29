@@ -13,6 +13,8 @@ const psdCanvas = document.getElementById("live-psd");
 const psdCtx = psdCanvas ? psdCanvas.getContext("2d") : null;
 const specCanvas = document.getElementById("live-spectrogram");
 const specCtx = specCanvas ? specCanvas.getContext("2d") : null;
+const spectrogramBufferCanvas = document.createElement("canvas");
+const spectrogramBufferCtx = spectrogramBufferCanvas.getContext("2d");
 const recordingGuardMessage = document.getElementById("recording-guard-message");
 let timer = null;
 let currentIntervalMs = null;
@@ -148,16 +150,19 @@ function renderFinalRun(data) {
 }
 
 function drawLine(ctx, canvas, points, color, mode) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const width = resizeCanvasForDisplay(canvas);
+  const height = canvas.height;
+  ctx.clearRect(0, 0, width, height);
   ctx.strokeStyle = color;
   ctx.lineWidth = 2;
   ctx.beginPath();
-  const min = mode === "bipolar" ? -0.35 : Math.min(...points);
-  const max = mode === "bipolar" ? 0.35 : Math.max(...points);
+  const bounds = mode === "bipolar" ? { min: -0.35, max: 0.35 } : pointBounds(points);
+  const min = bounds.min;
+  const max = bounds.max;
   const span = Math.max(1e-12, max - min);
   points.forEach((v, i) => {
-    const x = i * canvas.width / Math.max(1, points.length - 1);
-    const y = canvas.height - ((v - min) / span) * canvas.height;
+    const x = i * width / Math.max(1, points.length - 1);
+    const y = height - ((v - min) / span) * height;
     if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
   });
   ctx.stroke();
@@ -165,11 +170,58 @@ function drawLine(ctx, canvas, points, color, mode) {
 
 function drawSpectrogram(rows) {
   if (!rows.length) return;
-  const width = specCanvas.width;
+  const width = resizeCanvasForDisplay(specCanvas);
   const height = specCanvas.height;
-  specCtx.clearRect(0, 0, width, height);
   const cols = rows.length;
   const bins = rows[0].length;
+  spectrogramBufferCanvas.width = cols;
+  spectrogramBufferCanvas.height = bins;
+  const image = spectrogramBufferCtx.createImageData(cols, bins);
+  const data = image.data;
+  const bounds = nestedBounds(rows);
+  const span = Math.max(1e-12, bounds.max - bounds.min);
+  for (let x = 0; x < cols; x += 1) {
+    const row = rows[x];
+    for (let y = 0; y < bins; y += 1) {
+      const yIdx = bins - 1 - y;
+      const norm = Math.max(0, Math.min(1, (row[yIdx] - bounds.min) / span));
+      const offset = (y * cols + x) * 4;
+      data[offset] = 24 + Math.floor(norm * 220);
+      data[offset + 1] = 76 + Math.floor(norm * 120);
+      data[offset + 2] = 92 + Math.floor((1 - norm) * 120);
+      data[offset + 3] = 255;
+    }
+  }
+  spectrogramBufferCtx.putImageData(image, 0, 0);
+  specCtx.imageSmoothingEnabled = false;
+  specCtx.clearRect(0, 0, width, height);
+  specCtx.drawImage(spectrogramBufferCanvas, 0, 0, width, height);
+}
+
+function resizeCanvasForDisplay(canvas) {
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+  const cssWidth = Math.max(1, Math.floor(canvas.clientWidth || canvas.width));
+  const cssHeight = Math.max(1, Math.floor(canvas.clientHeight || canvas.height));
+  const width = Math.floor(cssWidth * pixelRatio);
+  const height = Math.floor(cssHeight * pixelRatio);
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+  }
+  return width;
+}
+
+function pointBounds(points) {
+  let min = Infinity;
+  let max = -Infinity;
+  points.forEach((v) => {
+    if (v < min) min = v;
+    if (v > max) max = v;
+  });
+  return { min, max };
+}
+
+function nestedBounds(rows) {
   let min = Infinity;
   let max = -Infinity;
   rows.forEach((row) => {
@@ -178,17 +230,7 @@ function drawSpectrogram(rows) {
       if (v > max) max = v;
     });
   });
-  const span = Math.max(1e-12, max - min);
-  rows.forEach((row, xIdx) => {
-    row.forEach((v, yIdx) => {
-      const norm = (v - min) / span;
-      const hue = 220 - norm * 180;
-      specCtx.fillStyle = `hsl(${hue}, 80%, ${25 + norm * 45}%)`;
-      const x = Math.floor(xIdx * width / cols);
-      const y = height - Math.floor((yIdx + 1) * height / bins);
-      specCtx.fillRect(x, y, Math.ceil(width / cols), Math.ceil(height / bins));
-    });
-  });
+  return { min, max };
 }
 
 document.querySelectorAll("[data-live-start]").forEach((button) => {

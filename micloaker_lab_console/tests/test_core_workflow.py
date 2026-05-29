@@ -340,6 +340,17 @@ def test_analysis_on_synthetic_bin(tmp_path: Path):
     assert metrics["dominant_tone_band_hz"] == pytest.approx([950.0, 1050.0], abs=10)
 
 
+def test_report_plot_series_is_decimated_without_changing_extrema():
+    data = np.sin(np.linspace(0, 80 * np.pi, 48000, endpoint=False)).astype(np.float64)
+    times, values = plotting_module._waveform_plot_series(data, 48000.0, 12000)
+    assert len(values) <= 12002
+    assert len(times) == len(values)
+    assert times[0] >= 0.0
+    assert times[-1] < 1.0
+    assert values.max() > 0.99
+    assert values.min() < -0.99
+
+
 def test_analysis_reports_missing_scipy_as_dependency_error(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     fs = 8000
     path = tmp_path / "tone.bin"
@@ -2216,6 +2227,9 @@ def test_live_snapshot_contains_preview_psd_and_spectrogram(tmp_path: Path, monk
     assert "scheduleRefresh" in live_js
     assert "requestAnimationFrame(renderCharts)" in live_js
     assert "function renderCharts()" in live_js
+    assert "createImageData" in live_js
+    assert "drawImage(spectrogramBufferCanvas" in live_js
+    assert "resizeCanvasForDisplay" in live_js
     assert "rows.flat()" not in live_js
     assert "setInterval(refresh, nextInterval)" in live_js
     assert "?download=1" in live_js
