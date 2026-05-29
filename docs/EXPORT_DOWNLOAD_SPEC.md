@@ -50,6 +50,8 @@ A session ZIP contains:
   export_manifest.json
 ```
 
+When `scripts/lab_readiness_check.py --check-server --write-report` was run before export, the readiness JSON/Markdown must preserve the CLI server/static asset smoke result, including the `CLI Server Routes` check.
+
 ## 4. Multi-session ZIP
 
 Contains multiple session ZIP-like folders and a top-level manifest. Each session folder should include the workspace-level hardware validation evidence and readiness snapshot under `ops_validation/` when those files exist, so supervisors can review physical DAQ/Mac/play-and-record/attenuation evidence with the exported session package.

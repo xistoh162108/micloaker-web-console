@@ -579,6 +579,19 @@ def main() -> int:
     if missing_completion_terms:
         for term in missing_completion_terms:
             print(f"  missing completion audit term: {term}")
+    export_spec_path = ROOT.parent / "docs" / "EXPORT_DOWNLOAD_SPEC.md"
+    export_spec_doc = export_spec_path.read_text(encoding="utf-8") if export_spec_path.exists() else ""
+    export_terms = [
+        "ops_validation/lab_readiness_report.json",
+        "ops_validation/lab_readiness_report.md",
+        "CLI Server Routes",
+        "server/static asset smoke result",
+    ]
+    missing_export_terms = [term for term in export_terms if term not in export_spec_doc]
+    checks.append(report(not missing_export_terms, "export spec preserves readiness and CLI smoke evidence"))
+    if missing_export_terms:
+        for term in missing_export_terms:
+            print(f"  missing export spec term: {term}")
     helper_doc_terms = [
         "cp config.example.json config.json",
         "python helper.py --config config.json",

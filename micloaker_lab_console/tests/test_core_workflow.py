@@ -827,7 +827,17 @@ def test_session_zip_includes_hardware_validation_records(tmp_path: Path):
         run_id="daq_smoke_run",
         evidence="DAQ sample count and channel verified.",
     )
-    write_readiness_artifacts(Settings(workspace=tmp_path))
+    write_readiness_artifacts(
+        Settings(workspace=tmp_path),
+        extra_checks=[
+            {
+                "key": "cli_server_routes",
+                "label": "CLI Server Routes",
+                "level": "PASS",
+                "message": "All smoke routes and UI assets returned expected content at http://100.88.179.43:8000.",
+            }
+        ],
+    )
 
     session_zip = make_session_zip(tmp_path, session["session_id"], tmp_path / "validation_session.zip")
     with zipfile.ZipFile(session_zip) as zf:
@@ -836,6 +846,7 @@ def test_session_zip_includes_hardware_validation_records(tmp_path: Path):
         records = zf.read(f"{session['session_id']}/ops_validation/hardware_validation.jsonl").decode("utf-8")
         report = zf.read(f"{session['session_id']}/ops_validation/hardware_validation_report.md").decode("utf-8")
         plan = zf.read(f"{session['session_id']}/ops_validation/hardware_validation_plan.txt").decode("utf-8")
+        readiness_json = json.loads(zf.read(f"{session['session_id']}/ops_validation/lab_readiness_report.json"))
         readiness_report = zf.read(f"{session['session_id']}/ops_validation/lab_readiness_report.md").decode("utf-8")
     assert f"{session['session_id']}/ops_validation/hardware_validation.jsonl" in names
     assert f"{session['session_id']}/ops_validation/hardware_validation_report.md" in names
@@ -852,6 +863,9 @@ def test_session_zip_includes_hardware_validation_records(tmp_path: Path):
     assert "Gate Evidence Checklist" in report
     assert "selected device_id" in report
     assert "MiCloaker Lab Readiness Report" in readiness_report
+    assert "CLI Server Routes" in readiness_report
+    assert "All smoke routes and UI assets returned expected content" in readiness_report
+    assert any(check["key"] == "cli_server_routes" for check in readiness_json["checks"])
 
 
 def test_multi_session_zip_and_no_database_files(tmp_path: Path):
@@ -859,12 +873,23 @@ def test_multi_session_zip_and_no_database_files(tmp_path: Path):
     s1 = create_session(tmp_path, "one")
     s2 = create_session(tmp_path, "two")
     record_lab_validation(tmp_path, gate="attenuation_pair", status="warn", session_id=s1["session_id"], evidence="comparison pending")
-    write_readiness_artifacts(Settings(workspace=tmp_path))
+    write_readiness_artifacts(
+        Settings(workspace=tmp_path),
+        extra_checks=[
+            {
+                "key": "cli_server_routes",
+                "label": "CLI Server Routes",
+                "level": "PASS",
+                "message": "All smoke routes and UI assets returned expected content at http://100.88.179.43:8000.",
+            }
+        ],
+    )
     out = make_multi_session_zip(tmp_path, [s1["session_id"], s2["session_id"]], tmp_path / "multi.zip")
     with zipfile.ZipFile(out) as zf:
         names = zf.namelist()
         manifest = json.loads(zf.read("export_manifest.json"))
         session_manifest = json.loads(zf.read(f"{s1['session_id']}/export_manifest.json"))
+        readiness_report = zf.read(f"{s1['session_id']}/ops_validation/lab_readiness_report.md").decode("utf-8")
     assert f"{s1['session_id']}/session.json" in names
     assert f"{s2['session_id']}/session_report.md" in names
     assert f"{s1['session_id']}/export_manifest.json" in names
@@ -876,6 +901,7 @@ def test_multi_session_zip_and_no_database_files(tmp_path: Path):
     assert f"{s1['session_id']}/ops_validation/hardware_validation.jsonl" in names
     assert f"{s1['session_id']}/ops_validation/hardware_validation_plan.txt" in names
     assert f"{s1['session_id']}/ops_validation/lab_readiness_report.json" in names
+    assert "CLI Server Routes" in readiness_report
     assert session_manifest["missing_files"] == []
     assert session_manifest["unsafe_files"] == []
     assert manifest["missing_files"] == []
