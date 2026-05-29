@@ -1105,6 +1105,8 @@ def test_uldaq_is_lazy_and_app_routes_smoke(tmp_path: Path, monkeypatch: pytest.
         assert response.status_code == 200
     ops_page = client.get("/ops")
     assert "Web shutdown" in ops_page.text
+    assert "python scripts/console_control.py restart" in ops_page.text
+    assert "Default restart reuses the last saved host, port, and web-shutdown mode." in ops_page.text
     assert "Lab Readiness" in ops_page.text
     assert "Workspace Text Files" in ops_page.text
     assert "disabled" in ops_page.text

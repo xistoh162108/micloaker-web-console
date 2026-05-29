@@ -491,6 +491,8 @@ def main() -> int:
         "Open Compare",
         "hardware validation gate status and next-action targets",
         "not applicable",
+        "python scripts/console_control.py restart",
+        "Default restart reuses the last saved host, port, and web-shutdown mode",
     ]
     validation_sources = (
         (ROOT / "app" / "templates" / "ops.html").read_text(encoding="utf-8")

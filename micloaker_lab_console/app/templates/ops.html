@@ -25,7 +25,10 @@
     <p class="muted">Use the console control script for normal lab operation.</p>
     <pre>python scripts/console_control.py start --tailscale --allow-web-shutdown
 python scripts/console_control.py status
+python scripts/console_control.py restart
+python scripts/console_control.py restart --tailscale --allow-web-shutdown
 python scripts/console_control.py stop</pre>
+    <p class="muted">Default restart reuses the last saved host, port, and web-shutdown mode. Use the explicit Tailscale restart command when changing from localhost to direct Tailnet access.</p>
     {% if allow_web_shutdown %}
       {% if recording_status.active %}
       <p class="warn">Shutdown is locked while recording is active.</p>
