@@ -33,10 +33,12 @@ def main() -> int:
     start.add_argument("--allow-web-shutdown", action="store_true", help="Enable the /ops Stop Console button for this process.")
     start.add_argument("--reload", action="store_true", help="Start uvicorn with reload for development only.")
     sub.choices["stop"].add_argument("--timeout", type=float, default=10.0)
+    sub.choices["stop"].add_argument("--force", action="store_true", help="Stop even if /recording/status reports an active recording.")
     restart = sub.choices["restart"]
     restart.add_argument("--allow-web-shutdown", action=argparse.BooleanOptionalAction, default=None, help="Enable or disable the /ops Stop Console button after restart.")
     restart.add_argument("--reload", action=argparse.BooleanOptionalAction, default=None, help="Restart uvicorn with reload for development only.")
     restart.add_argument("--timeout", type=float, default=10.0)
+    restart.add_argument("--force", action="store_true", help="Restart even if /recording/status reports an active recording.")
     args = parser.parse_args()
 
     workspace = (ROOT / args.workspace).resolve() if not Path(args.workspace).is_absolute() else Path(args.workspace).resolve()
@@ -48,11 +50,11 @@ def main() -> int:
     if args.command == "start":
         return start_console(workspace, host, args.port, allow_web_shutdown=args.allow_web_shutdown, reload=args.reload)
     if args.command == "stop":
-        return stop_console(workspace, timeout_s=args.timeout)
+        return stop_console(workspace, timeout_s=args.timeout, force=args.force)
     if args.command == "restart":
         allow_web_shutdown = bool(saved.get("allow_web_shutdown", False)) if args.allow_web_shutdown is None else args.allow_web_shutdown
         reload = bool(saved.get("reload", False)) if args.reload is None else args.reload
-        return restart_console(workspace, host, args.port, allow_web_shutdown=allow_web_shutdown, reload=reload, timeout_s=args.timeout)
+        return restart_console(workspace, host, args.port, allow_web_shutdown=allow_web_shutdown, reload=reload, timeout_s=args.timeout, force=args.force)
     return status_console(workspace, host, args.port)
 
 
@@ -99,15 +101,15 @@ def start_console(workspace: Path, host: str, port: int, *, allow_web_shutdown: 
     return 0
 
 
-def restart_console(workspace: Path, host: str, port: int, *, allow_web_shutdown: bool, reload: bool, timeout_s: float) -> int:
-    stop_status = stop_console(workspace, timeout_s=timeout_s)
+def restart_console(workspace: Path, host: str, port: int, *, allow_web_shutdown: bool, reload: bool, timeout_s: float, force: bool = False) -> int:
+    stop_status = stop_console(workspace, timeout_s=timeout_s, force=force)
     if stop_status != 0:
         print("Restart aborted because the previous console process did not stop cleanly.")
         return stop_status
     return start_console(workspace, host, port, allow_web_shutdown=allow_web_shutdown, reload=reload)
 
 
-def stop_console(workspace: Path, *, timeout_s: float) -> int:
+def stop_console(workspace: Path, *, timeout_s: float, force: bool = False) -> int:
     pid_file = workspace / ".micloaker" / "console.pid"
     pid = _read_pid(pid_file)
     if not pid:
@@ -117,6 +119,10 @@ def stop_console(workspace: Path, *, timeout_s: float) -> int:
         pid_file.unlink(missing_ok=True)
         print(f"Console PID {pid} is not running; removed stale PID file.")
         return 0
+    if not force and _recording_active(workspace):
+        print("Refusing to stop MiCloaker Lab Console because /recording/status reports an active recording or finalization.")
+        print("Wait for recording/finalization to finish, or rerun with --force only for emergency shutdown.")
+        return 2
     os.kill(pid, signal.SIGINT)
     deadline = time.monotonic() + timeout_s
     while time.monotonic() < deadline:
@@ -149,6 +155,20 @@ def status_console(workspace: Path, host: str, port: int) -> int:
     except Exception as exc:
         print(f"HTTP: unavailable at {url}: {exc}")
     return 0
+
+
+def _recording_active(workspace: Path) -> bool:
+    state = _read_console_state(workspace)
+    url = str(state.get("url") or "")
+    if not url:
+        host = str(state.get("host") or DEFAULT_HOST)
+        port = int(state.get("port") or DEFAULT_PORT)
+        url = f"http://{host}:{port}"
+    try:
+        data = httpx.get(url.rstrip("/") + "/recording/status", timeout=2.0).json()
+    except Exception:
+        return False
+    return bool(data.get("active") or data.get("recording_state") in {"Recording", "Finalizing"})
 
 
 def _read_pid(path: Path) -> int | None:

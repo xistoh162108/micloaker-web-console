@@ -50,6 +50,7 @@ The app is a temporary lab tool, not an always-on daemon. It must be easy and sa
 Required Linux controls:
 
 - Command-line start/status/restart/stop script.
+- CLI stop/restart must refuse active recording/finalization by default and require an explicit `--force` for emergency shutdown.
 - PID file and server log under `workspace/.micloaker/`.
 - Default safe local mode remains `127.0.0.1`.
 - Explicit Tailscale mode must bind to the `tailscale0` IPv4 address for direct Tailnet browser access.

@@ -30,7 +30,7 @@ Status language:
 - [x] Implement optional Mac Helper standalone service. Mock/test evidence complete; physical output routing remains lab verification.
 - [x] Implement Linux Mac Helper client and UI. Automated evidence complete.
 - [x] Add tests. Automated evidence complete.
-- [x] Run tests. Latest recorded result: `138 passed`.
+- [x] Run tests. Latest recorded result: `139 passed`.
 
 ## Do not forget
 

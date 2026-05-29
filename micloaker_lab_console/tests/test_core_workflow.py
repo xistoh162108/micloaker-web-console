@@ -144,8 +144,8 @@ def test_console_control_restart_stops_then_starts(tmp_path: Path, monkeypatch: 
     console_control = load_console_control_module()
     calls = []
 
-    def fake_stop(workspace: Path, *, timeout_s: float) -> int:
-        calls.append(("stop", workspace, timeout_s))
+    def fake_stop(workspace: Path, *, timeout_s: float, force: bool = False) -> int:
+        calls.append(("stop", workspace, timeout_s, force))
         return 0
 
     def fake_start(workspace: Path, host: str, port: int, *, allow_web_shutdown: bool, reload: bool) -> int:
@@ -159,7 +159,7 @@ def test_console_control_restart_stops_then_starts(tmp_path: Path, monkeypatch: 
 
     assert result == 0
     assert calls == [
-        ("stop", tmp_path, 3.0),
+        ("stop", tmp_path, 3.0, False),
         ("start", tmp_path, "100.88.179.43", 8000, True, False),
     ]
 
@@ -168,8 +168,8 @@ def test_console_control_restart_aborts_if_stop_fails(tmp_path: Path, monkeypatc
     console_control = load_console_control_module()
     calls = []
 
-    def fake_stop(workspace: Path, *, timeout_s: float) -> int:
-        calls.append(("stop", workspace, timeout_s))
+    def fake_stop(workspace: Path, *, timeout_s: float, force: bool = False) -> int:
+        calls.append(("stop", workspace, timeout_s, force))
         return 1
 
     def fake_start(*args, **kwargs) -> int:
@@ -182,7 +182,7 @@ def test_console_control_restart_aborts_if_stop_fails(tmp_path: Path, monkeypatc
     result = console_control.restart_console(tmp_path, "127.0.0.1", 8000, allow_web_shutdown=False, reload=False, timeout_s=0.1)
 
     assert result == 1
-    assert calls == [("stop", tmp_path, 0.1)]
+    assert calls == [("stop", tmp_path, 0.1, False)]
 
 
 def test_console_control_restart_preserves_saved_mode_by_default(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -200,8 +200,8 @@ def test_console_control_restart_preserves_saved_mode_by_default(tmp_path: Path,
         reload=False,
     )
 
-    def fake_stop(workspace: Path, *, timeout_s: float) -> int:
-        calls.append(("stop", workspace, timeout_s))
+    def fake_stop(workspace: Path, *, timeout_s: float, force: bool = False) -> int:
+        calls.append(("stop", workspace, timeout_s, force))
         return 0
 
     def fake_start(workspace: Path, host: str, port: int, *, allow_web_shutdown: bool, reload: bool) -> int:
@@ -214,9 +214,33 @@ def test_console_control_restart_preserves_saved_mode_by_default(tmp_path: Path,
 
     assert console_control.main() == 0
     assert calls == [
-        ("stop", tmp_path, 10.0),
+        ("stop", tmp_path, 10.0, False),
         ("start", tmp_path, "100.88.179.43", 9000, True, False),
     ]
+
+
+def test_console_control_stop_refuses_active_recording_without_force(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]):
+    console_control = load_console_control_module()
+    state_dir = tmp_path / ".micloaker"
+    state_dir.mkdir()
+    pid_file = state_dir / "console.pid"
+    pid_file.write_text("12345\n", encoding="utf-8")
+    monkeypatch.setattr(console_control, "_process_alive", lambda pid: True)
+    monkeypatch.setattr(console_control, "_recording_active", lambda workspace: True)
+    killed = []
+    monkeypatch.setattr(console_control.os, "kill", lambda pid, sig: killed.append((pid, sig)))
+
+    result = console_control.stop_console(tmp_path, timeout_s=0.1)
+
+    assert result == 2
+    assert killed == []
+    assert "Refusing to stop" in capsys.readouterr().out
+
+    monkeypatch.setattr(console_control.time, "sleep", lambda seconds: None)
+    monkeypatch.setattr(console_control, "_process_alive", lambda pid: not killed)
+    forced = console_control.stop_console(tmp_path, timeout_s=0.1, force=True)
+    assert forced == 0
+    assert killed
 
 
 def test_startup_rebuild_skips_malformed_scanned_json_files(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

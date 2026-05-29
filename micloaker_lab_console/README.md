@@ -177,6 +177,8 @@ The launchers use the same safe control script. The Start launcher uses Tailscal
 
 Stop a foreground console with `Ctrl+C`. Use `scripts/console_control.py restart` after code changes; by default it reuses the last saved host, port, and web-shutdown mode. On restart, the app rebuilds session/run lists from workspace text files.
 
+The control script refuses `stop` or `restart` while `/recording/status` reports active recording/finalization. Use `--force` only for emergency shutdown when you accept the risk of interrupting the current capture.
+
 ### Ops page
 
 Open `/ops` in the web UI to see:

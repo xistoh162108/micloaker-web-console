@@ -16,7 +16,7 @@ Run from `micloaker_lab_console/`:
 
 Expected automated state as of this audit:
 
-- Full test suite: `138 passed`
+- Full test suite: `139 passed`
 - Acceptance audit: `PASS`
 - Tailscale lab console smoke route: `http://100.88.179.43:8000` returns HTTP 200 when started explicitly with `--tailscale`
 - Default configured bind remains `127.0.0.1`
@@ -31,7 +31,7 @@ Expected automated state as of this audit:
 
 | Requirement | Status | Current evidence |
 |---|---|---|
-| Stable local Linux web app, not always-on production service | Proven | `README.md` documents temporary start/status/restart/stop, SSH tunnel, Tailscale explicit mode, and `scripts/console_control.py`; `/ops` exposes safe status/shutdown controls. |
+| Stable local Linux web app, not always-on production service | Proven | `README.md` documents temporary start/status/restart/stop, SSH tunnel, Tailscale explicit mode, and `scripts/console_control.py`; `/ops` exposes safe status/shutdown controls, and CLI stop/restart refuses active recording unless `--force` is used. |
 | Default bind is `127.0.0.1` | Proven | `app/config.py` default and `scripts/acceptance_audit.py` check `DEFAULT_HOST == "127.0.0.1"`. |
 | FastAPI + Jinja2 + vanilla JS/CSS, no frontend build step | Proven | `app/main.py`, `app/templates/`, `app/static/js/`, `app/static/css/app.css`; no React/Vite/Webpack config in the app. |
 | No database | Proven | Acceptance audit scans for database-like files and forbidden DB dependencies; requirements exclude database packages. |
