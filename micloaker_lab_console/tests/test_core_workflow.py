@@ -1326,6 +1326,46 @@ def test_lab_readiness_cli_reflects_validation_gate_status(tmp_path: Path):
     assert "JSONL:" in plan.stdout
     assert (tmp_path / ".micloaker" / "hardware_validation_plan.txt").is_file()
 
+    template_path = tmp_path / "daq_evidence.txt"
+    template = subprocess.run(
+        [
+            sys.executable,
+            "scripts/lab_readiness_check.py",
+            "--write-evidence-template",
+            "daq_smoke",
+            "--evidence-template-file",
+            str(template_path),
+        ],
+        cwd=Path(__file__).resolve().parents[1],
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert template.returncode == 0
+    assert "evidence template written: gate=daq_smoke" in template.stdout
+    template_text = template_path.read_text(encoding="utf-8")
+    assert "Evidence Template: Linux DAQ smoke capture" in template_text
+    assert "- expected vs written sample count:" in template_text
+    assert "scripts/lab_readiness_check.py --record-gate daq_smoke" in template_text
+    duplicate_template = subprocess.run(
+        [
+            sys.executable,
+            "scripts/lab_readiness_check.py",
+            "--write-evidence-template",
+            "daq_smoke",
+            "--evidence-template-file",
+            str(template_path),
+        ],
+        cwd=Path(__file__).resolve().parents[1],
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert duplicate_template.returncode == 2
+    assert "--evidence-template-file already exists" in duplicate_template.stderr
+
     cli_record = subprocess.run(
         [
             sys.executable,

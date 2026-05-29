@@ -47,6 +47,7 @@ The same table also shows structured checklist fields for each gate, such as `se
 The validation form has a **Use checklist draft** button that pre-fills the evidence field with gate-specific checklist labels, so the operator can fill measured values without retyping the field names.
 Terminal-only runs can append validation evidence with `scripts/lab_readiness_check.py --record-gate <gate> --record-status <pass|warn|fail|na> --record-evidence "..."`; use `--record-evidence-file evidence.txt` for longer copied lab notes. The CLI writes the same JSONL/Markdown evidence files as `/ops`.
 Run `scripts/lab_readiness_check.py --validation-plan` before a hardware session to print the ordered physical validation gates, checklist fields, next-action screens, and terminal record commands.
+Run `scripts/lab_readiness_check.py --write-evidence-template <gate> --evidence-template-file evidence.txt` to create a fillable evidence note with the gate checklist, evidence hint, and record command.
 The `hardware_validation_report.md` file includes a **Gate Evidence Checklist** section before the recorded evidence table so exported session packages remain self-auditing.
 The `/ops` Gate Status table also includes **Next action** links for the expected workflow screen, such as DAQ run creation, Mac Helper, Compare, and file review.
 The readiness Markdown report includes the same hardware validation gate status, checklist fields, next-action targets, and terminal record commands so exported evidence packages show which physical checks remain and how to record them.

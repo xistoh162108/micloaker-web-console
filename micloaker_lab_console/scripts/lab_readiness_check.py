@@ -17,10 +17,10 @@ if str(ROOT) not in sys.path:
 
 from app.config import DEFAULT_HOST, DEFAULT_PORT, get_settings  # noqa: E402
 from app.services.daq import daq_health  # noqa: E402
-from app.services.lab_validation import VALIDATION_GATES, VALIDATION_STATUSES, ensure_validation_artifacts, record_lab_validation, validation_paths, validation_plan, validation_summary  # noqa: E402
+from app.services.lab_validation import VALIDATION_GATES, VALIDATION_STATUSES, ensure_validation_artifacts, record_lab_validation, validation_evidence_template, validation_paths, validation_plan, validation_summary  # noqa: E402
 from app.services.mac_helper_client import MacHelperClient  # noqa: E402
 from app.services.readiness import write_readiness_artifacts  # noqa: E402
-from app.services.text_store import read_json_or_default  # noqa: E402
+from app.services.text_store import atomic_write_text, read_json_or_default  # noqa: E402
 
 
 DB_SUFFIXES = {".db", ".duckdb", ".sqlite", ".sqlite3"}
@@ -36,6 +36,9 @@ def main() -> int:
     parser.add_argument("--check-helper", action="store_true", help="Call configured Mac Helper health/devices/files/status endpoints.")
     parser.add_argument("--write-report", action="store_true", help="Write lab_readiness_report.json and .md under workspace/.micloaker.")
     parser.add_argument("--validation-plan", action="store_true", help="Print the ordered physical validation gate plan and recording commands.")
+    parser.add_argument("--write-evidence-template", choices=sorted(VALIDATION_GATES), help="Write an operator-fillable evidence template for the selected validation gate.")
+    parser.add_argument("--evidence-template-file", default="evidence.txt", help="Output path for --write-evidence-template.")
+    parser.add_argument("--overwrite-evidence-template", action="store_true", help="Allow --write-evidence-template to replace an existing file.")
     parser.add_argument("--record-gate", choices=sorted(VALIDATION_GATES), help="Append a hardware validation record for this gate before checking readiness.")
     parser.add_argument("--record-status", choices=sorted(VALIDATION_STATUSES), help="Status for --record-gate.")
     parser.add_argument("--record-operator", default="", help="Operator name or initials for --record-gate.")
@@ -54,6 +57,9 @@ def main() -> int:
     if args.validation_plan:
         ensure_validation_artifacts(settings.workspace)
         print(validation_plan(settings.workspace))
+        return 0
+    if args.write_evidence_template:
+        _write_evidence_template_from_args(parser, args)
         return 0
     _check_default_bind(findings, settings.host)
     _check_no_database(findings)
@@ -103,6 +109,14 @@ def _record_validation_from_args(parser: argparse.ArgumentParser, args: argparse
             report=paths["report"],
         )
     )
+
+
+def _write_evidence_template_from_args(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
+    path = Path(args.evidence_template_file).expanduser()
+    if path.exists() and not args.overwrite_evidence_template:
+        parser.error(f"--evidence-template-file already exists: {path}; pass --overwrite-evidence-template to replace it")
+    atomic_write_text(path, validation_evidence_template(args.write_evidence_template))
+    print(f"evidence template written: gate={args.write_evidence_template} path={path}")
 
 
 def _record_evidence_text(parser: argparse.ArgumentParser, args: argparse.Namespace) -> str:

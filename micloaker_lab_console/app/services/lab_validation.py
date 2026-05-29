@@ -183,6 +183,41 @@ def validation_plan(workspace: Path) -> str:
     return "\n".join(lines)
 
 
+def validation_evidence_template(gate: str) -> str:
+    """Return an operator-fillable evidence note template for one validation gate."""
+    if gate not in VALIDATION_GATES:
+        raise ValueError(f"unknown validation gate: {gate}")
+    lines = [
+        f"# Evidence Template: {VALIDATION_GATES[gate]}",
+        "",
+        f"gate: {gate}",
+        "status: <pass|warn|fail|na>",
+        "operator:",
+        "session_id:",
+        "run_id:",
+        "helper_url:",
+        "",
+        "## Checklist",
+    ]
+    for item in VALIDATION_GATE_CHECKLIST[gate]:
+        lines.append(f"- {item}: ")
+    lines.extend(
+        [
+            "",
+            "## Evidence Hint",
+            VALIDATION_GATE_EVIDENCE[gate],
+            "",
+            "## Record Command",
+            (
+                "scripts/lab_readiness_check.py --record-gate {gate} --record-status <pass|warn|fail|na> "
+                "--record-evidence-file evidence.txt"
+            ).format(gate=gate),
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
 def ensure_validation_artifacts(workspace: Path) -> dict[str, Path]:
     paths = validation_paths(workspace)
     paths["jsonl"].parent.mkdir(parents=True, exist_ok=True)

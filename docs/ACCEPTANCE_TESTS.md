@@ -81,5 +81,6 @@
 - `/ops` and `/ops/validation` expose the persisted `hardware_validation_plan.txt` path.
 - Session ZIP and multi-session ZIP exports include `ops_validation/hardware_validation_plan.txt`.
 - Readiness Markdown includes terminal validation record commands for each hardware gate.
+- `scripts/lab_readiness_check.py --write-evidence-template <gate> --evidence-template-file evidence.txt` writes a fillable gate-specific evidence note and refuses accidental overwrite.
 - `scripts/lab_readiness_check.py --record-gate ... --record-status ... --record-evidence ...` appends validation JSONL/Markdown evidence for terminal-only lab operation.
 - `scripts/lab_readiness_check.py --record-evidence-file evidence.txt` reads longer terminal validation evidence from UTF-8 text.

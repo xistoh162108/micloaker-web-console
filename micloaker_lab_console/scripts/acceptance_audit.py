@@ -562,6 +562,7 @@ def main() -> int:
         "scripts/lab_readiness_check.py --record-gate",
         "readiness Markdown includes record commands",
         "--validation-plan",
+        "--write-evidence-template",
         "--record-evidence-file",
         "Use checklist draft helper",
         "Remaining Requirements Not Yet Proved By Automation",
