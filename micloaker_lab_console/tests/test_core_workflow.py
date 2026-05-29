@@ -2820,6 +2820,9 @@ def test_live_snapshot_contains_preview_psd_and_spectrogram(tmp_path: Path, monk
     live_js = Path("app/static/js/live.js").read_text(encoding="utf-8")
     assert "failed_run_id" in live_js
     assert "finalization_error_log" in live_js
+    assert "showStructuredAlert" in live_js
+    assert "started.preview_error_code" in live_js
+    assert "window.alert(message)" in live_js
     assert "preview_source" in live_js
     assert "data-live-start" in page.text
     assert 'payload.set("source"' in live_js
@@ -4176,6 +4179,10 @@ def test_new_run_form_exposes_analysis_and_safety_fields(tmp_path: Path, monkeyp
     assert '<select name="carrier_freq_khz">' in page.text
     assert '<option value="25" selected>25 kHz</option>' in page.text
     assert '<option value="32.8">32.8 kHz</option>' in page.text
+    for template in ["dashboard.html", "new_run.html", "session_detail.html"]:
+        source = Path("app/templates", template).read_text(encoding="utf-8")
+        assert 'input name="carrier_freq_khz"' not in source
+        assert '<select name="carrier_freq_khz">' in source
     upload_form = page.text.split(f'action="/sessions/{session["session_id"]}/runs/upload-bin"', 1)[1].split("Import + Finalize", 1)[0]
     assert "Advanced upload metadata" in upload_form
     for field in [

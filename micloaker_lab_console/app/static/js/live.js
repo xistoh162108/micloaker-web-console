@@ -36,7 +36,22 @@ async function post(url, data) {
   const options = { method: "POST" };
   if (data) options.body = data;
   const res = await fetch(url, options);
-  return res.json();
+  const payload = await res.json();
+  if (!res.ok) {
+    showStructuredAlert(payload.detail || payload, `Request failed (${res.status})`);
+  }
+  return payload;
+}
+
+function showStructuredAlert(detail, fallback) {
+  let message = fallback || "Request failed";
+  if (typeof detail === "string") {
+    message = detail;
+  } else if (detail) {
+    const parts = [detail.error_code || detail.preview_error_code, detail.message || detail.preview_error, detail.suggestion].filter(Boolean);
+    message = parts.join("\n\n") || message;
+  }
+  window.alert(message);
 }
 
 async function refresh() {
@@ -395,12 +410,16 @@ bindChartReadout(specCanvas, specReadout, "spectrogram", spectrogramReadoutText)
 document.querySelectorAll("[data-live-start]").forEach((button) => {
   button.addEventListener("click", async () => {
     const payload = new FormData();
-    payload.set("source", button.dataset.liveSource || "daq");
+    const source = button.dataset.liveSource || "daq";
+    payload.set("source", source);
     payload.set("sample_rate_hz", button.dataset.liveSampleRate || "8000");
     payload.set("channel", button.dataset.liveChannel || "0");
     payload.set("input_mode", button.dataset.liveInputMode || "SINGLE_ENDED");
     payload.set("ai_range", button.dataset.liveAiRange || "BIP10VOLTS");
-    await post("/live/start", payload);
+    const started = await post("/live/start", payload);
+    if (source === "daq" && started.preview_error_code) {
+      showStructuredAlert(started, "DAQ live preview is unavailable.");
+    }
     await refresh();
   });
 });
