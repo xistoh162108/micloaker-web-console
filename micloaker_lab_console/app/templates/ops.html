@@ -73,6 +73,22 @@ python scripts/console_control.py stop</pre>
     <a class="btn btn-outline" href="/ops/validation/files/hardware_validation_report.md">Download Report</a>
   </div>
   <p class="muted">Markdown report: <code>{{ validation.report_path }}</code></p>
+  <h3>Gate Status</h3>
+  <table class="data-table">
+    <thead><tr><th>Gate</th><th>Status</th><th>Latest record</th><th>Session</th><th>Run</th></tr></thead>
+    <tbody>
+      {% for gate in validation.gate_status %}
+      <tr>
+        <td>{{ gate.gate_label }}</td>
+        <td><span class="badge {% if gate.status == 'pass' %}badge-success{% elif gate.status in ['warn', 'missing'] %}badge-warning{% else %}badge-error{% endif %}">{{ gate.status }}</span></td>
+        <td>{{ gate.recorded_at }}</td>
+        <td>{{ gate.session_id }}</td>
+        <td>{{ gate.run_id }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <h3>Recent Evidence</h3>
   <table class="data-table">
     <thead><tr><th>Time</th><th>Gate</th><th>Status</th><th>Session</th><th>Run</th><th>Evidence</th></tr></thead>
     <tbody>

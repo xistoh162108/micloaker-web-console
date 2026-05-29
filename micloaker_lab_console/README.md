@@ -195,6 +195,7 @@ workspace/.micloaker/hardware_validation_report.md
 
 Session ZIP and multi-session ZIP exports include these files under `ops_validation/` when validation records exist.
 The `/ops` page also provides direct JSONL and Markdown report downloads for these validation records.
+Readiness treats the latest record for each validation gate as the active state: any `fail` gate makes readiness fail, any `warn` or missing gate keeps readiness in warning state, and all gates must be `pass` before the hardware validation section is green.
 
 ## Live Monitor
 

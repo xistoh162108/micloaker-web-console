@@ -58,10 +58,8 @@ def lab_readiness(settings: Settings) -> dict[str, Any]:
         {
             "key": "hardware_validation_records",
             "label": "Hardware Validation Records",
-            "level": "PASS" if validation["record_count"] else "WARN",
-            "message": f"{validation['record_count']} physical validation record(s) saved in workspace/.micloaker/."
-            if validation["record_count"]
-            else "No physical validation records saved yet; use /ops before report-grade hardware experiments.",
+            "level": _validation_level(validation),
+            "message": _validation_message(validation),
             "details": validation,
         },
     ]
@@ -133,6 +131,27 @@ def _helper_message(health: dict[str, Any]) -> str:
     if health.get("connected"):
         return str(health.get("service") or health.get("message") or "Mac Helper connected.")
     return str(health.get("message") or "Mac Helper disconnected; Linux-only workflow remains available.")
+
+
+def _validation_level(validation: dict[str, Any]) -> str:
+    counts = validation.get("status_counts", {})
+    if counts.get("fail", 0):
+        return "FAIL"
+    if counts.get("warn", 0) or counts.get("missing", 0):
+        return "WARN"
+    return "PASS"
+
+
+def _validation_message(validation: dict[str, Any]) -> str:
+    counts = validation.get("status_counts", {})
+    total = validation.get("record_count", 0)
+    if not total:
+        return "No physical validation records saved yet; use /ops before report-grade hardware experiments."
+    return (
+        f"{total} physical validation record(s): "
+        f"{counts.get('pass', 0)} pass, {counts.get('warn', 0)} warn, "
+        f"{counts.get('fail', 0)} fail, {counts.get('missing', 0)} missing gate(s)."
+    )
 
 
 def _summary(checks: list[dict[str, Any]]) -> dict[str, int]:

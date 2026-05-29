@@ -1048,6 +1048,8 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     status = client.get("/ops/validation").json()
     assert status["summary"]["record_count"] == 1
     assert status["summary"]["latest_by_gate"]["daq_smoke"]["status"] == "pass"
+    assert status["summary"]["status_counts"]["pass"] == 1
+    assert status["summary"]["status_counts"]["missing"] == 4
     jsonl_download = client.get("/ops/validation/files/hardware_validation.jsonl")
     assert jsonl_download.status_code == 200
     assert "hardware_validation.jsonl" in jsonl_download.headers["content-disposition"]
@@ -1059,7 +1061,20 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert blocked_download.status_code == 404
     readiness = client.get("/ops/readiness").json()
     validation_check = [check for check in readiness["checks"] if check["key"] == "hardware_validation_records"][0]
-    assert validation_check["level"] == "PASS"
+    assert validation_check["level"] == "WARN"
+    assert "4 missing gate" in validation_check["message"]
+
+    fail_response = client.post(
+        "/ops/validation",
+        data={"gate": "mac_playback", "status": "fail", "evidence": "device_id did not route audio"},
+        follow_redirects=False,
+    )
+    assert fail_response.status_code == 303
+    failed_readiness = client.get("/ops/readiness").json()
+    failed_validation_check = [check for check in failed_readiness["checks"] if check["key"] == "hardware_validation_records"][0]
+    assert failed_readiness["ok"] is False
+    assert failed_validation_check["level"] == "FAIL"
+    assert "1 fail" in failed_validation_check["message"]
 
     bad = client.post("/ops/validation", data={"gate": "bad_gate", "status": "pass"})
     assert bad.status_code == 400

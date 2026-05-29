@@ -79,9 +79,31 @@ def validation_summary(workspace: Path) -> dict[str, Any]:
         gate = str(record.get("gate", ""))
         if gate and gate not in latest_by_gate:
             latest_by_gate[gate] = record
+    gate_status = []
+    for gate, label in VALIDATION_GATES.items():
+        latest = latest_by_gate.get(gate)
+        status = str(latest.get("status")) if latest else "missing"
+        gate_status.append(
+            {
+                "gate": gate,
+                "gate_label": label,
+                "status": status,
+                "recorded_at": latest.get("recorded_at") or latest.get("ts") if latest else "",
+                "session_id": latest.get("session_id", "") if latest else "",
+                "run_id": latest.get("run_id", "") if latest else "",
+                "evidence": latest.get("evidence", "") if latest else "",
+            }
+        )
     return {
         "record_count": len(records),
         "latest_by_gate": latest_by_gate,
+        "gate_status": gate_status,
+        "status_counts": {
+            "pass": sum(1 for row in gate_status if row["status"] == "pass"),
+            "warn": sum(1 for row in gate_status if row["status"] == "warn"),
+            "fail": sum(1 for row in gate_status if row["status"] == "fail"),
+            "missing": sum(1 for row in gate_status if row["status"] == "missing"),
+        },
         "latest": records[:5],
         "report_path": str(validation_paths(workspace)["report"]),
     }

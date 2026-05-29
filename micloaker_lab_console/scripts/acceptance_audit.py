@@ -448,6 +448,7 @@ def main() -> int:
     validation_download_terms = [
         "/ops/validation/files/hardware_validation.jsonl",
         "/ops/validation/files/hardware_validation_report.md",
+        "Gate Status",
     ]
     missing_validation_download_terms = [term for term in validation_download_terms if term not in (ROOT / "app" / "templates" / "ops.html").read_text(encoding="utf-8")]
     checks.append(report(not missing_validation_download_terms, "Ops page exposes validation evidence downloads"))
