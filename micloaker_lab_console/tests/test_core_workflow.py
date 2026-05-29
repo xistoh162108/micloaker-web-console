@@ -1192,6 +1192,50 @@ def test_lab_readiness_cli_reflects_validation_gate_status(tmp_path: Path):
     assert (tmp_path / ".micloaker" / "lab_readiness_report.json").is_file()
     assert "MiCloaker Lab Readiness Report" in (tmp_path / ".micloaker" / "lab_readiness_report.md").read_text(encoding="utf-8")
 
+    cli_record = subprocess.run(
+        [
+            sys.executable,
+            "scripts/lab_readiness_check.py",
+            "--record-gate",
+            "attenuation_pair",
+            "--record-status",
+            "warn",
+            "--record-operator",
+            "lab-op",
+            "--record-session-id",
+            "hardware_validation_20260529",
+            "--record-run-id",
+            "compare_001",
+            "--record-evidence",
+            "attenuation pair comparison pending supervisor review",
+            "--record-notes",
+            "recorded from terminal",
+        ],
+        cwd=Path(__file__).resolve().parents[1],
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert cli_record.returncode == 0
+    assert "validation record saved: attenuation_pair status=warn" in cli_record.stdout
+    assert "uj0/uj1 attenuation pair check: warn; next: Open Compare (/compare)" in cli_record.stdout
+    cli_records = read_jsonl(tmp_path / ".micloaker" / "hardware_validation.jsonl")
+    assert cli_records[-1]["gate"] == "attenuation_pair"
+    assert cli_records[-1]["operator"] == "lab-op"
+    assert "comparison pending supervisor review" in cli_records[-1]["evidence"]
+
+    incomplete_record = subprocess.run(
+        [sys.executable, "scripts/lab_readiness_check.py", "--record-gate", "daq_smoke"],
+        cwd=Path(__file__).resolve().parents[1],
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert incomplete_record.returncode == 2
+    assert "--record-gate requires --record-status" in incomplete_record.stderr
+
 
 def test_new_run_page_can_create_and_record_daq_failure_metadata(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("MICLOAKER_WORKSPACE", str(tmp_path))

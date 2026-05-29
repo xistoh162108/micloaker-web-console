@@ -550,6 +550,7 @@ def main() -> int:
         "DAQ recording with real hardware",
         "Helper uses explicit `device_id` without changing system default output",
         "Hardware validation records with workflow navigation",
+        "scripts/lab_readiness_check.py --record-gate",
         "Use checklist draft helper",
         "Remaining Requirements Not Yet Proved By Automation",
         "overall goal must remain open until the lab-only physical verification items",

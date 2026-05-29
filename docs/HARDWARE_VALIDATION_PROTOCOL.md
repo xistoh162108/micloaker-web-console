@@ -43,6 +43,7 @@ The `/ops` page also provides direct downloads for `hardware_validation.jsonl`, 
 The `/ops` page displays **Evidence Hints** for each validation gate so the operator can record the expected IDs, file paths, measured values, Helper/device details, and unresolved warnings consistently.
 The same table also shows structured checklist fields for each gate, such as `selected device_id`, `raw .bin path`, and expected-versus-written sample count, to reduce missing evidence in the lab notebook.
 The validation form has a **Use checklist draft** button that pre-fills the evidence field with gate-specific checklist labels, so the operator can fill measured values without retyping the field names.
+Terminal-only runs can append validation evidence with `scripts/lab_readiness_check.py --record-gate <gate> --record-status <pass|warn|fail|na> --record-evidence "..."`; the CLI writes the same JSONL/Markdown evidence files as `/ops`.
 The `hardware_validation_report.md` file includes a **Gate Evidence Checklist** section before the recorded evidence table so exported session packages remain self-auditing.
 The `/ops` Gate Status table also includes **Next action** links for the expected workflow screen, such as DAQ run creation, Mac Helper, Compare, and file review.
 The readiness Markdown report includes the same hardware validation gate status, checklist fields, and next-action targets so exported evidence packages show which physical checks remain.

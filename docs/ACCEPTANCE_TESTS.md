@@ -76,3 +76,4 @@
 - `/ops/readiness` and `scripts/lab_readiness_check.py` reflect validation gate status: fail is failing, warn/missing is warning, and pass/not-applicable closes the gate.
 - `/ops` and `scripts/lab_readiness_check.py --write-report` can persist `lab_readiness_report.json` and `lab_readiness_report.md` for experiment evidence packages.
 - `scripts/lab_readiness_check.py` prints hardware validation gate status and next-action targets for terminal-only pre-run checks.
+- `scripts/lab_readiness_check.py --record-gate ... --record-status ... --record-evidence ...` appends validation JSONL/Markdown evidence for terminal-only lab operation.

@@ -17,7 +17,7 @@ if str(ROOT) not in sys.path:
 
 from app.config import DEFAULT_HOST, DEFAULT_PORT, get_settings  # noqa: E402
 from app.services.daq import daq_health  # noqa: E402
-from app.services.lab_validation import validation_summary  # noqa: E402
+from app.services.lab_validation import VALIDATION_GATES, VALIDATION_STATUSES, record_lab_validation, validation_paths, validation_summary  # noqa: E402
 from app.services.mac_helper_client import MacHelperClient  # noqa: E402
 from app.services.readiness import write_readiness_artifacts  # noqa: E402
 from app.services.text_store import read_json_or_default  # noqa: E402
@@ -35,10 +35,20 @@ def main() -> int:
     parser.add_argument("--server-url", default=None, help="Console URL for --check-server. Defaults to configured host/port.")
     parser.add_argument("--check-helper", action="store_true", help="Call configured Mac Helper health/devices/files/status endpoints.")
     parser.add_argument("--write-report", action="store_true", help="Write lab_readiness_report.json and .md under workspace/.micloaker.")
+    parser.add_argument("--record-gate", choices=sorted(VALIDATION_GATES), help="Append a hardware validation record for this gate before checking readiness.")
+    parser.add_argument("--record-status", choices=sorted(VALIDATION_STATUSES), help="Status for --record-gate.")
+    parser.add_argument("--record-operator", default="", help="Operator name or initials for --record-gate.")
+    parser.add_argument("--record-session-id", default="", help="Session ID for --record-gate.")
+    parser.add_argument("--record-run-id", default="", help="Run ID for --record-gate.")
+    parser.add_argument("--record-helper-url", default="", help="Mac Helper URL for --record-gate.")
+    parser.add_argument("--record-evidence", default="", help="Evidence text for --record-gate.")
+    parser.add_argument("--record-notes", default="", help="Notes for --record-gate.")
     args = parser.parse_args()
 
     findings: list[tuple[str, str, str]] = []
     settings = get_settings()
+    if args.record_gate or args.record_status:
+        _record_validation_from_args(parser, args, settings.workspace)
     _check_default_bind(findings, settings.host)
     _check_no_database(findings)
     _check_workspace(findings, settings.workspace)
@@ -57,6 +67,35 @@ def main() -> int:
         paths = write_readiness_artifacts(settings)
         print(f"readiness reports written: {paths['json']} and {paths['report']}")
     return 1 if any(level == "FAIL" for level, _, _ in findings) else 0
+
+
+def _record_validation_from_args(parser: argparse.ArgumentParser, args: argparse.Namespace, workspace: Path) -> None:
+    if not args.record_gate:
+        parser.error("--record-status requires --record-gate")
+    if not args.record_status:
+        parser.error("--record-gate requires --record-status")
+    if args.record_status in {"pass", "warn", "fail"} and not args.record_evidence.strip():
+        parser.error("--record-evidence is required for pass/warn/fail validation records")
+    record = record_lab_validation(
+        workspace,
+        gate=args.record_gate,
+        status=args.record_status,
+        operator=args.record_operator,
+        session_id=args.record_session_id,
+        run_id=args.record_run_id,
+        helper_url=args.record_helper_url,
+        evidence=args.record_evidence,
+        notes=args.record_notes,
+    )
+    paths = validation_paths(workspace)
+    print(
+        "validation record saved: {gate} status={status} jsonl={jsonl} report={report}".format(
+            gate=record["gate"],
+            status=record["status"],
+            jsonl=paths["jsonl"],
+            report=paths["report"],
+        )
+    )
 
 
 def _check_default_bind(findings: list[tuple[str, str, str]], host: str) -> None:
