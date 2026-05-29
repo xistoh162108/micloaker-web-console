@@ -42,6 +42,7 @@ REQUIRED_PATHS = [
     "app/services/jobs.py",
     "app/services/live_monitor.py",
     "app/services/mac_helper_client.py",
+    "app/services/readiness.py",
     "app/services/tailscale.py",
     "app/templates/base.html",
     "app/templates/dashboard.html",
@@ -388,6 +389,7 @@ def main() -> int:
         "Explicit Tailscale mode",
         "Linux desktop launcher",
         "Finder double-click launchers",
+        "/ops/readiness",
         "GitHub Delivery",
     ]
     missing_operator_terms = [term for term in operator_terms if term not in operator_ui_doc]
@@ -427,11 +429,16 @@ def main() -> int:
         try:
             from app.main import create_app
 
-            create_app()
+            app = create_app()
             temp_root = Path(temp_dir)
             checks.append(report((temp_root / ".micloaker" / "config.json").exists(), "startup creates plain-text workspace config"))
             checks.append(report("uldaq" not in sys.modules, "app startup does not eagerly import uldaq"))
             checks.append(report("scipy" not in sys.modules, "app startup does not eagerly import SciPy analysis dependency"))
+            from fastapi.testclient import TestClient
+
+            readiness_response = TestClient(app).get("/ops/readiness")
+            readiness = readiness_response.json()
+            checks.append(report(readiness_response.status_code == 200 and readiness.get("summary", {}).get("fail") == 0 and any(row.get("key") == "workspace_text_files" for row in readiness.get("checks", [])), "Ops readiness JSON reports lab pre-checks"))
             ok, failures = audit_mock_workflow(temp_root)
             checks.append(report(ok, "mock workflow records, finalizes, labels, plots, and exports"))
             for failure in failures:

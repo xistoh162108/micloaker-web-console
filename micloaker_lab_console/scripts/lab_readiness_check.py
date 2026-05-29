@@ -24,7 +24,7 @@ from app.services.text_store import read_json_or_default  # noqa: E402
 DB_SUFFIXES = {".db", ".duckdb", ".sqlite", ".sqlite3"}
 DB_DEPENDENCIES = {"asyncpg", "databases", "duckdb", "psycopg", "psycopg2", "sqlalchemy", "tinydb"}
 SKIP_DIRS = {".git", ".mypy_cache", ".pytest_cache", ".ruff_cache", ".venv", "__pycache__"}
-SMOKE_ROUTES = ["/", "/sessions", "/runs/new", "/compare", "/mac-helper", "/files", "/logs", "/daq/health", "/recording/status", "/live", "/live/snapshot"]
+SMOKE_ROUTES = ["/", "/sessions", "/runs/new", "/compare", "/mac-helper", "/files", "/logs", "/ops", "/ops/readiness", "/daq/health", "/recording/status", "/live", "/live/snapshot"]
 
 
 def main() -> int:
@@ -43,11 +43,12 @@ def main() -> int:
     helper_config = _check_helper_config(findings, settings.workspace)
     if args.check_helper:
         _check_helper_endpoints(findings, helper_config)
+    server_url = None
     if args.check_server:
         server_url = args.server_url or f"http://{settings.host}:{settings.port}"
         _check_server_routes(findings, server_url)
 
-    _print_report(findings, settings.workspace, settings.host, settings.port)
+    _print_report(findings, settings.workspace, settings.host, settings.port, server_url=server_url)
     return 1 if any(level == "FAIL" for level, _, _ in findings) else 0
 
 
@@ -174,10 +175,12 @@ def _structured_message(data: dict[str, Any]) -> str:
     return "ok" if data.get("ok") else str(data)
 
 
-def _print_report(findings: list[tuple[str, str, str]], workspace: Path, host: str, port: int) -> None:
+def _print_report(findings: list[tuple[str, str, str]], workspace: Path, host: str, port: int, *, server_url: str | None) -> None:
     print("MiCloaker Lab Readiness Check")
     print(f"workspace: {workspace}")
-    print(f"console: http://{host}:{port}")
+    print(f"configured console: http://{host}:{port}")
+    if server_url:
+        print(f"route check target: {server_url}")
     print()
     for level, key, message in findings:
         print(f"{level}: {key}: {message}")

@@ -53,6 +53,8 @@ Required Linux controls:
 - Explicit Tailscale mode must bind to the `tailscale0` IPv4 address for direct Tailnet browser access.
 - Web shutdown must be opt-in only and blocked while recording is active.
 - `/ops` must show bind address, workspace, recording state, and shutdown availability.
+- `/ops` must show Lab Readiness checks for bind mode, workspace text files, recording lock, DAQ backend, Mac Helper, and web shutdown.
+- `/ops/readiness` must expose the same readiness summary as JSON for quick Tailnet/CLI checks.
 - Linux desktop launcher installation should provide Start/Status/Stop launchers for GUI use.
 
 Required Mac Helper controls:
@@ -73,6 +75,7 @@ Required behavior:
 - If the user wants to open `http://100.x.y.z:8000`, the Linux console must be started with Tailscale binding.
 - Documentation must explain that a server listening only on `127.0.0.1:8000` will not be reachable through a Tailscale IP.
 - Readiness checks should show whether routes respond through the intended server URL.
+- Readiness checks should include `/ops/readiness` so direct Tailnet access can be verified without relying only on the browser UI.
 
 ## 5. Manuals and Handoff
 

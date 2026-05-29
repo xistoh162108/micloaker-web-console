@@ -215,6 +215,7 @@ button, .btn-primary, .button.primary, .actions a {
 }
 .badge-success, .badge.ok { background: #dcfce7; color: var(--success); }
 .badge-warning, .badge.warn-badge, .badge.recording { background: #fef3c7; color: var(--warning); }
+.badge-error { background: #fee2e2; color: var(--error); }
 .warn { color: var(--error); font-weight: 700; }
 .result-number { font-size: 2rem; font-weight: 850; color: var(--bc); }
 

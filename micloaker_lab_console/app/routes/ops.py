@@ -7,6 +7,7 @@ import threading
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
+from ..services.readiness import lab_readiness
 from ..services.recorder import recording_status
 from ..services.text_store import append_app_event
 
@@ -16,6 +17,7 @@ router = APIRouter(prefix="/ops", tags=["ops"])
 @router.get("")
 def ops_page(request: Request):
     settings = request.app.state.settings
+    readiness = lab_readiness(settings)
     return request.app.state.templates.TemplateResponse(
         name="ops.html",
         request=request,
@@ -25,8 +27,14 @@ def ops_page(request: Request):
             "port": settings.port,
             "allow_web_shutdown": settings.allow_web_shutdown,
             "recording_status": recording_status(),
+            "readiness": readiness,
         },
     )
+
+
+@router.get("/readiness")
+def readiness_status(request: Request):
+    return lab_readiness(request.app.state.settings)
 
 
 @router.post("/shutdown")

@@ -168,8 +168,11 @@ Open `/ops` in the web UI to see:
 - workspace
 - recording state
 - whether web shutdown is enabled
+- Lab Readiness checks for bind mode, workspace text files, recording lock, DAQ backend, Mac Helper, and web shutdown
 
 The Stop Console button is only enabled when the process was started with `--allow-web-shutdown`. It refuses shutdown while recording is active.
+
+`/ops/readiness` returns the same readiness summary as JSON for quick checks from another Tailnet device.
 
 ## Live Monitor
 
@@ -318,6 +321,7 @@ The readiness check reports:
 - DAQ availability
 - Mac Helper config
 - server route health
+- `/ops/readiness` route health
 - lab-only verification reminders
 
 See [docs_alignment_report.md](docs_alignment_report.md) for the requirement-by-requirement evidence map and remaining lab verification items.

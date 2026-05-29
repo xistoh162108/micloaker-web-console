@@ -960,7 +960,14 @@ def test_uldaq_is_lazy_and_app_routes_smoke(tmp_path: Path, monkeypatch: pytest.
         assert response.status_code == 200
     ops_page = client.get("/ops")
     assert "Web shutdown" in ops_page.text
+    assert "Lab Readiness" in ops_page.text
+    assert "Workspace Text Files" in ops_page.text
     assert "disabled" in ops_page.text
+    readiness = client.get("/ops/readiness").json()
+    assert readiness["ok"] is True
+    assert readiness["summary"]["fail"] == 0
+    assert any(check["key"] == "daq_backend" for check in readiness["checks"])
+    assert "Actual DAQ" in readiness["manual_verification_required"][0] or "DAQ" in readiness["manual_verification_required"][0]
     shutdown = client.post("/ops/shutdown")
     assert shutdown.status_code == 403
     assert shutdown.json()["detail"]["error_code"] == "WEB_SHUTDOWN_DISABLED"

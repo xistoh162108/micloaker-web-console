@@ -1,18 +1,27 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>Console Ops</h1>
+<section class="stats">
+  <div class="stat"><span class="stat-value">{{ readiness.summary.pass }}</span><span class="stat-title">Pass</span></div>
+  <div class="stat"><span class="stat-value">{{ readiness.summary.warn }}</span><span class="stat-title">Warn</span></div>
+  <div class="stat"><span class="stat-value">{{ readiness.summary.fail }}</span><span class="stat-title">Fail</span></div>
+  <div class="stat"><span class="stat-value">{{ host }}</span><span class="stat-title">Bind host</span></div>
+</section>
 <section class="grid two">
-  <div>
-    <h2>Server</h2>
-    <table>
+  <div class="card">
+    <div class="card-body">
+    <h2 class="card-title">Server</h2>
+    <table class="data-table">
       <tr><th>Bind</th><td>{{ host }}:{{ port }}</td></tr>
       <tr><th>Workspace</th><td>{{ workspace }}</td></tr>
       <tr><th>Web shutdown</th><td>{{ "enabled" if allow_web_shutdown else "disabled" }}</td></tr>
       <tr><th>Recording</th><td>{{ "active" if recording_status.active else "stopped" }}</td></tr>
     </table>
   </div>
-  <div>
-    <h2>Safe Start/Stop</h2>
+  </div>
+  <div class="card">
+    <div class="card-body">
+    <h2 class="card-title">Safe Start/Stop</h2>
     <p class="muted">Use the console control script for normal lab operation.</p>
     <pre>python scripts/console_control.py start --tailscale --allow-web-shutdown
 python scripts/console_control.py status
@@ -22,12 +31,42 @@ python scripts/console_control.py stop</pre>
       <p class="warn">Shutdown is locked while recording is active.</p>
       {% else %}
       <form method="post" action="/ops/shutdown">
-        <button type="submit">Stop Console</button>
+        <button type="submit" class="btn btn-error">Stop Console</button>
       </form>
       {% endif %}
     {% else %}
     <p class="warn">Web shutdown is disabled. Start with <code>--allow-web-shutdown</code> only on a trusted Tailnet or localhost tunnel.</p>
     {% endif %}
+  </div>
+  </div>
+</section>
+<section class="card">
+  <div class="card-body">
+  <h2 class="card-title">Lab Readiness</h2>
+  <p class="muted">Use this before an experiment. Green checks do not replace physical DAQ and acoustic validation.</p>
+  <table class="data-table">
+    <thead><tr><th>Check</th><th>Level</th><th>Message</th></tr></thead>
+    <tbody>
+      {% for check in readiness.checks %}
+      <tr>
+        <td>{{ check.label }}</td>
+        <td><span class="badge {% if check.level == 'PASS' %}badge-success{% elif check.level == 'WARN' %}badge-warning{% else %}badge-error{% endif %}">{{ check.level }}</span></td>
+        <td>{{ check.message }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <nav class="actions">
+    <a class="btn btn-outline" href="/ops/readiness">Readiness JSON</a>
+    <a class="btn btn-outline" href="/daq/health">DAQ health</a>
+    <a class="btn btn-outline" href="/mac-helper">Mac Helper</a>
+  </nav>
+  <h3>Manual lab verification still required</h3>
+  <ul class="list">
+    {% for item in readiness.manual_verification_required %}
+    <li>{{ item }}</li>
+    {% endfor %}
+  </ul>
   </div>
 </section>
 {% endblock %}
