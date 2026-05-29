@@ -51,14 +51,15 @@
       <span class="badge">{{ selected_runs|length }} runs</span>
     </div>
     {% if selected_runs %}
-    <label class="filter-box">Filter runs <input type="search" data-filter-input data-filter-target="#selected-run-list" placeholder="run id, uj, status"></label>
-    <div id="selected-run-list" class="scroll-list session-scroll-list">
-      {% for run in selected_runs %}
-      <a class="session-row" href="/sessions/{{ selected_session_id }}/runs/{{ run.run_id }}" data-filter-item="{{ run.run_id }} {{ run.condition.uj }} {{ run.analysis.status }} {{ run.condition.carrier_freq_khz }}">
-        <span>{{ run.run_id }}</span>
-        <small>{{ run.condition.uj }} / {{ run.condition.carrier_freq_khz }} kHz / {{ run.analysis.status }}</small>
-      </a>
-      {% endfor %}
+    <div class="session-picker-form">
+      <label>Run
+        <select data-existing-run-select>
+          {% for run in selected_runs %}
+          <option value="/sessions/{{ selected_session_id }}/runs/{{ run.run_id }}">{{ run.run_id }} / {{ run.condition.uj }} / {{ run.condition.carrier_freq_khz }} kHz / {{ run.analysis.status }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <button class="btn btn-primary" type="button" data-open-selected-run>Open Run</button>
     </div>
     {% else %}
     <p class="muted">No runs in this session yet.</p>

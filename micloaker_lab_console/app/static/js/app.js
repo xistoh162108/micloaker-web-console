@@ -39,6 +39,13 @@ document.querySelectorAll("[data-filter-input]").forEach((input) => {
   });
 });
 
+document.querySelectorAll("[data-open-selected-run]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const select = button.closest(".card-body")?.querySelector("[data-existing-run-select]");
+    if (select?.value) window.location.href = select.value;
+  });
+});
+
 document.querySelectorAll("[data-run-helper-form]").forEach((form) => {
   const sessionTarget = form.querySelector("[data-session-target]");
   const target = form.querySelector("[data-run-target]");

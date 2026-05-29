@@ -421,6 +421,7 @@ button, .btn-primary, .button.primary, .actions a {
   display: grid;
   margin-top: 8px;
 }
+.selected-run-scroll { max-height: 190px; }
 .session-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;

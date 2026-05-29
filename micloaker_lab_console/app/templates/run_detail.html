@@ -37,6 +37,35 @@
     <button type="submit" class="btn btn-outline">Convert WAVs</button>
   </form>
 </nav>
+<section class="card run-live-preview">
+  <div class="card-body">
+    <div class="card-title">
+      <h2>DAQ Live Preview</h2>
+      <span id="live-state" class="badge">Stopped</span>
+    </div>
+    <div class="live-console-grid">
+      <div class="panel live-plot-panel">
+        <div class="card-title"><h3>Waveform</h3><span id="live-clipping" class="badge">unknown</span></div>
+        <canvas id="live-waveform" width="700" height="220"></canvas>
+        <div id="live-waveform-readout" class="chart-readout">hover waveform for t / V</div>
+      </div>
+      <div class="panel live-meter-panel">
+        <h3>RMS/Peak Meter</h3>
+        <div id="live-levels" class="metric-readout">stopped</div>
+      </div>
+      <div class="panel live-plot-panel">
+        <h3>Live PSD</h3>
+        <canvas id="live-psd" width="700" height="220"></canvas>
+        <div id="live-psd-readout" class="chart-readout">hover PSD for Hz / log power</div>
+      </div>
+      <div class="panel live-plot-panel">
+        <h3>Scrolling Spectrogram</h3>
+        <canvas id="live-spectrogram" width="700" height="220"></canvas>
+        <div id="live-spectrogram-readout" class="chart-readout">hover spectrogram for time row / frequency bin</div>
+      </div>
+    </div>
+  </div>
+</section>
 <section class="stats">
   <div class="stat"><span class="stat-value">{{ run.condition.carrier_freq_khz }} kHz</span><span class="stat-title">Carrier</span></div>
   <div class="stat"><span class="stat-value">{{ run.condition.uj }}</span><span class="stat-title">UJ condition</span></div>
@@ -136,7 +165,6 @@
 <section class="card">
   <div class="card-body">
   <h2 class="card-title">Preview Audio</h2>
-  <p>BIN: primary quantitative data.</p>
   {% if run.conversion.outputs %}
   <table class="data-table">
     <thead><tr><th>WAV</th><th>Purpose</th><th>Quantitative Use</th></tr></thead>
@@ -158,6 +186,9 @@
   {% if run.files.wav_range in file_set %}
   <p>Range WAV: scale-valid cross-check if full-scale voltage is correct.</p>
   <audio class="audio-preview" controls src="/sessions/{{ session_id }}/files/{{ run.files.wav_range }}"></audio>
+  {% endif %}
+  {% if not run.conversion.outputs and not (run.files.wav_peak in file_set) and not (run.files.wav_range in file_set) %}
+  <p class="muted">No listening WAV has been generated yet. Record or finalize from the saved .bin to create preview audio.</p>
   {% endif %}
   </div>
 </section>
