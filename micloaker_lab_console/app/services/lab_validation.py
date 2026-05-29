@@ -155,9 +155,26 @@ def _write_validation_report(workspace: Path) -> None:
         "",
         "These records are operator-entered evidence for the physical lab gates in `docs/HARDWARE_VALIDATION_PROTOCOL.md`.",
         "",
+        "## Gate Evidence Checklist",
+        "",
+        "| Gate | Checklist fields | Evidence hint |",
+        "|---|---|---|",
+    ]
+    for gate, label in VALIDATION_GATES.items():
+        lines.append(
+            "| {gate} | {checklist} | {hint} |".format(
+                gate=_md(label),
+                checklist=_md(", ".join(VALIDATION_GATE_CHECKLIST[gate])),
+                hint=_md(VALIDATION_GATE_EVIDENCE[gate]),
+            )
+        )
+    lines.extend([
+        "",
+        "## Recorded Evidence",
+        "",
         "| Time | Gate | Status | Session | Run | Operator | Evidence | Notes |",
         "|---|---|---|---|---|---|---|---|",
-    ]
+    ])
     for row in records:
         lines.append(
             "| {time} | {gate} | {status} | {session} | {run} | {operator} | {evidence} | {notes} |".format(

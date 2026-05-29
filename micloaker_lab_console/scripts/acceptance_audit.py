@@ -473,6 +473,7 @@ def main() -> int:
         "/ops/readiness/files/lab_readiness_report.md",
         "Download Readiness Report",
         "Evidence Hints",
+        "Gate Evidence Checklist",
         "Checklist fields",
         "selected device_id",
         "macOS default output did not change",

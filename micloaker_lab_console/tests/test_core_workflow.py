@@ -737,6 +737,8 @@ def test_session_zip_includes_hardware_validation_records(tmp_path: Path):
     assert f"{session['session_id']}/ops_validation/lab_readiness_report.json" in manifest["included_files"]
     assert "daq_smoke" in records
     assert "DAQ sample count and channel verified." in report
+    assert "Gate Evidence Checklist" in report
+    assert "selected device_id" in report
     assert "MiCloaker Lab Readiness Report" in readiness_report
 
 
@@ -1066,6 +1068,9 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert records[-1]["run_id"] == "260529-DAQ-smoke"
     report = (tmp_path / ".micloaker" / "hardware_validation_report.md").read_text(encoding="utf-8")
     assert "MiCloaker Hardware Validation Records" in report
+    assert "Gate Evidence Checklist" in report
+    assert "selected device_id" in report
+    assert "raw .bin path" in report
     assert "Linux DAQ smoke capture" in report
     assert "written_samples matched expected duration" in report
 
