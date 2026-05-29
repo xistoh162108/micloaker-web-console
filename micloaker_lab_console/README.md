@@ -102,6 +102,12 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+Install Playwright's Chromium browser when you want to run the visual UI smoke check:
+
+```bash
+.venv/bin/python -m playwright install chromium
+```
+
 Direct localhost run command, equivalent to the control script's default local mode:
 
 ```bash
@@ -357,6 +363,7 @@ Run automated checks:
 .venv/bin/pytest -q
 .venv/bin/python scripts/acceptance_audit.py
 .venv/bin/python scripts/lab_readiness_check.py --check-server --server-url http://100.88.179.43:8000
+.venv/bin/python scripts/playwright_ui_smoke.py http://100.88.179.43:8000
 ```
 
 The readiness check reports:
@@ -371,6 +378,8 @@ The readiness check reports:
 - `/ops/readiness` route health
 - lab-only verification reminders
 - hardware validation gate status and next-action targets
+
+The Playwright UI smoke check captures screenshots under `workspace/.micloaker/playwright` and checks dashboard, sessions, new-run, compare, Mac Helper, Ops, and Live screens at desktop/mobile viewports for horizontal overflow and overlapping operator controls.
 
 When combined with `--write-report`, CLI preflight findings such as server route and static asset health are included in the saved readiness JSON/Markdown evidence files.
 
