@@ -140,6 +140,46 @@ def validation_summary(workspace: Path) -> dict[str, Any]:
     }
 
 
+def validation_plan(workspace: Path) -> str:
+    """Return a terminal-friendly physical validation plan for lab operators."""
+    summary = validation_summary(workspace)
+    lines = [
+        "MiCloaker Physical Validation Plan",
+        "",
+        "Complete these gates before treating real hardware results as report-grade.",
+        "Use /ops for web entry, or the shown CLI command when operating from a terminal.",
+        "",
+    ]
+    for index, gate in enumerate(summary.get("gate_status", []), start=1):
+        action = gate.get("action") or {}
+        checklist = gate.get("evidence_checklist") or []
+        gate_key = gate.get("gate")
+        lines.extend(
+            [
+                f"{index}. {gate.get('gate_label') or gate_key}",
+                f"   current_status: {gate.get('status')}",
+                f"   next_action: {action.get('label', 'Open /ops')} {action.get('href', '/ops')}",
+                f"   checklist: {', '.join(str(item) for item in checklist)}",
+                f"   evidence_hint: {gate.get('evidence_hint', '')}",
+                "   record_command:",
+                (
+                    "     scripts/lab_readiness_check.py --record-gate {gate} --record-status <pass|warn|fail|na> "
+                    "--record-evidence-file evidence.txt"
+                ).format(gate=gate_key),
+                "",
+            ]
+        )
+    lines.extend(
+        [
+            "Evidence files:",
+            f"- JSONL: {validation_paths(workspace)['jsonl']}",
+            f"- Markdown: {validation_paths(workspace)['report']}",
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
 def ensure_validation_artifacts(workspace: Path) -> dict[str, Path]:
     paths = validation_paths(workspace)
     paths["jsonl"].parent.mkdir(parents=True, exist_ok=True)

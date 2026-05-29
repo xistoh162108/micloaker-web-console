@@ -17,7 +17,7 @@ if str(ROOT) not in sys.path:
 
 from app.config import DEFAULT_HOST, DEFAULT_PORT, get_settings  # noqa: E402
 from app.services.daq import daq_health  # noqa: E402
-from app.services.lab_validation import VALIDATION_GATES, VALIDATION_STATUSES, record_lab_validation, validation_paths, validation_summary  # noqa: E402
+from app.services.lab_validation import VALIDATION_GATES, VALIDATION_STATUSES, record_lab_validation, validation_paths, validation_plan, validation_summary  # noqa: E402
 from app.services.mac_helper_client import MacHelperClient  # noqa: E402
 from app.services.readiness import write_readiness_artifacts  # noqa: E402
 from app.services.text_store import read_json_or_default  # noqa: E402
@@ -35,6 +35,7 @@ def main() -> int:
     parser.add_argument("--server-url", default=None, help="Console URL for --check-server. Defaults to configured host/port.")
     parser.add_argument("--check-helper", action="store_true", help="Call configured Mac Helper health/devices/files/status endpoints.")
     parser.add_argument("--write-report", action="store_true", help="Write lab_readiness_report.json and .md under workspace/.micloaker.")
+    parser.add_argument("--validation-plan", action="store_true", help="Print the ordered physical validation gate plan and recording commands.")
     parser.add_argument("--record-gate", choices=sorted(VALIDATION_GATES), help="Append a hardware validation record for this gate before checking readiness.")
     parser.add_argument("--record-status", choices=sorted(VALIDATION_STATUSES), help="Status for --record-gate.")
     parser.add_argument("--record-operator", default="", help="Operator name or initials for --record-gate.")
@@ -50,6 +51,9 @@ def main() -> int:
     settings = get_settings()
     if args.record_gate or args.record_status:
         _record_validation_from_args(parser, args, settings.workspace)
+    if args.validation_plan:
+        print(validation_plan(settings.workspace))
+        return 0
     _check_default_bind(findings, settings.host)
     _check_no_database(findings)
     _check_workspace(findings, settings.workspace)

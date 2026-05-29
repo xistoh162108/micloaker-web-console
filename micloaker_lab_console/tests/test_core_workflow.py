@@ -1293,6 +1293,13 @@ def test_lab_readiness_cli_reflects_validation_gate_status(tmp_path: Path):
     assert (tmp_path / ".micloaker" / "lab_readiness_report.json").is_file()
     assert "MiCloaker Lab Readiness Report" in (tmp_path / ".micloaker" / "lab_readiness_report.md").read_text(encoding="utf-8")
 
+    plan = subprocess.run([sys.executable, "scripts/lab_readiness_check.py", "--validation-plan"], cwd=Path(__file__).resolve().parents[1], env=env, text=True, capture_output=True, check=False)
+    assert plan.returncode == 0
+    assert "MiCloaker Physical Validation Plan" in plan.stdout
+    assert "scripts/lab_readiness_check.py --record-gate daq_smoke --record-status <pass|warn|fail|na> --record-evidence-file evidence.txt" in plan.stdout
+    assert "checklist: session_id, run_id, DAQ channel/range/input mode" in plan.stdout
+    assert "JSONL:" in plan.stdout
+
     cli_record = subprocess.run(
         [
             sys.executable,
