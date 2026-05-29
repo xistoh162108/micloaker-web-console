@@ -216,6 +216,7 @@ def _print_report(findings: list[tuple[str, str, str]], workspace: Path, host: s
     print()
     for level, key, message in findings:
         print(f"{level}: {key}: {message}")
+    _print_validation_gate_status(workspace)
     print()
     print("Manual lab verification still required:")
     print("- Protocol: follow ../docs/HARDWARE_VALIDATION_PROTOCOL.md before real report-grade experiments.")
@@ -224,6 +225,24 @@ def _print_report(findings: list[tuple[str, str, str]], workspace: Path, host: s
     print("- Play & Record: run a short synchronized DAQ trial when Mac playback and Linux recording are both required.")
     print("- Attenuation: record one finalized uj0/uj1 validation pair and inspect BIN-primary comparison output.")
     print("- Legacy parity: compare a known historical .bin against legacy notebook outputs if exact historical numeric parity is required.")
+
+
+def _print_validation_gate_status(workspace: Path) -> None:
+    summary = validation_summary(workspace)
+    print()
+    print("Hardware validation gate status:")
+    for gate in summary.get("gate_status", []):
+        action = gate.get("action") or {}
+        action_label = action.get("label") or "Open /ops"
+        action_href = action.get("href") or "/ops"
+        print(
+            "- {label}: {status}; next: {action_label} ({action_href})".format(
+                label=gate.get("gate_label") or gate.get("gate"),
+                status=gate.get("status"),
+                action_label=action_label,
+                action_href=action_href,
+            )
+        )
 
 
 if __name__ == "__main__":

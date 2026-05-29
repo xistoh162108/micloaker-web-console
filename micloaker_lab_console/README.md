@@ -352,6 +352,7 @@ The readiness check reports:
 - server route health
 - `/ops/readiness` route health
 - lab-only verification reminders
+- hardware validation gate status and next-action targets
 
 See [docs_alignment_report.md](docs_alignment_report.md) for the implementation-to-docs alignment map and [../docs/COMPLETION_AUDIT.md](../docs/COMPLETION_AUDIT.md) for the requirement-by-requirement evidence map and remaining lab verification items.
 

@@ -481,12 +481,15 @@ def main() -> int:
         "Create DAQ validation run",
         "Open Mac Helper",
         "Open Compare",
+        "hardware validation gate status and next-action targets",
         "not applicable",
     ]
     validation_sources = (
         (ROOT / "app" / "templates" / "ops.html").read_text(encoding="utf-8")
         + (ROOT / "app" / "services" / "lab_validation.py").read_text(encoding="utf-8")
         + (ROOT / "app" / "services" / "readiness.py").read_text(encoding="utf-8")
+        + (ROOT / "scripts" / "lab_readiness_check.py").read_text(encoding="utf-8")
+        + readme
     )
     missing_validation_download_terms = [term for term in validation_download_terms if term not in validation_sources]
     checks.append(report(not missing_validation_download_terms, "Ops page exposes validation evidence downloads and gate-specific hints"))
