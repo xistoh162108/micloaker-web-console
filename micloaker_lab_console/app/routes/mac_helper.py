@@ -295,8 +295,9 @@ def _play_and_record(
     _store_helper_result(workspace, session_id, run_id, "play", payload, play_result)
     if not play_result.get("ok"):
         raise HTTPException(status_code=502, detail=play_result)
+    run = _apply_playback_delay_trim(workspace, session_id, run_id, delay_ms)
     try:
-        final = recorder(workspace, load_run(workspace, session_id, run_id))
+        final = recorder(workspace, run)
     except RecordingBusyError as exc:
         detail = _recording_busy_error(str(exc))
         _stop_helper_after_failed_recording(workspace, session_id, run_id, client)
@@ -540,6 +541,29 @@ def _store_helper_plan(workspace, session_id: str, run_id: str, payload: dict) -
     if payload.get("delay_ms") is not None:
         helper["planned_delay_ms"] = payload.get("delay_ms")
     save_run(workspace, run)
+
+
+def _apply_playback_delay_trim(workspace, session_id: str, run_id: str, delay_ms: int) -> dict:
+    run = load_run(workspace, session_id, run_id)
+    delay_s = max(0.0, float(delay_ms) / 1000.0)
+    analysis = run.setdefault("analysis", {})
+    helper = run.setdefault("mac_helper", {})
+    previous_delay_s = float(helper.get("playback_delay_trim_s", 0.0) or 0.0)
+    if "operator_trim_start_s" in analysis:
+        operator_trim_start_s = float(analysis.get("operator_trim_start_s", 0.0) or 0.0)
+    else:
+        current_trim_start_s = float(analysis.get("trim_start_s", 0.0) or 0.0)
+        operator_trim_start_s = max(0.0, current_trim_start_s - previous_delay_s)
+    analysis["operator_trim_start_s"] = operator_trim_start_s
+    analysis["playback_delay_trim_start_s"] = delay_s
+    analysis["trim_start_s"] = operator_trim_start_s + delay_s
+    helper["playback_delay_trim_s"] = delay_s
+    save_run(workspace, run)
+    append_log(
+        session_dir(workspace, session_id) / "logs" / f"{run_id}.log",
+        f"playback_delay_trim_applied delay_ms={delay_ms} trim_start_s={analysis['trim_start_s']}",
+    )
+    return run
 
 
 def _helper_connected_state(action: str, result: dict, helper: dict) -> bool:

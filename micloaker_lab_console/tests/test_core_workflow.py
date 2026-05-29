@@ -4128,6 +4128,10 @@ def test_play_and_record_success_finalizes_and_preserves_helper_metadata(tmp_pat
     assert saved["mac_helper"]["play_request_ok"] is True
     assert saved["mac_helper"]["play_id"] == "play_record_001"
     assert saved["mac_helper"]["last_request"]["delay_ms"] == 25
+    assert saved["analysis"]["operator_trim_start_s"] == 0.0
+    assert saved["analysis"]["playback_delay_trim_start_s"] == pytest.approx(0.025)
+    assert saved["analysis"]["trim_start_s"] == pytest.approx(0.025)
+    assert saved["mac_helper"]["playback_delay_trim_s"] == pytest.approx(0.025)
     base = session_dir(tmp_path, session["session_id"])
     assert (base / saved["files"]["bin"]).exists()
     assert (base / saved["files"]["metrics_json"]).exists()
@@ -4163,9 +4167,39 @@ def test_play_and_capture_success_waits_for_manual_finalize(tmp_path: Path, monk
     base = session_dir(tmp_path, session["session_id"])
     assert saved["analysis"]["status"] == "awaiting_approval"
     assert saved["mac_helper"]["play_id"] == "play_capture_001"
+    assert saved["analysis"]["playback_delay_trim_start_s"] == pytest.approx(0.025)
+    assert saved["analysis"]["trim_start_s"] == pytest.approx(0.025)
     assert (base / saved["files"]["bin"]).exists()
     assert (base / saved["files"]["wav_peak"]).exists()
     assert "metrics_json" not in saved["files"] or not (base / saved["files"]["metrics_json"]).exists()
+
+
+def test_play_and_record_delay_trim_preserves_manual_operator_trim(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("MICLOAKER_WORKSPACE", str(tmp_path))
+    ensure_workspace(tmp_path)
+    session = create_session(tmp_path, "helper delay trim")
+    run = create_run_metadata(tmp_path, session["session_id"], carrier_freq_khz=25, uj="uj0", duration_s=0.2, trim_start_s=0.05)
+
+    class FakeHelper:
+        def validate_playback(self, payload):
+            return {"ok": True, "duration_s": 1.0, "device_exists": True}
+
+        def play(self, payload):
+            return {"ok": True, "play_id": "play_trim_001", **payload}
+
+    monkeypatch.setattr(mac_helper_routes, "_client_from_config", lambda workspace: FakeHelper())
+    client = TestClient(create_app())
+    payload = {"file": "jamming_sound/25khz_1hr.wav", "device_id": 4, "sample_rate": 8000, "channels": 1, "gain": 0.4}
+    assert client.post(f"/mac-helper/sessions/{session['session_id']}/runs/{run['run_id']}/validate-playback", data=payload).json()["ok"] is True
+    response = client.post(
+        f"/mac-helper/sessions/{session['session_id']}/runs/{run['run_id']}/play-and-record-mock",
+        data={**payload, "delay_ms": 25},
+    )
+    assert response.status_code == 200
+    saved = load_run(tmp_path, session["session_id"], run["run_id"])
+    assert saved["analysis"]["operator_trim_start_s"] == pytest.approx(0.05)
+    assert saved["analysis"]["playback_delay_trim_start_s"] == pytest.approx(0.025)
+    assert saved["analysis"]["trim_start_s"] == pytest.approx(0.075)
 
 
 def test_daq_play_and_record_uses_validated_helper_settings_and_daq_recorder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -4219,6 +4253,8 @@ def test_daq_play_and_record_uses_validated_helper_settings_and_daq_recorder(tmp
     assert saved["mac_helper"]["play_id"] == "play_daq_001"
     assert saved["mac_helper"]["last_request"]["delay_ms"] == 25
     assert saved["mac_helper"]["last_request"]["duration_s"] == 0.15
+    assert saved["analysis"]["playback_delay_trim_start_s"] == pytest.approx(0.025)
+    assert saved["analysis"]["trim_start_s"] == pytest.approx(0.025)
     page = client.get(f"/sessions/{session['session_id']}/runs/{run['run_id']}")
     assert "Play + Record + Finalize" in page.text
 
