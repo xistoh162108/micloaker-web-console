@@ -213,7 +213,7 @@ def _check_daq(findings: list[tuple[str, str, str]]) -> None:
     if health.get("ok"):
         findings.append(("PASS", "daq_backend", str(health.get("message", "DAQ backend appears available."))))
     else:
-        findings.append(("WARN", "daq_backend", str(health.get("message", "DAQ unavailable; mock mode remains available."))))
+        findings.append(("WARN", "daq_backend", str(health.get("message", "DAQ unavailable; offline developer validation remains available."))))
 
 
 def _check_helper_config(findings: list[tuple[str, str, str]], workspace: Path) -> dict[str, Any]:

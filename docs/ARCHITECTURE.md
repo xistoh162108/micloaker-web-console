@@ -124,7 +124,7 @@ DAQ Reader
   └── quick metrics
 ```
 
-Never create two competing readers for the same DAQ during a recording. The console may offer an explicit DAQ live preview setup mode that performs short lazy-`uldaq` scans before recording; the server rejects DAQ live preview while recording is active. If DAQ preview is unavailable it must report a preview error and leave mock/live page operation intact.
+Never create two competing readers for the same DAQ during a recording. The console may offer an explicit DAQ live preview setup mode that performs short lazy-`uldaq` scans before recording; the server rejects DAQ live preview while recording is active. If DAQ preview is unavailable it must report a preview error and leave the offline developer preview path intact for tests.
 
 ## 7. Security posture
 

@@ -11,7 +11,7 @@
 - Add dashboard and basic templates.
 - Add tests for startup and workspace creation.
 
-## Phase 1 — File and mock workflow
+## Phase 1 — File and offline developer validation workflow
 
 - Implement sessions/runs with JSON metadata.
 - Implement append-only JSONL events/indexes.
@@ -66,4 +66,4 @@
 
 ## Critical sequencing rule
 
-Do not implement Mac Helper before the stable Linux mock workflow, analysis, and exports are working. Do not add a database at any phase.
+Do not implement Mac Helper before the stable Linux offline developer validation workflow, analysis, and exports are working. Do not add a database at any phase.

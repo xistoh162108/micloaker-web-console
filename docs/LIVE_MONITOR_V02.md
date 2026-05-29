@@ -44,7 +44,7 @@ After recording ends, automatically start a finalization job:
 Use one acquisition source where possible:
 
 ```text
-DAQ/mock source
+DAQ/offline developer source
   ├── raw .bin writer
   ├── live preview buffer
   └── quick metric calculator

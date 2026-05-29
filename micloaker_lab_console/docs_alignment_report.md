@@ -20,9 +20,9 @@ done
 
 Most recent observed results:
 
-- Full test suite: `139 passed`
+- Full test suite: `142 passed`
 - Acceptance audit: `PASS`
-- Smoke routes: all listed routes returned `200`
+- Validation routes: all listed routes returned `200`
 
 ## Alignment Matrix
 
@@ -38,7 +38,7 @@ Most recent observed results:
 | Startup scan/index rebuild | Proven | `load_sessions`, `load_runs`, `rebuild_indexes`; tests cover stale/missing indexes and malformed JSON tolerance. |
 | Session/run manager | Proven | Routes/templates for sessions and runs; tests cover create/list/detail and filters. |
 | Metadata forms | Proven | New-run/session forms include acquisition, condition, analysis, safety, conversion, and Mac Helper planning fields; tests check field exposure and validation. |
-| Mock DAQ mode | Proven | `app/services/mock_daq.py`; tests and acceptance audit record/finalize mock runs without hardware. |
+| Offline developer validation mode | Proven | `app/services/mock_daq.py`; tests and acceptance audit record/finalize deterministic runs without hardware. This path remains available for tests while the default operator UI stays DAQ-first. |
 | Lazy `uldaq` import | Proven | `app/services/daq.py` imports `uldaq` inside DAQ recording code; tests assert app startup and health checks do not import it. |
 | Real DAQ code path | Partially proven | Lazy real scan path has unit coverage with fake `uldaq`; physical hardware capture must be verified in lab. |
 | One recording at a time | Proven | Recorder lock and busy errors; tests cover busy behavior and structured response. |
@@ -55,16 +55,16 @@ Most recent observed results:
 | ZIP exports | Proven | Run/session/multi-session ZIPs include manifests, missing-file records, unsafe path rejection, relative archive names, session-level hardware validation evidence, and readiness snapshots when records exist. |
 | Logs/debug UI | Proven | `/logs` displays app/job events, run logs, tracebacks, and diagnostic downloads; tests cover traceback capture. |
 | Dashboard command center UI | Proven | `app/templates/dashboard.html` has always-visible Setup, Capture And Live Preview, Results/Compare/Export, live canvases, latest artifacts, recent runs, and operations; dashboard workflow controls are not hidden behind tabs. Static plot images use lazy/async loading and stable aspect ratios so the command surface stays responsive. The current visual standard is a scientific instrument console using local DaisyUI vocabulary, neutral lab surfaces, low-contrast chart chrome, restrained semantic status colors, and cyan/blue data emphasis. |
-| Live monitor v0.2 | Proven for mock source | `/live` and `/live/snapshot` expose waveform, RMS/peak, clipping, PSD, spectrogram, preview-only labels, finalization status, and final artifact pointers. Canvas drawing is scheduled with `requestAnimationFrame`, avoids flattening spectrogram rows during each refresh, and provides hover readouts plus crosshair inspection for waveform time/voltage, PSD frequency/log power, and spectrogram row/frequency/value. |
-| Live monitor with real DAQ source | Code path proven, not physically verified | Default live preview remains mock. Explicit DAQ live preview performs short lazy-`uldaq` scans, is blocked while recording is active to avoid a second DAQ reader, and degrades to structured preview errors when hardware/drivers are unavailable. Physical DAQ live signal quality still needs lab verification. |
+| Live monitor v0.2 | Proven for offline developer source | `/live` and `/live/snapshot` expose waveform, RMS/peak, clipping, PSD, spectrogram, preview-only labels, finalization status, and final artifact pointers. Canvas drawing is scheduled with `requestAnimationFrame`, avoids flattening spectrogram rows during each refresh, and provides hover readouts plus crosshair inspection for waveform time/voltage, PSD frequency/log power, and spectrogram row/frequency/value. |
+| Live monitor with real DAQ source | Code path proven, not physically verified | Default operator UI exposes explicit DAQ live preview. DAQ live preview performs short lazy-`uldaq` scans, is blocked while recording is active to avoid a second DAQ reader, and degrades to structured preview errors when hardware/drivers are unavailable. Physical DAQ live signal quality still needs lab verification. |
 | Post-record finalization | Proven | Recording/import flows finalize from saved `.bin`; live snapshot surfaces latest finalized report-grade run and artifacts. |
-| Optional Mac Helper APIs | Proven in mock/test mode | `/health`, `/devices`, `/files`, `/validate-playback`, `/play`, `/stop`, `/status`; standalone tests cover structured responses. |
+| Optional Mac Helper APIs | Proven in offline developer validation | `/health`, `/devices`, `/files`, `/validate-playback`, `/play`, `/stop`, `/status`; standalone tests cover structured responses. |
 | Mac Helper path safety | Proven | Relative-only `wav_root` validation, traversal rejection, symlink-outside exclusion, optional bearer token tests. |
 | Mac Helper explicit device use | Proven in code/test | Playback validation checks the selected device, playback uses `sd.play(..., device=req.device_id, ...)`, and tests guard against mutating `sounddevice.default`. Physical output routing still needs Mac lab verification. |
 | Linux Helper integration | Proven | Manual URL config, health/files/devices/actions, validate-before-play-and-record, disconnected-safe behavior, run JSON/log persistence. |
 | Tailscale discovery | Proven as best-effort optional | `app/services/tailscale.py` and UI route handle absent/unexpected Tailscale without breaking manual connection. |
 | README and dependency files | Proven | `README.md`, `requirements.txt`, `requirements-mac-helper.txt`, `mac_helper/README.md`. |
-| Hardware validation protocol | Proven as documented protocol | `../docs/HARDWARE_VALIDATION_PROTOCOL.md` defines the DAQ smoke capture, Mac Helper playback validation, play-and-record trial, attenuation pair check, and pass/fail evidence. Physical execution remains lab work. |
+| Hardware validation protocol | Proven as documented protocol | `../docs/HARDWARE_VALIDATION_PROTOCOL.md` defines the DAQ validation capture, Mac Helper playback validation, play-and-record trial, attenuation pair check, and pass/fail evidence. Physical execution remains lab work. |
 | Safe start/stop operation | Proven for local controls | `scripts/console_control.py`, `/ops`, Linux desktop launcher installer, and Mac Helper control scripts provide explicit start/status/stop flows. |
 | Hardware validation evidence capture | Proven for text persistence | `/ops` records operator-entered DAQ/Mac/play-and-record/attenuation validation evidence to `workspace/.micloaker/hardware_validation.jsonl` and `hardware_validation_report.md`; each record preserves evidence completeness by storing present and missing checklist labels; direct downloads and ZIP inclusion are tested. Physical execution remains lab work. |
 | Hardware validation readiness gates | Proven for operator-entered evidence | `/ops/readiness` and `scripts/lab_readiness_check.py` use the latest record per gate; `fail` makes readiness fail, `warn`/missing stays warning, and `pass`/`not applicable` closes a gate. `/ops` and `scripts/lab_readiness_check.py --write-report` persist `lab_readiness_report.json` and `lab_readiness_report.md` for export evidence. |
@@ -78,12 +78,12 @@ The notebooks under `../docs/legacy` are treated as workflow references rather t
 - `plot_maker.ipynb`: represented by waveform, PSD, spectrogram, report artifacts, and live chart inspection.
 - `SJR_plot_maker.ipynb`: represented for the core acoustic-console scope by exported comparison metrics/plots and retained room/distance/angle metadata. WER/CER outcome plots remain external downstream analysis.
 - `volume_measurer.ipynb`: represented by RMS, band power, dominant tone, quality-flag analysis, and BIN-primary power-ratio comparison.
-- `daq_deploy.ipynb`: represented by lazy DAQ integration, mock fallback, `uj0`/`uj1` metadata, numbered run outputs, and recording/finalization logs; physical DAQ behavior remains lab-verification work.
+- `daq_deploy.ipynb`: represented by lazy DAQ integration, offline developer fallback, `uj0`/`uj1` metadata, numbered run outputs, and recording/finalization logs; physical DAQ behavior remains lab-verification work.
 - `jtest.ipynb`: represented only as historical exploratory context for speech/jamming analysis; no direct runtime requirement is inferred from it unless the PRD/specs also require it.
 
 ## Remaining Lab Verification
 
-These items are outside what the local mock/test environment can prove:
+These items are outside what the local offline validation environment can prove:
 
 1. Connect the actual DAQ and run a short DAQ capture through `Record DAQ + Finalize`.
 2. Confirm actual sample rate, channel, DAQ range, and `.bin` sample count match lab expectations.
@@ -95,4 +95,4 @@ Use `../docs/HARDWARE_VALIDATION_PROTOCOL.md` as the operator checklist for item
 
 ## Current Completion Assessment
 
-The implementation satisfies the documented local/mock and text-persistence acceptance surface with automated evidence. The remaining unproven items are physical DAQ capture, physical Mac playback routing, and optional numeric parity against historical notebooks.
+The implementation satisfies the documented local/offline-validation and text-persistence acceptance surface with automated evidence. The remaining unproven items are physical DAQ capture, physical Mac playback routing, and optional numeric parity against historical notebooks.

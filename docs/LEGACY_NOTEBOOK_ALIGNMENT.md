@@ -7,7 +7,7 @@ The notebooks in `docs/legacy/` are historical workflow references. They are not
 | Notebook | Historical role | Current app replacement |
 |---|---|---|
 | `bin_to_wav.ipynb` | DAQ/raw data conversion into playable WAV files. | `app/services/converter.py` converts saved float64 `.bin` files to mode-tagged peak and range WAVs. Peak WAV is listening preview only; range WAV is cross-check only when full-scale voltage is known. |
-| `daq_deploy.ipynb` | DAQ capture experiments and spectrogram checks. | `app/services/daq.py`, `app/services/recorder.py`, and mock fallback handle real or mock recording, one recording job at a time, lazy `uldaq`, logs, and finalization from saved `.bin`. |
+| `daq_deploy.ipynb` | DAQ capture experiments and spectrogram checks. | `app/services/daq.py`, `app/services/recorder.py`, and offline developer fallback handle real DAQ recording plus offline developer validation, one recording job at a time, lazy `uldaq`, logs, and finalization from saved `.bin`. |
 | `plot_maker.ipynb` | Audio loading and spectrogram/plot exploration. | `app/services/plotting.py` generates report-friendly waveform, PSD, spectrogram, PSD overlay, and attenuation plots as PNG/SVG artifacts. |
 | `SJR_plot_maker.ipynb` | Jamming-condition plot exploration. | Compare workflow computes `uj0`/`uj1` attenuation and saves comparison JSON/CSV plus PSD overlay and attenuation bar plots. |
 | `volume_measurer.ipynb` | RMS/volume measurement exploration. | `app/services/analyzer.py` computes RMS, band power, Welch PSD, dominant tone, clipping/DC/sample-count flags, and report-grade metrics from saved `.bin`. |

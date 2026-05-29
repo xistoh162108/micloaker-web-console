@@ -600,7 +600,7 @@ def main() -> int:
     checklist_terms = [
         "Automated evidence complete",
         "Lab verification required",
-        "Latest recorded result: `139 passed`",
+        "Latest recorded result: `142 passed`",
         "Run a short real DAQ validation capture",
         "Run explicit DAQ live preview on the real DAQ",
         "Run Mac Helper on the actual macOS playback machine",
@@ -673,7 +673,7 @@ def main() -> int:
             print(f"  missing helper README term: {term}")
     alignment_report = (ROOT / "docs_alignment_report.md").read_text(encoding="utf-8")
     alignment_terms = [
-        "Full test suite: `139 passed`",
+        "Full test suite: `142 passed`",
         "scientific instrument console",
         "hover readouts plus crosshair inspection",
         "evidence completeness by storing present and missing checklist labels",
@@ -708,7 +708,7 @@ def main() -> int:
             readiness_keys = {row.get("key") for row in readiness.get("checks", [])}
             checks.append(report(readiness_response.status_code == 200 and readiness.get("summary", {}).get("fail") == 0 and {"workspace_text_files", "hardware_validation_records"} <= readiness_keys, "Ops readiness JSON reports lab pre-checks"))
             ok, failures = audit_mock_workflow(temp_root)
-            checks.append(report(ok, "mock workflow records, finalizes, labels, plots, and exports"))
+            checks.append(report(ok, "offline developer validation workflow records, finalizes, labels, plots, and exports"))
             for failure in failures:
                 print(f"  workflow failure: {failure}")
             helper_ok, helper_failures = audit_mac_helper_mock(temp_root / "helper_wavs")

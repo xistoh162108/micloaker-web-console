@@ -16,7 +16,7 @@ Run from `micloaker_lab_console/`:
 
 Expected automated state as of this audit:
 
-- Full test suite: `139 passed`
+- Full test suite: `142 passed`
 - Acceptance audit: `PASS`
 - Tailscale lab console validation route: `http://100.88.179.43:8000` returns HTTP 200 when started explicitly with `--tailscale`
 - Default configured bind remains `127.0.0.1`
@@ -56,14 +56,14 @@ Expected automated state as of this audit:
 | Individual, run, session, and multi-session ZIP downloads | Proven | Export service, route tests, and acceptance audit; session/multi-session ZIPs include validation/readiness evidence and `hardware_validation_plan.txt`. |
 | ZIP manifests and safe relative archive paths | Proven | Export tests and acceptance audit. |
 | Debug/log console with tracebacks | Proven | Logs route/template and traceback tests. |
-| Live Monitor waveform/RMS/peak/clipping/PSD/spectrogram | Proven for mock source | `/live`, `/live/snapshot`, live monitor service, and tests; live charts use `requestAnimationFrame`, display-size canvas rendering, cached `ImageData` spectrogram buffers, and no per-frame spectrogram flattening. Waveform, PSD, and spectrogram canvases provide hover readouts and crosshair inspection while retaining preview-only labels. |
+| Live Monitor waveform/RMS/peak/clipping/PSD/spectrogram | Proven for offline developer source | `/live`, `/live/snapshot`, live monitor service, and tests; live charts use `requestAnimationFrame`, display-size canvas rendering, cached `ImageData` spectrogram buffers, and no per-frame spectrogram flattening. Waveform, PSD, and spectrogram canvases provide hover readouts and crosshair inspection while retaining preview-only labels. |
 | Live values are preview-only | Proven | Live UI text, JSON payload labels, docs, and tests. |
 | DAQ live preview | Code proven, lab verification required | Explicit DAQ preview route uses lazy DAQ scan and structured errors; physical DAQ waveform/PSD quality must be validated in lab. |
 | DAQ recording with real hardware | Code proven, lab verification required | DAQ code path and fake-`uldaq` tests exist; actual sample rate, channel, range, and saved `.bin` count need physical DAQ evidence. |
 | Optional macOS Audio Helper is not required for Linux-only workflows | Proven | Disconnected Helper tests and UI status keep Linux workflows available. |
-| Helper APIs `/health`, `/devices`, `/files`, `/validate-playback`, `/play`, `/stop`, `/status` | Proven in mock/test mode | `mac_helper/helper.py` and `tests/test_mac_helper.py`. |
+| Helper APIs `/health`, `/devices`, `/files`, `/validate-playback`, `/play`, `/stop`, `/status` | Proven in offline developer validation | `mac_helper/helper.py` and `tests/test_mac_helper.py`. |
 | Helper plays only under `wav_root` and blocks traversal | Proven | Helper file/path tests. |
-| Helper validates file/device/sample-rate/channels before play | Proven in mock/test mode | Helper validation tests. |
+| Helper validates file/device/sample-rate/channels before play | Proven in offline developer validation | Helper validation tests. |
 | Helper uses explicit `device_id` without changing system default output | Code proven, lab verification required | Tests prove `sd.play(..., device=req.device_id, ...)` and no mutation of `sounddevice.default`; physical output routing still needs Mac validation. |
 | Helper status/playback info stored in run JSON/log files | Proven | Linux Helper integration and play-and-record tests, including best-effort Helper stop logging when playback starts but Linux recording fails before capture. |
 | Manual Helper URL first, Tailscale discovery optional | Proven | Mac Helper UI/config and best-effort discovery tests. |
@@ -85,4 +85,4 @@ These are not code gaps; they require physical devices and operator evidence:
 
 ## Completion Decision
 
-The software implementation is complete for the local/mock/text-persistence acceptance surface currently available in this repository. The overall goal must remain open until the lab-only physical verification items above have matching `/ops` evidence records or the user explicitly declares those hardware gates out of scope for completion.
+The software implementation is complete for the local/offline-validation/text-persistence acceptance surface currently available in this repository. The overall goal must remain open until the lab-only physical verification items above have matching `/ops` evidence records or the user explicitly declares those hardware gates out of scope for completion.
