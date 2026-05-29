@@ -541,6 +541,9 @@ def main() -> int:
         "daq_deploy.ipynb",
         "volume_measurer.ipynb",
         "Raw `.bin` voltage data is the quantitative source of truth",
+        "SJR_plot_maker.ipynb",
+        "Live charts may be interactive",
+        "WER/CER exploratory plots",
         "Exact numeric parity with a notebook is not assumed",
     ]
     missing_legacy_terms = [term for term in legacy_terms if term not in legacy_alignment_doc]
@@ -571,6 +574,8 @@ def main() -> int:
         "Helper uses explicit `device_id` without changing system default output",
         "Hardware validation records with workflow navigation",
         "cached `ImageData` spectrogram buffers",
+        "hover readouts and crosshair inspection",
+        "WER/CER exploratory plots marked as downstream analysis",
         "CLI server/static asset smoke evidence",
         "CLI Server Routes",
         "hardware_validation_plan.txt` is persisted under `.micloaker",
@@ -619,6 +624,19 @@ def main() -> int:
     if missing_helper_terms:
         for term in missing_helper_terms:
             print(f"  missing helper README term: {term}")
+    alignment_report = (ROOT / "docs_alignment_report.md").read_text(encoding="utf-8")
+    alignment_terms = [
+        "Full test suite: `139 passed`",
+        "scientific instrument console",
+        "hover readouts plus crosshair inspection",
+        "WER/CER outcome plots remain external downstream analysis",
+        "float64 little-endian `.bin` handling",
+    ]
+    missing_alignment_terms = [term for term in alignment_terms if term not in alignment_report]
+    checks.append(report(not missing_alignment_terms, "docs alignment report reflects current UI, legacy, and test evidence"))
+    if missing_alignment_terms:
+        for term in missing_alignment_terms:
+            print(f"  missing alignment report term: {term}")
 
     with tempfile.TemporaryDirectory(prefix="micloaker-audit-") as temp_dir:
         previous_workspace = os.environ.get("MICLOAKER_WORKSPACE")

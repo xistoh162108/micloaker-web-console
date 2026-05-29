@@ -20,7 +20,7 @@ done
 
 Most recent observed results:
 
-- Full test suite: `133 passed`
+- Full test suite: `139 passed`
 - Acceptance audit: `PASS`
 - Smoke routes: all listed routes returned `200`
 
@@ -54,8 +54,8 @@ Most recent observed results:
 | Individual file downloads | Proven | Session file routes and file browser support `.bin`, WAV, plots, metrics, reports, logs; route tests cover downloads. |
 | ZIP exports | Proven | Run/session/multi-session ZIPs include manifests, missing-file records, unsafe path rejection, relative archive names, session-level hardware validation evidence, and readiness snapshots when records exist. |
 | Logs/debug UI | Proven | `/logs` displays app/job events, run logs, tracebacks, and diagnostic downloads; tests cover traceback capture. |
-| Dashboard command center UI | Proven | `app/templates/dashboard.html` has always-visible Setup, Capture And Live Preview, Results/Compare/Export, live canvases, latest artifacts, recent runs, and operations; dashboard workflow controls are not hidden behind tabs. Static plot images use lazy/async loading and stable aspect ratios so the command surface stays responsive. |
-| Live monitor v0.2 | Proven for mock source | `/live` and `/live/snapshot` expose waveform, RMS/peak, clipping, PSD, spectrogram, preview-only labels, finalization status, and final artifact pointers. Canvas drawing is scheduled with `requestAnimationFrame` and avoids flattening spectrogram rows during each refresh. |
+| Dashboard command center UI | Proven | `app/templates/dashboard.html` has always-visible Setup, Capture And Live Preview, Results/Compare/Export, live canvases, latest artifacts, recent runs, and operations; dashboard workflow controls are not hidden behind tabs. Static plot images use lazy/async loading and stable aspect ratios so the command surface stays responsive. The current visual standard is a scientific instrument console using local DaisyUI vocabulary, neutral lab surfaces, low-contrast chart chrome, restrained semantic status colors, and cyan/blue data emphasis. |
+| Live monitor v0.2 | Proven for mock source | `/live` and `/live/snapshot` expose waveform, RMS/peak, clipping, PSD, spectrogram, preview-only labels, finalization status, and final artifact pointers. Canvas drawing is scheduled with `requestAnimationFrame`, avoids flattening spectrogram rows during each refresh, and provides hover readouts plus crosshair inspection for waveform time/voltage, PSD frequency/log power, and spectrogram row/frequency/value. |
 | Live monitor with real DAQ source | Code path proven, not physically verified | Default live preview remains mock. Explicit DAQ live preview performs short lazy-`uldaq` scans, is blocked while recording is active to avoid a second DAQ reader, and degrades to structured preview errors when hardware/drivers are unavailable. Physical DAQ live signal quality still needs lab verification. |
 | Post-record finalization | Proven | Recording/import flows finalize from saved `.bin`; live snapshot surfaces latest finalized report-grade run and artifacts. |
 | Optional Mac Helper APIs | Proven in mock/test mode | `/health`, `/devices`, `/files`, `/validate-playback`, `/play`, `/stop`, `/status`; standalone tests cover structured responses. |
@@ -74,11 +74,12 @@ Most recent observed results:
 
 The notebooks under `../docs/legacy` are treated as workflow references rather than executable acceptance artifacts. See `../docs/LEGACY_NOTEBOOK_ALIGNMENT.md` for the durable mapping.
 
-- `bin_to_wav.ipynb`: represented by `app/services/converter.py`, mode-tagged peak/range WAV outputs, and converter tests.
-- `plot_maker.ipynb` and `SJR_plot_maker.ipynb`: represented by waveform, PSD, spectrogram, PSD overlay, and attenuation plot generation.
-- `volume_measurer.ipynb`: represented by RMS, band power, dominant tone, and quality-flag analysis.
-- `daq_deploy.ipynb`: represented by lazy DAQ integration and mock fallback; physical DAQ behavior remains lab-verification work.
-- `jtest.ipynb`: represented only as historical exploratory context; no direct runtime requirement is inferred from it.
+- `bin_to_wav.ipynb`: represented by `app/services/converter.py`, float64 little-endian `.bin` handling, 8000 Hz/channel metadata, no silent overwrite, mode-tagged peak/range WAV outputs, and converter tests.
+- `plot_maker.ipynb`: represented by waveform, PSD, spectrogram, report artifacts, and live chart inspection.
+- `SJR_plot_maker.ipynb`: represented for the core acoustic-console scope by exported comparison metrics/plots and retained room/distance/angle metadata. WER/CER outcome plots remain external downstream analysis.
+- `volume_measurer.ipynb`: represented by RMS, band power, dominant tone, quality-flag analysis, and BIN-primary power-ratio comparison.
+- `daq_deploy.ipynb`: represented by lazy DAQ integration, mock fallback, `uj0`/`uj1` metadata, numbered run outputs, and recording/finalization logs; physical DAQ behavior remains lab-verification work.
+- `jtest.ipynb`: represented only as historical exploratory context for speech/jamming analysis; no direct runtime requirement is inferred from it unless the PRD/specs also require it.
 
 ## Remaining Lab Verification
 
