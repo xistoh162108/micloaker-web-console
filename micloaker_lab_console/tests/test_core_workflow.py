@@ -1036,6 +1036,7 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert "Evidence Hints" in page.text
     assert "Checklist fields" in page.text
     assert "Checklist preview" in page.text
+    assert "Use checklist draft" in page.text
     assert "data-checklist=" in page.text
     assert "data-hint=" in page.text
     assert "expected vs written sample count" in page.text
@@ -1049,6 +1050,8 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert "No physical validation records yet." in page.text
     app_js = client.get("/static/js/app.js").text
     assert "validation-checklist-preview" in app_js
+    assert "validation-draft-button" in app_js
+    assert "currentChecklist.map" in app_js
     assert "updateValidationHint" in app_js
     assert "selected?.dataset.checklist" in app_js
 

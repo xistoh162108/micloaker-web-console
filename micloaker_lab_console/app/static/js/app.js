@@ -30,14 +30,21 @@ document.querySelectorAll('form[action="/ops/validation"]').forEach((form) => {
   const gate = form.querySelector('select[name="gate"]');
   const evidence = form.querySelector('textarea[name="evidence"]');
   const preview = form.querySelector("#validation-checklist-preview");
+  const draftButton = form.querySelector("#validation-draft-button");
   if (!gate || !evidence || !preview) return;
+  let currentChecklist = [];
   const updateValidationHint = () => {
     const selected = gate.options[gate.selectedIndex];
     const checklist = selected?.dataset.checklist || "";
     const hint = selected?.dataset.hint || "";
+    currentChecklist = checklist.split(";").map((item) => item.trim()).filter(Boolean);
     preview.value = checklist ? `Checklist fields: ${checklist}` : "";
     evidence.placeholder = hint ? `${hint} Checklist fields: ${checklist}` : evidence.placeholder;
   };
+  draftButton?.addEventListener("click", () => {
+    evidence.value = currentChecklist.map((item) => `${item}: `).join("\n");
+    evidence.focus();
+  });
   gate.addEventListener("change", updateValidationHint);
   updateValidationHint();
 });
