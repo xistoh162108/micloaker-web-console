@@ -476,6 +476,10 @@ def main() -> int:
         "macOS default output did not change",
         "expected vs written sample count",
         "Gate Status",
+        "Next action",
+        "Create DAQ validation run",
+        "Open Mac Helper",
+        "Open Compare",
         "not applicable",
     ]
     validation_sources = (
@@ -534,6 +538,7 @@ def main() -> int:
         "Raw `.bin` float64 voltage is saved and primary quantitative source",
         "DAQ recording with real hardware",
         "Helper uses explicit `device_id` without changing system default output",
+        "Hardware validation records with workflow navigation",
         "Remaining Requirements Not Yet Proved By Automation",
         "overall goal must remain open until the lab-only physical verification items",
     ]

@@ -91,7 +91,7 @@ python scripts/console_control.py stop</pre>
   <h3>Gate Status</h3>
   <div class="table-scroll">
   <table class="data-table">
-    <thead><tr><th>Gate</th><th>Status</th><th>Latest record</th><th>Session</th><th>Run</th><th>Expected evidence</th></tr></thead>
+    <thead><tr><th>Gate</th><th>Status</th><th>Latest record</th><th>Session</th><th>Run</th><th>Next action</th><th>Expected evidence</th></tr></thead>
     <tbody>
       {% for gate in validation.gate_status %}
       <tr>
@@ -100,6 +100,7 @@ python scripts/console_control.py stop</pre>
         <td>{{ gate.recorded_at }}</td>
         <td>{{ gate.session_id }}</td>
         <td>{{ gate.run_id }}</td>
+        <td><a class="btn btn-outline" href="{{ gate.action.href }}">{{ gate.action.label }}</a></td>
         <td>{{ gate.evidence_hint }}</td>
       </tr>
       {% endfor %}

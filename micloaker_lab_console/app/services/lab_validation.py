@@ -20,6 +20,13 @@ VALIDATION_GATE_EVIDENCE = {
     "attenuation_pair": "Record uj0/uj1 run IDs, compare JSON/CSV path, source=bin, band, attenuation dB, mismatch warnings, and PSD/bar plot status.",
     "legacy_parity": "Record legacy .bin fixture path, notebook/reference output, current metrics/plots, tolerance, and pass/not-applicable decision.",
 }
+VALIDATION_GATE_ACTIONS = {
+    "daq_smoke": {"label": "Create DAQ validation run", "href": "/runs/new"},
+    "mac_playback": {"label": "Open Mac Helper", "href": "/mac-helper"},
+    "play_and_record": {"label": "Open recent runs", "href": "/sessions"},
+    "attenuation_pair": {"label": "Open Compare", "href": "/compare"},
+    "legacy_parity": {"label": "Open files", "href": "/files"},
+}
 VALIDATION_STATUSES = {"pass", "warn", "fail", "na"}
 
 
@@ -99,6 +106,7 @@ def validation_summary(workspace: Path) -> dict[str, Any]:
                 "gate_label": label,
                 "status": status,
                 "evidence_hint": VALIDATION_GATE_EVIDENCE[gate],
+                "action": VALIDATION_GATE_ACTIONS[gate],
                 "recorded_at": latest.get("recorded_at") or latest.get("ts") if latest else "",
                 "session_id": latest.get("session_id", "") if latest else "",
                 "run_id": latest.get("run_id", "") if latest else "",
@@ -108,6 +116,7 @@ def validation_summary(workspace: Path) -> dict[str, Any]:
     return {
         "record_count": len(records),
         "evidence_hints": VALIDATION_GATE_EVIDENCE,
+        "actions": VALIDATION_GATE_ACTIONS,
         "latest_by_gate": latest_by_gate,
         "gate_status": gate_status,
         "status_counts": {

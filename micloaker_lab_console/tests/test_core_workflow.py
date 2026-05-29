@@ -1034,6 +1034,10 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert "Evidence Hints" in page.text
     assert "expected vs written sample count" in page.text
     assert "macOS default output did not change" in page.text
+    assert "Next action" in page.text
+    assert "Create DAQ validation run" in page.text
+    assert 'href="/mac-helper"' in page.text
+    assert 'href="/compare"' in page.text
     assert "No physical validation records yet." in page.text
 
     response = client.post(
@@ -1068,6 +1072,8 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert "evidence_hints" in status["summary"]
     assert "expected vs written sample count" in status["summary"]["evidence_hints"]["daq_smoke"]
     assert "evidence_hint" in status["summary"]["gate_status"][0]
+    assert status["summary"]["gate_status"][0]["action"]["href"]
+    assert status["summary"]["actions"]["mac_playback"]["href"] == "/mac-helper"
     assert status["summary"]["latest_by_gate"]["daq_smoke"]["status"] == "pass"
     assert status["summary"]["status_counts"]["pass"] == 1
     assert status["summary"]["status_counts"]["na"] == 0
