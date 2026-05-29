@@ -601,6 +601,8 @@ def main() -> int:
         "explicit `device_id`",
         "does not change the macOS system default output device",
         "`error_code`",
+        "best-effort Helper",
+        "Linux recording fails before capture",
     ]
     missing_helper_terms = [term for term in helper_doc_terms if term not in helper_readme]
     checks.append(report(not missing_helper_terms, "Mac Helper README documents run command and safety contract"))

@@ -219,7 +219,15 @@ Before playing, validate:
 - Must open an output stream with explicit `device_id`.
 - This allows experiment sound to go to a USB DAC/ultrasonic speaker while normal Mac audio remains on the default output.
 
-## 8. Error handling
+## 8. Linux Play & Record safety
+
+When Linux Console starts Mac playback and then fails to start the paired Linux
+recording because the recorder is busy, the raw `.bin` target already exists,
+or DAQ is unavailable/not configured, it should send a best-effort Helper
+`/stop` request. The run log should contain the successful play request, the
+stop attempt, and the structured recording failure.
+
+## 9. Error handling
 
 Return structured errors:
 
@@ -232,7 +240,7 @@ Return structured errors:
 }
 ```
 
-## 9. Physical output verification
+## 10. Physical output verification
 
 Software playback success does not fully prove the physical speaker emitted sound. Optional later verification:
 
@@ -243,7 +251,7 @@ Software playback success does not fully prove the physical speaker emitted soun
 
 This must remain optional and should not complicate v0.1/v0.2 core.
 
-## 10. Linux metadata fields
+## 11. Linux metadata fields
 
 When used, store:
 

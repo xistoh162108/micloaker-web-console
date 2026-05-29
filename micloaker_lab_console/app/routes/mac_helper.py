@@ -226,7 +226,8 @@ def _play_and_record(
         _store_helper_result(workspace, session_id, run_id, "play_and_record_rejected", requested, result)
         raise HTTPException(status_code=400, detail=result)
     payload = {**requested, "delay_ms": delay_ms}
-    play_result = _client_from_config(workspace).play(payload)
+    client = _client_from_config(workspace)
+    play_result = client.play(payload)
     _store_helper_result(workspace, session_id, run_id, "play", payload, play_result)
     if not play_result.get("ok"):
         raise HTTPException(status_code=502, detail=play_result)
@@ -234,21 +235,30 @@ def _play_and_record(
         final = recorder(workspace, load_run(workspace, session_id, run_id))
     except RecordingBusyError as exc:
         detail = _recording_busy_error(str(exc))
+        _stop_helper_after_failed_recording(workspace, session_id, run_id, client)
         _store_helper_result(workspace, session_id, run_id, "play_and_record_failed", payload, {"ok": False, **detail})
         raise HTTPException(status_code=409, detail=detail) from exc
     except FileExistsError as exc:
         detail = _raw_bin_exists_error(str(exc))
+        _stop_helper_after_failed_recording(workspace, session_id, run_id, client)
         _store_helper_result(workspace, session_id, run_id, "play_and_record_failed", payload, {"ok": False, **detail})
         raise HTTPException(status_code=409, detail=detail) from exc
     except DaqUnavailableError as exc:
         detail = {"error_code": "DAQ_UNAVAILABLE", "message": str(exc), "suggestion": "Use Play & Record Mock, or install/configure uldaq drivers before DAQ recording."}
+        _stop_helper_after_failed_recording(workspace, session_id, run_id, client)
         _store_helper_result(workspace, session_id, run_id, "play_and_record_failed", payload, {"ok": False, **detail})
         raise HTTPException(status_code=503, detail=detail) from exc
     except DaqNotConfiguredError as exc:
         detail = {"error_code": "DAQ_NOT_CONFIGURED", "message": str(exc), "suggestion": "Configure the DAQ-specific acquisition code for this hardware, or use mock recording."}
+        _stop_helper_after_failed_recording(workspace, session_id, run_id, client)
         _store_helper_result(workspace, session_id, run_id, "play_and_record_failed", payload, {"ok": False, **detail})
         raise HTTPException(status_code=501, detail=detail) from exc
     return {"ok": True, "playback": play_result, "recording_source": recorder_label, "run": {"run_id": final["run_id"], "analysis_status": final["analysis"]["status"]}}
+
+
+def _stop_helper_after_failed_recording(workspace, session_id: str, run_id: str, client: MacHelperClient) -> None:
+    stop_result = client.stop()
+    _store_helper_result(workspace, session_id, run_id, "stop_after_recording_failure", {}, stop_result)
 
 
 def _client_from_config(workspace):

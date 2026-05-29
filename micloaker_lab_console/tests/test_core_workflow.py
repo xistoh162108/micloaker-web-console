@@ -3208,13 +3208,19 @@ def test_play_and_record_returns_structured_busy_conflict(tmp_path: Path, monkey
     ensure_workspace(tmp_path)
     session = create_session(tmp_path, "helper busy")
     run = create_run_metadata(tmp_path, session["session_id"], carrier_freq_khz=25, uj="uj0")
+    calls = []
 
     class FakeHelper:
         def validate_playback(self, payload):
             return {"ok": True, "duration_s": 1.0, "source_sample_rate": payload["sample_rate"], **payload}
 
         def play(self, payload):
+            calls.append("play")
             return {"ok": True, "play_id": "play_busy", "duration_s": 1.0, **payload}
+
+        def stop(self):
+            calls.append("stop")
+            return {"ok": True, "stopped": True}
 
     monkeypatch.setattr(mac_helper_routes, "_client_from_config", lambda workspace: FakeHelper())
     client = TestClient(create_app())
@@ -3236,8 +3242,10 @@ def test_play_and_record_returns_structured_busy_conflict(tmp_path: Path, monkey
         assert saved["mac_helper"]["last_error_code"] == "RECORDING_BUSY"
         assert saved["mac_helper"]["play_request_ok"] is True
         assert saved["mac_helper"]["play_id"] == "play_busy"
+        assert calls == ["play", "stop"]
         log_text = (session_dir(tmp_path, session["session_id"]) / "logs" / f"{run['run_id']}.log").read_text(encoding="utf-8")
         assert "mac_helper_play ok=True" in log_text
+        assert "mac_helper_stop_after_recording_failure ok=True" in log_text
         assert "mac_helper_play_and_record_failed ok=False" in log_text
     finally:
         _recording_lock.release()

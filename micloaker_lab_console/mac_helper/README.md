@@ -103,6 +103,7 @@ GET  /status
 - Playback requests must use an explicit `device_id`.
 - The Helper does not change the macOS system default output device.
 - `/validate-playback` checks file readability, device existence, sample rate, channel count, gain, and delay before `/play`.
+- If Mac playback starts but Linux recording fails before capture, the Linux console sends a best-effort Helper `/stop` request and logs the stop attempt with the structured recording failure.
 - Mono WAVs may be mapped to multiple output channels only when the selected device supports them.
 - If source and requested sample rates differ, validation reports `will_resample: true`; playback resamples in memory before opening the explicit output device.
 - Errors return structured JSON with `ok`, `error_code`, `message`, and `suggestion`.
