@@ -46,4 +46,5 @@ Stability first. Keep the Linux recording/analysis workflow simple and reliable.
 - `IMPLEMENTATION_PLAN.md`: phased implementation roadmap.
 - `ACCEPTANCE_TESTS.md`: acceptance tests.
 - `CODEX_TASK_CHECKLIST.md`: concrete coding checklist.
+- `COMPLETION_AUDIT.md`: requirement-by-requirement evidence map and remaining lab-only verification gates.
 - `REQUIREMENTS_TEMPLATE.txt`: dependency template.

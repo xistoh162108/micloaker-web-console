@@ -396,6 +396,8 @@ def main() -> int:
     checks.append(report(DEFAULT_HOST == "127.0.0.1", "default host binds to 127.0.0.1"))
 
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    repo_readme = (ROOT.parent / "README.md").read_text(encoding="utf-8")
+    docs_readme = (ROOT.parent / "docs" / "README.md").read_text(encoding="utf-8")
     helper_readme = (ROOT / "mac_helper" / "README.md").read_text(encoding="utf-8")
     dashboard_template = (ROOT / "app" / "templates" / "dashboard.html").read_text(encoding="utf-8")
     app_css = (ROOT / "app" / "static" / "css" / "app.css").read_text(encoding="utf-8")
@@ -414,6 +416,7 @@ def main() -> int:
     checks.append(report("uvicorn app.main:app --host 127.0.0.1 --port 8000" in readme, "README documents localhost console run command"))
     checks.append(report("Ctrl+C" in readme and "rebuilds session/run lists from workspace text files" in readme, "README documents temporary lifecycle and restart recovery"))
     checks.append(report("Live Monitor" in readme and "Live preview is approximate" in readme and "saved `.bin`" in readme, "README documents live preview-only workflow"))
+    checks.append(report("docs/COMPLETION_AUDIT.md" in repo_readme and "COMPLETION_AUDIT.md" in docs_readme and "../docs/COMPLETION_AUDIT.md" in readme, "README indexes link to the completion audit"))
     operator_terms = [
         "The UI standard is **DaisyUI**",
         "Experiment Command Center",
