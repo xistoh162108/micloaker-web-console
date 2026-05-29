@@ -1238,6 +1238,8 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert "Create DAQ validation run (/runs/new)" in readiness_report_download.text
     assert "Open Mac Helper (/mac-helper)" in readiness_report_download.text
     assert "Checklist fields" in readiness_report_download.text
+    assert "Record command" in readiness_report_download.text
+    assert "scripts/lab_readiness_check.py --record-gate daq_smoke" in readiness_report_download.text
     assert "selected device_id" in readiness_report_download.text
     assert "raw .bin path" in readiness_report_download.text
     blocked_readiness_download = client.get("/ops/readiness/files/../app.log")
@@ -1303,7 +1305,9 @@ def test_lab_readiness_cli_reflects_validation_gate_status(tmp_path: Path):
     assert written.returncode == 0
     assert "readiness reports written:" in written.stdout
     assert (tmp_path / ".micloaker" / "lab_readiness_report.json").is_file()
-    assert "MiCloaker Lab Readiness Report" in (tmp_path / ".micloaker" / "lab_readiness_report.md").read_text(encoding="utf-8")
+    readiness_report = (tmp_path / ".micloaker" / "lab_readiness_report.md").read_text(encoding="utf-8")
+    assert "MiCloaker Lab Readiness Report" in readiness_report
+    assert "scripts/lab_readiness_check.py --record-gate daq_smoke" in readiness_report
 
     plan = subprocess.run([sys.executable, "scripts/lab_readiness_check.py", "--validation-plan"], cwd=Path(__file__).resolve().parents[1], env=env, text=True, capture_output=True, check=False)
     assert plan.returncode == 0

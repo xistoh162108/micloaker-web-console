@@ -48,7 +48,7 @@ Terminal-only runs can append validation evidence with `scripts/lab_readiness_ch
 Run `scripts/lab_readiness_check.py --validation-plan` before a hardware session to print the ordered physical validation gates, checklist fields, next-action screens, and terminal record commands.
 The `hardware_validation_report.md` file includes a **Gate Evidence Checklist** section before the recorded evidence table so exported session packages remain self-auditing.
 The `/ops` Gate Status table also includes **Next action** links for the expected workflow screen, such as DAQ run creation, Mac Helper, Compare, and file review.
-The readiness Markdown report includes the same hardware validation gate status, checklist fields, and next-action targets so exported evidence packages show which physical checks remain.
+The readiness Markdown report includes the same hardware validation gate status, checklist fields, next-action targets, and terminal record commands so exported evidence packages show which physical checks remain and how to record them.
 The `scripts/lab_readiness_check.py` CLI also prints the hardware validation gate status and next-action targets for terminal-only pre-run checks.
 The latest record for each gate controls the readiness status: any `fail` gate makes readiness fail, any `warn` or missing gate keeps readiness in warning state, and each gate must be `pass` or explicitly marked `not applicable` before the hardware validation section is green.
 The same gate status logic is used by `scripts/lab_readiness_check.py`; a failed validation gate makes the CLI exit non-zero.

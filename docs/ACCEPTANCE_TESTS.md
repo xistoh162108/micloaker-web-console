@@ -79,5 +79,6 @@
 - `scripts/lab_readiness_check.py --validation-plan` prints ordered physical validation gates, checklist fields, next-action screens, and terminal record commands.
 - `/ops/validation/plan` downloads the same physical validation plan as `hardware_validation_plan.txt`.
 - Session ZIP and multi-session ZIP exports include `ops_validation/hardware_validation_plan.txt`.
+- Readiness Markdown includes terminal validation record commands for each hardware gate.
 - `scripts/lab_readiness_check.py --record-gate ... --record-status ... --record-evidence ...` appends validation JSONL/Markdown evidence for terminal-only lab operation.
 - `scripts/lab_readiness_check.py --record-evidence-file evidence.txt` reads longer terminal validation evidence from UTF-8 text.

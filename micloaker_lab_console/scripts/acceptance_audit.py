@@ -558,6 +558,7 @@ def main() -> int:
         "Helper uses explicit `device_id` without changing system default output",
         "Hardware validation records with workflow navigation",
         "scripts/lab_readiness_check.py --record-gate",
+        "readiness Markdown includes record commands",
         "--validation-plan",
         "--record-evidence-file",
         "Use checklist draft helper",
