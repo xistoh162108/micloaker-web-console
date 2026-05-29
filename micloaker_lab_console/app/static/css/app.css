@@ -98,6 +98,17 @@ p { margin: 8px 0; }
   margin: 8px 0 12px;
 }
 .capture-actions form { margin: 0; }
+.live-command-card .capture-actions {
+  position: sticky;
+  top: 64px;
+  z-index: 6;
+  padding: 8px;
+  margin: 0 0 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--rounded-box);
+  background: #fff;
+  box-shadow: var(--shadow-sm);
+}
 .actions form {
   display: inline-flex;
   align-items: center;
@@ -343,4 +354,5 @@ canvas { display: block; width: 100%; max-width: 100%; background: white; border
   .hero-actions .button, .hero-actions .btn, .button-row .button, .button-row .btn, .capture-actions .btn, .capture-actions button, button { width: 100%; white-space: normal; }
   .tab-button { min-width: 92px; }
   .stat-value, .metric-strip span, .result-number { font-size: 1.15rem; overflow-wrap: anywhere; }
+  .live-command-card .capture-actions { position: static; }
 }

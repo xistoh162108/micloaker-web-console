@@ -3748,6 +3748,9 @@ def test_dashboard_shows_lab_status_cards_and_shortcuts(tmp_path: Path, monkeypa
     assert "data-tabs" not in page.text
     assert "live-waveform" in page.text
     assert "Record Latest Mock" in page.text
+    css = client.get("/static/css/app.css").text
+    assert ".live-command-card .capture-actions" in css
+    assert "position: sticky" in css
     assert session["session_id"] in page.text
     assert final1["run_id"] in page.text
     assert "dB" in page.text
