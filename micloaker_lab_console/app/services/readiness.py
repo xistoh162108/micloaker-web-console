@@ -149,7 +149,7 @@ def _validation_message(validation: dict[str, Any]) -> str:
         return "No physical validation records saved yet; use /ops before report-grade hardware experiments."
     return (
         f"{total} physical validation record(s): "
-        f"{counts.get('pass', 0)} pass, {counts.get('warn', 0)} warn, "
+        f"{counts.get('pass', 0)} pass, {counts.get('na', 0)} not applicable, {counts.get('warn', 0)} warn, "
         f"{counts.get('fail', 0)} fail, {counts.get('missing', 0)} missing gate(s)."
     )
 

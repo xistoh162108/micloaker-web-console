@@ -55,6 +55,7 @@ python scripts/console_control.py stop</pre>
     <label>Status
       <select name="status" required>
         <option value="pass">pass</option>
+        <option value="na">not applicable</option>
         <option value="warn">warn</option>
         <option value="fail">fail</option>
       </select>
@@ -80,7 +81,7 @@ python scripts/console_control.py stop</pre>
       {% for gate in validation.gate_status %}
       <tr>
         <td>{{ gate.gate_label }}</td>
-        <td><span class="badge {% if gate.status == 'pass' %}badge-success{% elif gate.status in ['warn', 'missing'] %}badge-warning{% else %}badge-error{% endif %}">{{ gate.status }}</span></td>
+        <td><span class="badge {% if gate.status in ['pass', 'na'] %}badge-success{% elif gate.status in ['warn', 'missing'] %}badge-warning{% else %}badge-error{% endif %}">{{ gate.status }}</span></td>
         <td>{{ gate.recorded_at }}</td>
         <td>{{ gate.session_id }}</td>
         <td>{{ gate.run_id }}</td>
@@ -96,7 +97,7 @@ python scripts/console_control.py stop</pre>
       <tr>
         <td>{{ record.recorded_at or record.ts }}</td>
         <td>{{ record.gate_label }}</td>
-        <td><span class="badge {% if record.status == 'pass' %}badge-success{% elif record.status == 'warn' %}badge-warning{% else %}badge-error{% endif %}">{{ record.status }}</span></td>
+        <td><span class="badge {% if record.status in ['pass', 'na'] %}badge-success{% elif record.status == 'warn' %}badge-warning{% else %}badge-error{% endif %}">{{ record.status }}</span></td>
         <td>{{ record.session_id }}</td>
         <td>{{ record.run_id }}</td>
         <td>{{ record.evidence }}</td>

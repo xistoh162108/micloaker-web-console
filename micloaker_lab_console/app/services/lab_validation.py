@@ -13,7 +13,7 @@ VALIDATION_GATES = {
     "attenuation_pair": "uj0/uj1 attenuation pair check",
     "legacy_parity": "Legacy notebook numeric parity check",
 }
-VALIDATION_STATUSES = {"pass", "warn", "fail"}
+VALIDATION_STATUSES = {"pass", "warn", "fail", "na"}
 
 
 def validation_paths(workspace: Path) -> dict[str, Path]:
@@ -25,8 +25,11 @@ def validation_paths(workspace: Path) -> dict[str, Path]:
 
 
 def list_validation_records(workspace: Path, *, limit: int | None = None) -> list[dict[str, Any]]:
-    records = read_jsonl(validation_paths(workspace)["jsonl"])
-    records = sorted(records, key=lambda row: str(row.get("ts", "")), reverse=True)
+    records = [
+        {**record, "_order": index}
+        for index, record in enumerate(read_jsonl(validation_paths(workspace)["jsonl"]))
+    ]
+    records = sorted(records, key=lambda row: (str(row.get("ts", "")), int(row.get("_order", 0))), reverse=True)
     return records[:limit] if limit else records
 
 
@@ -100,6 +103,7 @@ def validation_summary(workspace: Path) -> dict[str, Any]:
         "gate_status": gate_status,
         "status_counts": {
             "pass": sum(1 for row in gate_status if row["status"] == "pass"),
+            "na": sum(1 for row in gate_status if row["status"] == "na"),
             "warn": sum(1 for row in gate_status if row["status"] == "warn"),
             "fail": sum(1 for row in gate_status if row["status"] == "fail"),
             "missing": sum(1 for row in gate_status if row["status"] == "missing"),

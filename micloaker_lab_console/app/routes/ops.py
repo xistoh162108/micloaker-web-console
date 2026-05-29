@@ -98,7 +98,7 @@ def save_validation_record(
             detail={
                 "error_code": "INVALID_VALIDATION_RECORD",
                 "message": str(exc),
-                "suggestion": "Choose one of the listed validation gates and pass/warn/fail statuses.",
+                "suggestion": "Choose one of the listed validation gates and pass/not-applicable/warn/fail statuses.",
             },
         ) from exc
     return RedirectResponse("/ops#hardware-validation", status_code=303)

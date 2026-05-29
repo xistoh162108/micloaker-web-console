@@ -1049,6 +1049,7 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert status["summary"]["record_count"] == 1
     assert status["summary"]["latest_by_gate"]["daq_smoke"]["status"] == "pass"
     assert status["summary"]["status_counts"]["pass"] == 1
+    assert status["summary"]["status_counts"]["na"] == 0
     assert status["summary"]["status_counts"]["missing"] == 4
     jsonl_download = client.get("/ops/validation/files/hardware_validation.jsonl")
     assert jsonl_download.status_code == 200
@@ -1075,6 +1076,21 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert failed_readiness["ok"] is False
     assert failed_validation_check["level"] == "FAIL"
     assert "1 fail" in failed_validation_check["message"]
+
+    for gate in ["mac_playback", "play_and_record", "attenuation_pair", "legacy_parity"]:
+        response = client.post(
+            "/ops/validation",
+            data={"gate": gate, "status": "na", "evidence": "not part of this Linux-only validation run"},
+            follow_redirects=False,
+        )
+        assert response.status_code == 303
+    na_readiness = client.get("/ops/readiness").json()
+    na_validation_check = [check for check in na_readiness["checks"] if check["key"] == "hardware_validation_records"][0]
+    assert na_validation_check["level"] == "PASS"
+    assert "4 not applicable" in na_validation_check["message"]
+    na_status = client.get("/ops/validation").json()
+    assert na_status["summary"]["status_counts"]["na"] == 4
+    assert na_status["summary"]["status_counts"]["missing"] == 0
 
     bad = client.post("/ops/validation", data={"gate": "bad_gate", "status": "pass"})
     assert bad.status_code == 400
