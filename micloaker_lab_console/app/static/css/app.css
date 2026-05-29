@@ -110,6 +110,10 @@ button, .btn-primary, .button.primary, .actions a {
   color: var(--pc);
 }
 .btn-outline, .button.btn-outline { background: #fff; color: var(--primary); }
+.actions a.btn-outline {
+  background: #fff;
+  color: var(--primary);
+}
 .btn-error, .button.danger-soft {
   color: var(--ec);
   border-color: var(--error);
@@ -209,9 +213,21 @@ button, .btn-primary, .button.primary, .actions a {
   max-width: 760px;
 }
 .form.inline { display: flex; flex-wrap: wrap; align-items: end; }
+.card .form, .card-body .form { max-width: none; }
 .grid-form { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .grid-form .wide { grid-column: span 2; }
+.grid-form .full, .form-actions { grid-column: 1 / -1; }
 .nested-form { margin-top: 10px; max-width: none; }
+.section-stack {
+  display: grid;
+  gap: 14px;
+}
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
 label { display: grid; gap: 4px; font-size: 0.92rem; font-weight: 600; color: #344448; }
 .inline-check { display: inline-flex; align-items: center; gap: 6px; margin-right: 8px; }
 input, select, textarea {

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import signal
 import subprocess
@@ -36,6 +37,10 @@ def main() -> int:
 
     workspace = (ROOT / args.workspace).resolve() if not Path(args.workspace).is_absolute() else Path(args.workspace).resolve()
     host = _tailscale_ipv4() if args.tailscale else args.host
+    if args.command == "status" and not args.tailscale and args.host == DEFAULT_HOST and args.port == DEFAULT_PORT:
+        saved = _read_console_state(workspace)
+        host = str(saved.get("host", host))
+        args.port = int(saved.get("port", args.port))
     if args.command == "start":
         return start_console(workspace, host, args.port, allow_web_shutdown=args.allow_web_shutdown, reload=args.reload)
     if args.command == "stop":
@@ -70,6 +75,7 @@ def start_console(workspace: Path, host: str, port: int, *, allow_web_shutdown: 
     with log_file.open("ab") as log:
         proc = subprocess.Popen(cmd, cwd=ROOT, env=env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
     pid_file.write_text(str(proc.pid) + "\n", encoding="utf-8")
+    _write_console_state(micloaker / "console_state.json", host=host, port=port, workspace=workspace, log_file=log_file)
     print(f"Started MiCloaker Lab Console PID {proc.pid}")
     print(f"URL: http://{host}:{port}")
     print(f"Workspace: {workspace}")
@@ -121,6 +127,27 @@ def _read_pid(path: Path) -> int | None:
         return int(path.read_text(encoding="utf-8").strip())
     except (FileNotFoundError, ValueError):
         return None
+
+
+def _read_console_state(workspace: Path) -> dict[str, object]:
+    try:
+        return json.loads((workspace / ".micloaker" / "console_state.json").read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError, TypeError):
+        return {}
+
+
+def _write_console_state(path: Path, *, host: str, port: int, workspace: Path, log_file: Path) -> None:
+    state = {
+        "host": host,
+        "port": port,
+        "url": f"http://{host}:{port}",
+        "workspace": str(workspace),
+        "log_file": str(log_file),
+        "updated_at_epoch": time.time(),
+    }
+    tmp = path.with_suffix(".json.tmp")
+    tmp.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
+    tmp.replace(path)
 
 
 def _process_alive(pid: int) -> bool:

@@ -3,23 +3,26 @@
 <h1>New Run</h1>
 <p class="muted">Create a run in an existing session, or create a session first when starting a new experiment.</p>
 <section class="grid two">
-  <div>
-    <h2>Create Session</h2>
+  <div class="card">
+    <div class="card-body">
+    <h2 class="card-title">Create Session</h2>
     <form method="post" action="/sessions" class="form">
       <label>Title <input name="title" required value="r25k_test"></label>
       <label>Notes <textarea name="notes"></textarea></label>
-      <button type="submit">Create Session</button>
+      <div class="form-actions"><button type="submit" class="btn btn-primary">Create Session</button></div>
     </form>
   </div>
-  <div>
-    <h2>Choose a Session</h2>
+  </div>
+  <div class="card">
+    <div class="card-body">
+    <h2 class="card-title">Choose a Session</h2>
     <form method="get" action="/runs/new" class="form inline">
       <select name="session_id" aria-label="Session">
         {% for session in sessions %}
         <option value="{{ session.session_id }}" {% if session.session_id == selected_session_id %}selected{% endif %}>{{ session.session_id }} ({{ session.run_count }} runs)</option>
         {% endfor %}
       </select>
-      <button type="submit">Use Session</button>
+      <button type="submit" class="btn btn-primary">Use Session</button>
     </form>
     <ul class="list">
       {% for session in sessions %}
@@ -32,10 +35,12 @@
       {% endfor %}
     </ul>
   </div>
+  </div>
 </section>
 {% if selected_session_id %}
-<section class="band">
-  <h2>Run Metadata</h2>
+<section class="card">
+  <div class="card-body">
+  <h2 class="card-title">Run Metadata</h2>
   <details open>
     <summary>Simple</summary>
     <form method="post" action="/sessions/{{ selected_session_id }}/runs" class="form grid-form">
@@ -87,16 +92,21 @@
           <label>Mac Helper delay ms <input name="mac_helper_delay_ms" type="number" min="0" value="500"></label>
         </div>
       </details>
-      <button type="submit">Create Run</button>
-      <button type="submit" name="record_after_create" value="true">Create + Record Mock</button>
-      <button type="submit" name="record_after_create_source" value="daq">Create + Record DAQ</button>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-outline">Create Run</button>
+        <button type="submit" name="record_after_create" value="true" class="btn btn-primary">Create + Record Mock</button>
+        <button type="submit" name="record_after_create_source" value="daq" class="btn btn-primary">Create + Record DAQ</button>
+      </div>
     </form>
   </details>
+  </div>
 </section>
 {% else %}
-<section class="band">
-  <h2>Run Metadata</h2>
+<section class="card">
+  <div class="card-body">
+  <h2 class="card-title">Run Metadata</h2>
   <p class="muted">Create a session before adding runs.</p>
+  </div>
 </section>
 {% endif %}
 {% endblock %}

@@ -1,26 +1,31 @@
 {% extends "base.html" %}
 {% block content %}
 <h1>{{ session_id }}</h1>
-<section class="band">
-  <h2>Session Summary</h2>
+<section class="card">
+  <div class="card-body">
+  <h2 class="card-title">Session Summary</h2>
+  <div class="stats">
+    <div class="stat"><span class="stat-value">{{ run_count }}</span><span class="stat-title">Runs</span></div>
+    <div class="stat"><span class="stat-value">{{ finalized_count }}</span><span class="stat-title">Finalized</span></div>
+    <div class="stat"><span class="stat-value">{{ comparison_count }}</span><span class="stat-title">Comparisons</span></div>
+  </div>
   <table class="data-table">
     <tbody>
       <tr><th>Title</th><td>{{ session.title }}</td></tr>
       <tr><th>Created</th><td>{{ session.created_at }}</td></tr>
       <tr><th>Notes</th><td>{{ session.notes or "none" }}</td></tr>
-      <tr><th>Runs</th><td>{{ run_count }}</td></tr>
-      <tr><th>Finalized</th><td>{{ finalized_count }}</td></tr>
-      <tr><th>Comparisons</th><td>{{ comparison_count }}</td></tr>
     </tbody>
   </table>
   <nav class="actions">
-    {% if summary_files.summary_csv %}<a href="/sessions/{{ session_id }}/files/summary.csv?download=1" download>Download Summary CSV</a>{% endif %}
-    {% if summary_files.session_report %}<a href="/sessions/{{ session_id }}/files/session_report.md?download=1" download>Download Session Report</a>{% endif %}
-    <a href="/exports/sessions/{{ session_id }}.zip">Download Session ZIP</a>
+    {% if summary_files.summary_csv %}<a class="btn btn-outline" href="/sessions/{{ session_id }}/files/summary.csv?download=1" download>Download Summary CSV</a>{% endif %}
+    {% if summary_files.session_report %}<a class="btn btn-outline" href="/sessions/{{ session_id }}/files/session_report.md?download=1" download>Download Session Report</a>{% endif %}
+    <a class="btn btn-primary" href="/exports/sessions/{{ session_id }}.zip">Download Session ZIP</a>
   </nav>
+  </div>
 </section>
-<section class="band">
-  <h2>New Mock Run</h2>
+<section class="card">
+  <div class="card-body">
+  <h2 class="card-title">New Mock Run</h2>
   <details open>
     <summary>Simple</summary>
   <form method="post" action="/sessions/{{ session_id }}/runs" class="form grid-form">
@@ -71,13 +76,17 @@
         <label>Mac Helper delay ms <input name="mac_helper_delay_ms" type="number" min="0" value="500"></label>
       </div>
     </details>
-    <button type="submit">Create Run</button>
-    <button type="submit" name="record_after_create" value="true">Create + Record Mock</button>
+    <div class="form-actions">
+      <button type="submit" class="btn btn-outline">Create Run</button>
+      <button type="submit" name="record_after_create" value="true" class="btn btn-primary">Create + Record Mock</button>
+    </div>
   </form>
   </details>
+  </div>
 </section>
-<section class="band">
-  <h2>Upload Raw .bin</h2>
+<section class="card">
+  <div class="card-body">
+  <h2 class="card-title">Upload Raw .bin</h2>
   <form method="post" action="/sessions/{{ session_id }}/runs/upload-bin" enctype="multipart/form-data" class="form grid-form">
     <label class="wide">Raw float64 .bin <input name="file" type="file" accept=".bin" required></label>
     <label>Frequency kHz <input name="carrier_freq_khz" type="number" step="0.1" value="25" list="carrier-frequency-presets"></label>
@@ -114,13 +123,14 @@
       </div>
     </details>
     <label class="wide">Notes <input name="notes" value="uploaded raw bin"></label>
-    <button type="submit">Import + Finalize</button>
+    <div class="form-actions"><button type="submit" class="btn btn-primary">Import + Finalize</button></div>
   </form>
+  </div>
 </section>
 <nav class="actions">
-  <a href="/compare/{{ session_id }}">Compare Runs</a>
-  <a href="/sessions/{{ session_id }}/browser">Browse Files</a>
-  <a href="/exports/sessions/{{ session_id }}.zip">Download Session ZIP</a>
+  <a class="btn btn-primary" href="/compare/{{ session_id }}">Compare Runs</a>
+  <a class="btn btn-outline" href="/sessions/{{ session_id }}/browser">Browse Files</a>
+  <a class="btn btn-outline" href="/exports/sessions/{{ session_id }}.zip">Download Session ZIP</a>
 </nav>
 <h2>Runs</h2>
 <form method="get" class="form grid-form">
@@ -131,8 +141,10 @@
   <label>Mic <input name="mic_id" value="{{ filters.mic_id }}"></label>
   <label>Room <input name="room" value="{{ filters.room }}"></label>
   <label>Analysis <select name="analysis_status"><option value="">any</option><option value="pending" {% if filters.analysis_status == "pending" %}selected{% endif %}>pending</option><option value="finalized" {% if filters.analysis_status == "finalized" %}selected{% endif %}>finalized</option><option value="failed" {% if filters.analysis_status == "failed" %}selected{% endif %}>failed</option></select></label>
-  <button type="submit">Filter Runs</button>
-  <a href="/sessions/{{ session_id }}">Clear</a>
+  <div class="form-actions">
+    <button type="submit" class="btn btn-primary">Filter Runs</button>
+    <a class="btn btn-outline" href="/sessions/{{ session_id }}">Clear</a>
+  </div>
 </form>
 <table class="data-table">
   <thead>
