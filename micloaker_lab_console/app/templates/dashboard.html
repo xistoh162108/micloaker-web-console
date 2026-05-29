@@ -130,6 +130,7 @@
           <div class="panel live-plot-panel live-primary">
             <div class="card-title"><h3>Waveform</h3><span id="live-state" class="badge">Stopped</span></div>
             <canvas id="live-waveform" width="700" height="220"></canvas>
+            <div id="live-waveform-readout" class="chart-readout">hover waveform for t / V</div>
           </div>
           <div class="panel live-meter-panel">
             <h3>RMS/Peak Meter</h3>
@@ -138,10 +139,12 @@
           <div class="panel live-plot-panel">
             <div class="card-title"><h3>Live PSD</h3><span id="live-clipping" class="badge">unknown</span></div>
             <canvas id="live-psd" width="700" height="220"></canvas>
+            <div id="live-psd-readout" class="chart-readout">hover PSD for Hz / log power</div>
           </div>
           <div class="panel live-plot-panel">
             <h3>Scrolling Spectrogram</h3>
             <canvas id="live-spectrogram" width="700" height="220"></canvas>
+            <div id="live-spectrogram-readout" class="chart-readout">hover spectrogram for time row / frequency bin</div>
           </div>
         </div>
         <div class="panel finalization-panel">

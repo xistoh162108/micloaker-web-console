@@ -211,6 +211,7 @@ Logs are secondary diagnostic material. The Dashboard and run detail pages shoul
 Use lightweight CSS:
 
 - DaisyUI component vocabulary implemented locally in vanilla CSS
+- scientific instrument visual vocabulary: neutral lab surfaces, low-contrast chart chrome, restrained semantic status colors, and cyan/blue data emphasis
 - clean cards
 - subtle borders
 - readable tables
@@ -227,5 +228,14 @@ Plots should be report-friendly:
 - axis labels with units
 - grid lines
 - readable fonts
+- accessible, restrained scientific palettes rather than decorative dashboard gradients
+- interactive live chart readouts for waveform time/voltage, PSD frequency/log power, and spectrogram row/frequency/value
+- crosshair inspection on live charts without changing the saved quantitative source
 - PNG and SVG output
 - no over-styled scientific plots
+
+External design references used for the scientific console direction:
+
+- W3C WCAG contrast guidance: https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum
+- NOAA CoastWatch color-choice discussion for scientific visualization: https://coastwatch.noaa.gov/cwn/news/2021-09-23/colors-and-confusion-making-better-color-choices-data-visualization.html
+- NASA Ames information display principles: https://www.nas.nasa.gov/assets/nas/pdf/techreports/1994/nas-94-002.pdf

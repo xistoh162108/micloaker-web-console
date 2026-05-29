@@ -72,7 +72,7 @@ def plot_compare(result: dict, out_dir: Path, compare_id: str) -> dict[str, str]
     bar = out_dir / f"{compare_id}_attenuation.png"
     bar_svg = out_dir / f"{compare_id}_attenuation.svg"
     fig, ax = plt.subplots(figsize=(5, 3), constrained_layout=True)
-    ax.bar(["attenuation"], [result["attenuation_db"]], color="#2f6f73")
+    ax.bar(["attenuation"], [result["attenuation_db"]], color="#0a8793")
     ax.set_ylabel("dB")
     ax.set_title("UJ0 to UJ1 attenuation")
     ax.grid(axis="y", alpha=0.25)
@@ -99,9 +99,9 @@ def plot_psd_overlay(
     p1 = np.asarray(metrics1.get("psd_v2_per_hz", []), dtype=float)
     fig, ax = plt.subplots(figsize=(8, 3), constrained_layout=True)
     if f0.size and p0.size:
-        ax.semilogy(f0, p0, label="uj0", color="#1f4e79", linewidth=1.0)
+        ax.semilogy(f0, p0, label="uj0", color="#2f5f93", linewidth=1.0)
     if f1.size and p1.size:
-        ax.semilogy(f1, p1, label="uj1", color="#8f3b2d", linewidth=1.0)
+        ax.semilogy(f1, p1, label="uj1", color="#a52828", linewidth=1.0)
     _highlight_band(ax, band_hz, label=_band_label(band_hz))
     ax.set_xlabel("Frequency (Hz)")
     ax.set_ylabel("PSD (V^2/Hz)")
@@ -117,7 +117,7 @@ def plot_psd_overlay(
 def _waveform(data: np.ndarray, fs: float, png: Path, svg: Path) -> None:
     t, data = _waveform_plot_series(data, fs, MAX_WAVEFORM_PLOT_POINTS)
     fig, ax = plt.subplots(figsize=(8, 3), constrained_layout=True)
-    ax.plot(t, data, linewidth=0.8, color="#1f4e79")
+    ax.plot(t, data, linewidth=0.8, color="#0a8793")
     ax.set_xlabel("Time (s)")
     ax.set_ylabel("Voltage (V)")
     ax.set_title("Waveform")
@@ -134,7 +134,7 @@ def _psd(data: np.ndarray, fs: float, png: Path, svg: Path, band_hz: tuple[float
     freqs, psd = _thin_xy(freqs, psd, MAX_PSD_PLOT_BINS)
     fig, ax = plt.subplots(figsize=(8, 3), constrained_layout=True)
     if freqs.size:
-        ax.semilogy(freqs, psd, color="#6b4e16", linewidth=1.0)
+        ax.semilogy(freqs, psd, color="#2f5f93", linewidth=1.0)
         _highlight_band(ax, band_hz, nyquist=fs / 2)
         ax.legend(loc="best")
     ax.set_xlabel("Frequency (Hz)")
@@ -152,7 +152,7 @@ def _highlight_band(ax, band_hz: tuple[float, float], *, nyquist: float | None =
         hi = min(hi, float(nyquist))
     if hi <= lo:
         return
-    ax.axvspan(lo, hi, color="#d8a03d", alpha=0.18, label=label or _band_label((lo, hi)))
+    ax.axvspan(lo, hi, color="#b9842c", alpha=0.18, label=label or _band_label((lo, hi)))
 
 
 def _band_label(band_hz: tuple[float, float]) -> str:

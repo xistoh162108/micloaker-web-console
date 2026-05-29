@@ -448,16 +448,18 @@ def main() -> int:
     if missing_hardware_protocol_terms:
         for term in missing_hardware_protocol_terms:
             print(f"  missing hardware protocol term: {term}")
-    daisy_terms = ["btn btn-primary", "btn btn-outline", "btn btn-error", "card", "card-body", "stats", "stat-value", "badge-success", "badge-warning", "Capture And Live Preview", "live-waveform", "live-psd", "live-spectrogram"]
+    daisy_terms = ["btn btn-primary", "btn btn-outline", "btn btn-error", "card", "card-body", "stats", "stat-value", "badge-success", "badge-warning", "Capture And Live Preview", "live-waveform", "live-psd", "live-spectrogram", "live-waveform-readout", "live-psd-readout", "live-spectrogram-readout"]
     missing_daisy_terms = [term for term in daisy_terms if term not in dashboard_template]
     hidden_tab_dashboard = "tab-panel" in dashboard_template or "data-tabs" in dashboard_template
     wrapping_layout_terms = ["repeat(auto-fit, minmax(min(100%, 170px), 1fr))", "operator-action-bar", "live-primary", "dashboard-artifacts", "overflow-wrap: anywhere"]
     chart_perf_terms = ["content-visibility: auto", "aspect-ratio: 16 / 9"]
+    scientific_ui_terms = ["Scientific instrument visual vocabulary", "--data-cyan", "--grid-line", "neutral lab surfaces"]
     missing_wrapping_terms = [term for term in wrapping_layout_terms if term not in app_css]
     missing_chart_perf_terms = [term for term in chart_perf_terms if term not in app_css]
     live_js = (ROOT / "app" / "static" / "js" / "live.js").read_text(encoding="utf-8")
     plotting_py = (ROOT / "app" / "services" / "plotting.py").read_text(encoding="utf-8")
-    checks.append(report(not missing_daisy_terms and not hidden_tab_dashboard and not missing_wrapping_terms and not missing_chart_perf_terms and "requestAnimationFrame(renderCharts)" in live_js and "createImageData" in live_js and "cachedSpectrogramImage" in live_js and "spectrogramImage(cols, bins)" in live_js and "drawImage(spectrogramBufferCanvas" in live_js and "resizeCanvasForDisplay" in live_js and "rows.flat()" not in live_js and "MAX_WAVEFORM_PLOT_POINTS" in plotting_py and "set_rasterized(True)" in plotting_py and 'decoding="async"' in dashboard_template and "DaisyUI component vocabulary" in app_css and "shadcn" not in app_css.lower(), "dashboard uses local DaisyUI command console vocabulary without hidden workflow tabs"))
+    missing_scientific_ui_terms = [term for term in scientific_ui_terms if term not in app_css]
+    checks.append(report(not missing_daisy_terms and not hidden_tab_dashboard and not missing_wrapping_terms and not missing_chart_perf_terms and not missing_scientific_ui_terms and "requestAnimationFrame(renderCharts)" in live_js and "createImageData" in live_js and "cachedSpectrogramImage" in live_js and "spectrogramImage(cols, bins)" in live_js and "drawImage(spectrogramBufferCanvas" in live_js and "resizeCanvasForDisplay" in live_js and "bindChartReadout" in live_js and "drawCrosshair" in live_js and "formatScientific" in live_js and ".chart-readout" in app_css and "rows.flat()" not in live_js and "MAX_WAVEFORM_PLOT_POINTS" in plotting_py and "set_rasterized(True)" in plotting_py and 'decoding="async"' in dashboard_template and "DaisyUI component vocabulary" in app_css and "shadcn" not in app_css.lower(), "dashboard uses local DaisyUI command console vocabulary without hidden workflow tabs"))
     if missing_daisy_terms:
         for term in missing_daisy_terms:
             print(f"  missing DaisyUI dashboard term: {term}")
@@ -469,6 +471,9 @@ def main() -> int:
     if missing_chart_perf_terms:
         for term in missing_chart_perf_terms:
             print(f"  missing chart performance term: {term}")
+    if missing_scientific_ui_terms:
+        for term in missing_scientific_ui_terms:
+            print(f"  missing scientific UI term: {term}")
     validation_download_terms = [
         "/ops/validation/files/hardware_validation.jsonl",
         "/ops/validation/files/hardware_validation_report.md",
@@ -518,7 +523,10 @@ def main() -> int:
     command_center_terms = [
         "Dashboard Command Center",
         "Do not hide core experiment controls behind Dashboard tabs",
+        "scientific instrument visual vocabulary",
         "latest finalized visual artifacts",
+        "interactive live chart readouts",
+        "crosshair inspection",
         "Logs are secondary diagnostic material",
         "controls wrap cleanly",
     ]

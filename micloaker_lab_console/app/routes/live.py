@@ -77,6 +77,7 @@ def _snapshot(request: Request) -> dict:
             "preview_source": live_monitor.source,
             **preview_contract(),
             "sample_rate_hz": live_monitor.sample_rate_hz,
+            "preview_window_s": 0.25,
             "preview_label": "Preview only. Final metrics will be recomputed from saved .bin after recording.",
             "preview_error": str(exc),
             "preview_error_code": "LIVE_PREVIEW_UNAVAILABLE",

@@ -2495,6 +2495,9 @@ def test_live_snapshot_contains_preview_psd_and_spectrogram(tmp_path: Path, monk
     assert "Download metrics JSON" in page.text
     assert "Open run log" in page.text
     assert "Status Log Tail" in page.text
+    assert "live-waveform-readout" in page.text
+    assert "live-psd-readout" in page.text
+    assert "live-spectrogram-readout" in page.text
     assert "Preview only. Final metrics will be recomputed from saved .bin after recording." in page.text
     live_js = Path("app/static/js/live.js").read_text(encoding="utf-8")
     assert "failed_run_id" in live_js
@@ -2513,6 +2516,10 @@ def test_live_snapshot_contains_preview_psd_and_spectrogram(tmp_path: Path, monk
     assert "cachedSpectrogramImage" in live_js
     assert "spectrogramImage(cols, bins)" in live_js
     assert "drawImage(spectrogramBufferCanvas" in live_js
+    assert "bindChartReadout" in live_js
+    assert "drawCrosshair" in live_js
+    assert "formatScientific" in live_js
+    assert "preview_window_s" in live_js
     assert "resizeCanvasForDisplay" in live_js
     assert "rows.flat()" not in live_js
     assert "setInterval(refresh, nextInterval)" in live_js
@@ -4481,6 +4488,9 @@ def test_dashboard_shows_lab_status_cards_and_shortcuts(tmp_path: Path, monkeypa
     assert "tab-panel" not in page.text
     assert "data-tabs" not in page.text
     assert "live-waveform" in page.text
+    assert "live-waveform-readout" in page.text
+    assert "live-psd-readout" in page.text
+    assert "live-spectrogram-readout" in page.text
     assert "Record Latest Mock" not in page.text
     assert 'action="/sessions/' in page.text and '/runs"' in page.text
     css = client.get("/static/css/app.css").text
@@ -4491,10 +4501,13 @@ def test_dashboard_shows_lab_status_cards_and_shortcuts(tmp_path: Path, monkeypa
     assert "aspect-ratio: 16 / 9" in css
     assert 'decoding="async"' in page.text
     assert ".quick-capture-form" in css
+    assert ".chart-readout" in css
     assert "data-recording-submit" in page.text
     js = client.get("/static/js/live.js").text
     assert "updateRecordingGuard" in js
     assert "active_recording" in js
+    assert "bindChartReadout" in js
+    assert "drawCrosshair" in js
     assert session["session_id"] in page.text
     assert final1["run_id"] in page.text
     assert f'src="/sessions/{session["session_id"]}/files/{final1["files"]["waveform_png"]}"' in page.text

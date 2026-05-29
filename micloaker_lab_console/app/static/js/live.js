@@ -9,10 +9,13 @@ const clippingOutput = document.getElementById("live-clipping");
 const logTailOutput = document.getElementById("live-log-tail");
 const waveformCanvas = document.getElementById("live-waveform");
 const waveformCtx = waveformCanvas ? waveformCanvas.getContext("2d") : null;
+const waveformReadout = document.getElementById("live-waveform-readout");
 const psdCanvas = document.getElementById("live-psd");
 const psdCtx = psdCanvas ? psdCanvas.getContext("2d") : null;
+const psdReadout = document.getElementById("live-psd-readout");
 const specCanvas = document.getElementById("live-spectrogram");
 const specCtx = specCanvas ? specCanvas.getContext("2d") : null;
+const specReadout = document.getElementById("live-spectrogram-readout");
 const spectrogramBufferCanvas = document.createElement("canvas");
 const spectrogramBufferCtx = spectrogramBufferCanvas.getContext("2d");
 const recordingGuardMessage = document.getElementById("recording-guard-message");
@@ -23,6 +26,11 @@ let latestChartData = null;
 let cachedSpectrogramImage = null;
 let cachedSpectrogramCols = 0;
 let cachedSpectrogramBins = 0;
+const chartPointers = {
+  waveform: null,
+  psd: null,
+  spectrogram: null,
+};
 
 async function post(url, data) {
   const options = { method: "POST" };
@@ -68,9 +76,18 @@ function scheduleChartRender(data) {
 function renderCharts() {
   pendingChartFrame = false;
   const data = latestChartData || {};
-  if (waveformCtx && data.waveform) drawLine(waveformCtx, waveformCanvas, data.waveform, "#245b63", "bipolar");
-  if (psdCtx && data.psd) drawLine(psdCtx, psdCanvas, data.psd.map(v => Math.log10(v + 1e-18)), "#6b4e16", "auto");
-  if (specCtx && data.spectrogram) drawSpectrogram(data.spectrogram);
+  if (waveformCtx && data.waveform) {
+    drawLine(waveformCtx, waveformCanvas, data.waveform, "#0a8793", "bipolar");
+    drawCrosshair(waveformCtx, waveformCanvas, chartPointers.waveform);
+  }
+  if (psdCtx && data.psd) {
+    drawLine(psdCtx, psdCanvas, data.psd.map(v => Math.log10(v + 1e-18)), "#2f5f93", "auto");
+    drawCrosshair(psdCtx, psdCanvas, chartPointers.psd);
+  }
+  if (specCtx && data.spectrogram) {
+    drawSpectrogram(data.spectrogram);
+    drawCrosshair(specCtx, specCanvas, chartPointers.spectrogram);
+  }
 }
 
 function updateRecordingGuard(data) {
@@ -188,9 +205,9 @@ function drawSpectrogram(rows) {
       const yIdx = bins - 1 - y;
       const norm = Math.max(0, Math.min(1, (row[yIdx] - bounds.min) / span));
       const offset = (y * cols + x) * 4;
-      data[offset] = 24 + Math.floor(norm * 220);
-      data[offset + 1] = 76 + Math.floor(norm * 120);
-      data[offset + 2] = 92 + Math.floor((1 - norm) * 120);
+      data[offset] = 18 + Math.floor(norm * 214);
+      data[offset + 1] = 52 + Math.floor(norm * 154);
+      data[offset + 2] = 76 + Math.floor((1 - norm) * 110);
       data[offset + 3] = 255;
     }
   }
@@ -198,6 +215,23 @@ function drawSpectrogram(rows) {
   specCtx.imageSmoothingEnabled = false;
   specCtx.clearRect(0, 0, width, height);
   specCtx.drawImage(spectrogramBufferCanvas, 0, 0, width, height);
+}
+
+function drawCrosshair(ctx, canvas, pointer) {
+  if (!pointer) return;
+  const x = pointer.xNorm * canvas.width;
+  const y = pointer.yNorm * canvas.height;
+  ctx.save();
+  ctx.strokeStyle = "rgba(11, 111, 121, 0.72)";
+  ctx.lineWidth = Math.max(1, Math.round((window.devicePixelRatio || 1)));
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(x, 0);
+  ctx.lineTo(x, canvas.height);
+  ctx.moveTo(0, y);
+  ctx.lineTo(canvas.width, y);
+  ctx.stroke();
+  ctx.restore();
 }
 
 function spectrogramImage(cols, bins) {
@@ -249,6 +283,64 @@ function nestedBounds(rows) {
   }
   return { min, max };
 }
+
+function bindChartReadout(canvas, readout, key, formatter) {
+  if (!canvas || !readout) return;
+  canvas.addEventListener("pointermove", (event) => {
+    const rect = canvas.getBoundingClientRect();
+    const xNorm = Math.max(0, Math.min(1, (event.clientX - rect.left) / Math.max(1, rect.width)));
+    const yNorm = Math.max(0, Math.min(1, (event.clientY - rect.top) / Math.max(1, rect.height)));
+    chartPointers[key] = { xNorm, yNorm };
+    readout.textContent = formatter(xNorm, yNorm, latestChartData || {});
+    scheduleChartRender(latestChartData || {});
+  });
+  canvas.addEventListener("pointerleave", () => {
+    chartPointers[key] = null;
+    readout.textContent = readout.dataset.defaultLabel || readout.textContent;
+    scheduleChartRender(latestChartData || {});
+  });
+  readout.dataset.defaultLabel = readout.textContent;
+}
+
+function formatScientific(value, digits = 3) {
+  if (!Number.isFinite(value)) return "n/a";
+  const absValue = Math.abs(value);
+  if (absValue !== 0 && (absValue < 0.001 || absValue >= 10000)) return value.toExponential(2);
+  return value.toFixed(digits);
+}
+
+function waveformReadoutText(xNorm, _yNorm, data) {
+  const points = data.waveform || [];
+  if (!points.length) return "waveform: no preview samples";
+  const idx = Math.round(xNorm * (points.length - 1));
+  const previewSeconds = Number(data.preview_window_s || 0.25);
+  const t = xNorm * previewSeconds;
+  return `waveform t~${formatScientific(t, 4)} s | sample ${idx + 1}/${points.length} | V ${formatScientific(points[idx], 5)}`;
+}
+
+function psdReadoutText(xNorm, _yNorm, data) {
+  const values = data.psd || [];
+  if (!values.length) return "PSD: no preview bins";
+  const idx = Math.round(xNorm * (values.length - 1));
+  const freqs = data.psd_freq_hz || [];
+  const hz = Number.isFinite(freqs[idx]) ? freqs[idx] : xNorm * Number(data.sample_rate_hz || 0) / 2;
+  const logPower = Math.log10(values[idx] + 1e-18);
+  return `PSD ${formatScientific(hz, 1)} Hz | bin ${idx + 1}/${values.length} | log10 ${formatScientific(logPower, 4)}`;
+}
+
+function spectrogramReadoutText(xNorm, yNorm, data) {
+  const rows = data.spectrogram || [];
+  if (!rows.length || !rows[0].length) return "spectrogram: no preview rows";
+  const rowIdx = Math.round(xNorm * (rows.length - 1));
+  const bins = rows[rowIdx].length;
+  const binIdx = Math.round((1 - yNorm) * (bins - 1));
+  const hz = bins > 1 ? (binIdx / (bins - 1)) * Number(data.sample_rate_hz || 0) / 2 : 0;
+  return `spectrogram row ${rowIdx + 1}/${rows.length} | ${formatScientific(hz, 1)} Hz | value ${formatScientific(rows[rowIdx][binIdx], 4)}`;
+}
+
+bindChartReadout(waveformCanvas, waveformReadout, "waveform", waveformReadoutText);
+bindChartReadout(psdCanvas, psdReadout, "psd", psdReadoutText);
+bindChartReadout(specCanvas, specReadout, "spectrogram", spectrogramReadoutText);
 
 document.querySelectorAll("[data-live-start]").forEach((button) => {
   button.addEventListener("click", async () => {
