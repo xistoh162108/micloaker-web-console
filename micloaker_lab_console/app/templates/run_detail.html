@@ -7,7 +7,10 @@
     <span class="badge {% if run.analysis.status == 'finalized' %}badge-success{% else %}badge-warning{% endif %}">{{ run.analysis.status }}</span>
     <span class="badge">{{ run.analysis.result_grade }}</span>
   </div>
-  <a class="btn btn-primary" href="/exports/sessions/{{ session_id }}/runs/{{ run.run_id }}.zip">Run ZIP</a>
+  <div class="actions compact-actions">
+    <a class="btn btn-outline" href="/ops/validation/drafts/daq/{{ session_id }}/{{ run.run_id }}">DAQ Evidence Draft</a>
+    <a class="btn btn-primary" href="/exports/sessions/{{ session_id }}/runs/{{ run.run_id }}.zip">Run ZIP</a>
+  </div>
 </section>
 {% if daq_status and not daq_status.available %}
 <p class="warn">DAQ unavailable - connect/configure DAQ hardware or import a saved raw .bin file.</p>

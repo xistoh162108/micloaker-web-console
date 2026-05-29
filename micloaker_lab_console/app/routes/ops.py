@@ -10,6 +10,7 @@ from fastapi.responses import FileResponse, PlainTextResponse, RedirectResponse
 from ..services.lab_validation import (
     VALIDATION_GATE_EVIDENCE,
     VALIDATION_GATES,
+    daq_validation_evidence_from_run,
     ensure_validation_artifacts,
     list_validation_records,
     record_lab_validation,
@@ -18,7 +19,7 @@ from ..services.lab_validation import (
 )
 from ..services.readiness import lab_readiness, write_readiness_artifacts
 from ..services.recorder import recording_status
-from ..services.text_store import append_app_event
+from ..services.text_store import append_app_event, safe_name
 
 router = APIRouter(prefix="/ops", tags=["ops"])
 
@@ -98,6 +99,26 @@ def validation_template_text(gate: str):
     return PlainTextResponse(
         validation_evidence_template(gate),
         headers={"Content-Disposition": f'attachment; filename="{gate}_evidence_template.txt"'},
+    )
+
+
+@router.get("/validation/drafts/daq/{session_id}/{run_id}")
+def daq_validation_draft_text(request: Request, session_id: str, run_id: str):
+    try:
+        draft = daq_validation_evidence_from_run(request.app.state.settings.workspace, session_id, run_id)
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error_code": "RUN_NOT_FOUND",
+                "message": f"Run {run_id} was not found in session {session_id}.",
+                "suggestion": "Open an existing run detail page before downloading a DAQ validation evidence draft.",
+            },
+        ) from exc
+    filename = f"{safe_name(session_id)}_{safe_name(run_id)}_daq_validation_evidence.txt"
+    return PlainTextResponse(
+        draft,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 

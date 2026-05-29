@@ -4,7 +4,8 @@ from pathlib import Path
 import re
 from typing import Any
 
-from .text_store import append_app_event, append_jsonl, atomic_write_text, now_iso, read_jsonl
+from .metadata import load_run
+from .text_store import append_app_event, append_jsonl, atomic_write_text, now_iso, read_json_or_default, read_jsonl, safe_name, session_dir
 
 
 VALIDATION_GATES = {
@@ -251,6 +252,69 @@ def validation_evidence_template(gate: str) -> str:
     return "\n".join(lines)
 
 
+def daq_validation_evidence_from_run(workspace: Path, session_id: str, run_id: str) -> str:
+    """Build an operator-reviewable DAQ validation evidence draft from saved run files.
+
+    The draft pre-fills the DAQ checklist used by `/ops`. It is not a pass/fail
+    decision and must still be reviewed against the physical lab setup.
+    """
+    run = load_run(workspace, session_id, run_id)
+    base = session_dir(workspace, session_id)
+    files = run.get("files", {})
+    recording = run.get("recording", {})
+    analysis = run.get("analysis", {})
+    metrics = _read_artifact_json(base, files.get("metrics_json"))
+    log_path = base / "logs" / f"{safe_name(run_id)}.log"
+    log_text = log_path.read_text(encoding="utf-8", errors="replace") if log_path.is_file() else ""
+
+    requested_rate = _num_or_unknown(recording.get("sample_rate_hz"))
+    actual_rate = _num_or_unknown(recording.get("actual_sample_rate_hz") or recording.get("sample_rate_hz"))
+    duration_s = recording.get("duration_s")
+    expected_samples = _expected_sample_count(actual_rate, duration_s)
+    written_samples = _first_value(
+        recording.get("written_samples"),
+        recording.get("raw_sample_count"),
+        recording.get("sample_count"),
+        metrics.get("sample_count"),
+        default="unknown",
+    )
+
+    bin_rel = str(files.get("bin", ""))
+    plot_status = ", ".join(
+        [
+            f"waveform={_artifact_state(base, files.get('waveform_png'))}/{_artifact_state(base, files.get('waveform_svg'))}",
+            f"PSD={_artifact_state(base, files.get('psd_png'))}/{_artifact_state(base, files.get('psd_svg'))}",
+            f"spectrogram={_artifact_state(base, files.get('spectrogram_png'))}/{_artifact_state(base, files.get('spectrogram_svg'))}",
+        ]
+    )
+    traceback_status = "yes" if "Traceback" in log_text else "no"
+    log_status = "present" if log_path.is_file() else "missing"
+
+    lines = [
+        "# Evidence Draft: Linux DAQ validation capture",
+        "# Review physical wiring, DAQ device identity, and measured values before saving this in /ops.",
+        "gate: daq_smoke",
+        f"session_id: {run.get('session_id') or session_id}",
+        f"run_id: {run.get('run_id') or run_id}",
+        (
+            "DAQ channel/range/input mode: "
+            f"channel {recording.get('channels', ['unknown'])} / {recording.get('ai_range', 'unknown')} / "
+            f"{recording.get('input_mode', 'unknown')}; source={recording.get('source', 'unknown')}"
+        ),
+        f"requested and actual sample rate: requested {requested_rate} Hz / actual {actual_rate} Hz",
+        f"expected vs written sample count: expected {expected_samples} / written {written_samples}",
+        f"raw .bin path: {bin_rel or 'unknown'} ({_artifact_state(base, bin_rel)})",
+        (
+            "run log/plot status: "
+            f"log={log_status}; traceback={traceback_status}; {plot_status}; "
+            f"analysis={analysis.get('status', 'unknown')}; grade={analysis.get('result_grade', 'unknown')}"
+        ),
+        "",
+        "operator_review: confirm DAQ wiring, range, input mode, sample count tolerance, and plot quality before recording pass/warn/fail.",
+    ]
+    return "\n".join(lines)
+
+
 def ensure_validation_artifacts(workspace: Path) -> dict[str, Path]:
     paths = validation_paths(workspace)
     paths["jsonl"].parent.mkdir(parents=True, exist_ok=True)
@@ -334,3 +398,47 @@ def _checklist_item_has_value(text: str, item: str) -> bool:
         if _normalize_evidence_text(label) == normalized_item and value.strip():
             return True
     return False
+
+
+def _num_or_unknown(value: Any) -> Any:
+    return value if value not in (None, "") else "unknown"
+
+
+def _first_value(*values: Any, default: Any = "unknown") -> Any:
+    for value in values:
+        if value not in (None, ""):
+            return value
+    return default
+
+
+def _expected_sample_count(rate: Any, duration_s: Any) -> str | int:
+    try:
+        return int(round(float(rate) * float(duration_s)))
+    except (TypeError, ValueError):
+        return "unknown"
+
+
+def _artifact_state(base: Path, rel_path: Any) -> str:
+    rel = str(rel_path or "")
+    if not rel:
+        return "missing"
+    candidate = (base / rel).resolve()
+    try:
+        candidate.relative_to(base.resolve())
+    except ValueError:
+        return "unsafe"
+    return "present" if candidate.is_file() else "missing"
+
+
+def _read_artifact_json(base: Path, rel_path: Any) -> dict[str, Any]:
+    rel = str(rel_path or "")
+    if not rel:
+        return {}
+    candidate = (base / rel).resolve()
+    try:
+        candidate.relative_to(base.resolve())
+    except ValueError:
+        return {}
+    if not candidate.is_file():
+        return {}
+    return read_json_or_default(candidate, {})

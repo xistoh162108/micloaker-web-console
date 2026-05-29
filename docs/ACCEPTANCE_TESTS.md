@@ -83,6 +83,7 @@
 - Readiness Markdown includes terminal validation record commands for each hardware gate.
 - `scripts/lab_readiness_check.py --write-evidence-template <gate> --evidence-template-file evidence.txt` writes a fillable gate-specific evidence note and refuses accidental overwrite.
 - `/ops/validation/templates/<gate>` downloads the same fillable gate-specific evidence note for browser operators.
+- Run detail pages download a DAQ evidence draft from saved run metadata, metrics, raw `.bin` path, log state, and plot artifact status.
 - `scripts/lab_readiness_check.py --check-server` verifies core routes plus required static UI assets for local CSS and live chart JavaScript, and `--write-report` persists those CLI findings into readiness JSON/Markdown.
 - `scripts/lab_readiness_check.py --record-gate ... --record-status ... --record-evidence ...` appends validation JSONL/Markdown evidence for terminal-only lab operation.
 - `scripts/lab_readiness_check.py --record-evidence-file evidence.txt` reads longer terminal validation evidence from UTF-8 text.

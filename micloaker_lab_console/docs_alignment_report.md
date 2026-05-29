@@ -20,7 +20,7 @@ done
 
 Most recent observed results:
 
-- Full test suite: `142 passed`
+- Full test suite: `143 passed`
 - Acceptance audit: `PASS`
 - Validation routes: all listed routes returned `200`
 
@@ -66,7 +66,7 @@ Most recent observed results:
 | README and dependency files | Proven | `README.md`, `requirements.txt`, `requirements-mac-helper.txt`, `mac_helper/README.md`. |
 | Hardware validation protocol | Proven as documented protocol | `../docs/HARDWARE_VALIDATION_PROTOCOL.md` defines the DAQ validation capture, Mac Helper playback validation, play-and-record trial, attenuation pair check, and pass/fail evidence. Physical execution remains lab work. |
 | Safe start/stop operation | Proven for local controls | `scripts/console_control.py`, `/ops`, Linux desktop launcher installer, and Mac Helper control scripts provide explicit start/status/stop flows. |
-| Hardware validation evidence capture | Proven for text persistence | `/ops` records operator-entered DAQ/Mac/play-and-record/attenuation validation evidence to `workspace/.micloaker/hardware_validation.jsonl` and `hardware_validation_report.md`; each record preserves evidence completeness by storing present and missing checklist labels only when non-empty `label: value` evidence is provided; direct downloads and ZIP inclusion are tested. Physical execution remains lab work. |
+| Hardware validation evidence capture | Proven for text persistence | `/ops` records operator-entered DAQ/Mac/play-and-record/attenuation validation evidence to `workspace/.micloaker/hardware_validation.jsonl` and `hardware_validation_report.md`; each record preserves evidence completeness by storing present and missing checklist labels only when non-empty `label: value` evidence is provided; run detail pages provide DAQ evidence drafts from saved run metadata, metrics, raw `.bin` path, log state, and plot artifact status; direct downloads and ZIP inclusion are tested. Physical execution remains lab work. |
 | Hardware validation readiness gates | Proven for operator-entered evidence | `/ops/readiness` and `scripts/lab_readiness_check.py` use the latest record per gate; `fail` makes readiness fail, `warn`/missing stays warning, and `pass`/`not applicable` closes a gate. `/ops` and `scripts/lab_readiness_check.py --write-report` persist `lab_readiness_report.json` and `lab_readiness_report.md` for export evidence. |
 | Tests without DAQ/Mac Helper | Proven | Full suite passes without physical DAQ or Mac Helper service. |
 

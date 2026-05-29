@@ -600,7 +600,7 @@ def main() -> int:
     checklist_terms = [
         "Automated evidence complete",
         "Lab verification required",
-        "Latest recorded result: `142 passed`",
+        "Latest recorded result: `143 passed`",
         "Run a short real DAQ validation capture",
         "Run explicit DAQ live preview on the real DAQ",
         "Run Mac Helper on the actual macOS playback machine",
@@ -633,6 +633,7 @@ def main() -> int:
         "/ops/validation/templates/<gate>",
         "--record-evidence-file",
         "Use checklist draft helper",
+        "DAQ evidence drafts from saved run metadata",
         "Remaining Requirements Not Yet Proved By Automation",
         "overall goal must remain open until the lab-only physical verification items",
     ]
@@ -673,10 +674,11 @@ def main() -> int:
             print(f"  missing helper README term: {term}")
     alignment_report = (ROOT / "docs_alignment_report.md").read_text(encoding="utf-8")
     alignment_terms = [
-        "Full test suite: `142 passed`",
+        "Full test suite: `143 passed`",
         "scientific instrument console",
         "hover readouts plus crosshair inspection",
         "evidence completeness by storing present and missing checklist labels only when non-empty `label: value` evidence is provided",
+        "DAQ evidence drafts from saved run metadata",
         "WER/CER outcome plots remain external downstream analysis",
         "float64 little-endian `.bin` handling",
     ]

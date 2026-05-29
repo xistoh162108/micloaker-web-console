@@ -22,7 +22,7 @@ from app.services.converter import PEAK_WAV_HEADROOM, convert_bin_to_wav, peak_w
 from app.main import create_app
 from app.services.export_zip import make_multi_session_zip, make_run_zip, make_session_zip
 from app.services.jobs import mark_unfinished_jobs_interrupted, run_job
-from app.services.lab_validation import record_lab_validation
+from app.services.lab_validation import daq_validation_evidence_from_run, record_lab_validation, validation_evidence_completeness
 from app.services.mac_helper_client import MacHelperClient
 from app.services.metadata import create_run_metadata, create_session, load_run, load_runs, rebuild_indexes, regenerate_summary, save_run
 from app.services.recorder import RecordingBusyError, _recording_lock, finalize_run, import_bin_and_finalize, record_daq_and_finalize, record_mock_and_finalize, record_mock_capture_only, recording_status, validate_raw_bin_source
@@ -1400,6 +1400,68 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     bad = client.post("/ops/validation", data={"gate": "bad_gate", "status": "pass"})
     assert bad.status_code == 400
     assert bad.json()["detail"]["error_code"] == "INVALID_VALIDATION_RECORD"
+
+
+def test_run_page_downloads_daq_validation_evidence_draft(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("MICLOAKER_WORKSPACE", str(tmp_path))
+    session = create_session(tmp_path, "daq evidence draft")
+    run = create_run_metadata(
+        tmp_path,
+        session["session_id"],
+        carrier_freq_khz=25,
+        uj="uj0",
+        source="daq",
+        sample_rate_hz=8000,
+        duration_s=0.1,
+        ai_range="BIP10VOLTS",
+        input_mode="SINGLE_ENDED",
+        channel=0,
+    )
+    finalized = record_mock_and_finalize(tmp_path, run)
+    client = TestClient(create_app())
+
+    page = client.get(f"/sessions/{session['session_id']}/runs/{finalized['run_id']}")
+    assert page.status_code == 200
+    assert "DAQ Evidence Draft" in page.text
+    assert f"/ops/validation/drafts/daq/{session['session_id']}/{finalized['run_id']}" in page.text
+
+    response = client.get(f"/ops/validation/drafts/daq/{session['session_id']}/{finalized['run_id']}")
+    assert response.status_code == 200
+    assert "daq_validation_evidence.txt" in response.headers["content-disposition"]
+    draft = response.text
+    assert draft == daq_validation_evidence_from_run(tmp_path, session["session_id"], finalized["run_id"])
+    assert "Evidence Draft: Linux DAQ validation capture" in draft
+    assert f"session_id: {session['session_id']}" in draft
+    assert f"run_id: {finalized['run_id']}" in draft
+    assert "DAQ channel/range/input mode: channel [0] / BIP10VOLTS / SINGLE_ENDED" in draft
+    assert "requested and actual sample rate: requested 8000 Hz / actual 8000 Hz" in draft
+    assert "expected vs written sample count: expected 800 / written 800" in draft
+    assert f"raw .bin path: {finalized['files']['bin']} (present)" in draft
+    assert "run log/plot status: log=present; traceback=no;" in draft
+    assert "analysis=finalized; grade=report-grade" in draft
+    assert validation_evidence_completeness("daq_smoke", evidence=draft)["complete"] is True
+
+    saved = client.post(
+        "/ops/validation",
+        data={
+            "gate": "daq_smoke",
+            "status": "warn",
+            "operator": "lab-op",
+            "session_id": session["session_id"],
+            "run_id": finalized["run_id"],
+            "evidence": draft,
+            "notes": "Draft copied from run page; physical DAQ wiring still requires operator review.",
+        },
+        follow_redirects=False,
+    )
+    assert saved.status_code == 303
+    record = read_jsonl(tmp_path / ".micloaker" / "hardware_validation.jsonl")[-1]
+    assert record["checklist_complete"] is True
+    assert record["checklist_missing"] == []
+
+    missing = client.get(f"/ops/validation/drafts/daq/{session['session_id']}/missing_run")
+    assert missing.status_code == 404
+    assert missing.json()["detail"]["error_code"] == "RUN_NOT_FOUND"
 
 
 def test_lab_readiness_cli_reflects_validation_gate_status(tmp_path: Path):
