@@ -42,6 +42,7 @@ def validation_paths(workspace: Path) -> dict[str, Path]:
     return {
         "jsonl": root / "hardware_validation.jsonl",
         "report": root / "hardware_validation_report.md",
+        "plan": root / "hardware_validation_plan.txt",
     }
 
 
@@ -174,6 +175,7 @@ def validation_plan(workspace: Path) -> str:
             "Evidence files:",
             f"- JSONL: {validation_paths(workspace)['jsonl']}",
             f"- Markdown: {validation_paths(workspace)['report']}",
+            f"- Plan: {validation_paths(workspace)['plan']}",
             "",
         ]
     )
@@ -230,6 +232,11 @@ def _write_validation_report(workspace: Path) -> None:
         )
     lines.append("")
     atomic_write_text(validation_paths(workspace)["report"], "\n".join(lines))
+    _write_validation_plan(workspace)
+
+
+def _write_validation_plan(workspace: Path) -> None:
+    atomic_write_text(validation_paths(workspace)["plan"], validation_plan(workspace))
 
 
 def _md(value: Any) -> str:

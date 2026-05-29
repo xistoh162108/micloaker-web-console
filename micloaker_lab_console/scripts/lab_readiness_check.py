@@ -17,7 +17,7 @@ if str(ROOT) not in sys.path:
 
 from app.config import DEFAULT_HOST, DEFAULT_PORT, get_settings  # noqa: E402
 from app.services.daq import daq_health  # noqa: E402
-from app.services.lab_validation import VALIDATION_GATES, VALIDATION_STATUSES, record_lab_validation, validation_paths, validation_plan, validation_summary  # noqa: E402
+from app.services.lab_validation import VALIDATION_GATES, VALIDATION_STATUSES, ensure_validation_artifacts, record_lab_validation, validation_paths, validation_plan, validation_summary  # noqa: E402
 from app.services.mac_helper_client import MacHelperClient  # noqa: E402
 from app.services.readiness import write_readiness_artifacts  # noqa: E402
 from app.services.text_store import read_json_or_default  # noqa: E402
@@ -52,6 +52,7 @@ def main() -> int:
     if args.record_gate or args.record_status:
         _record_validation_from_args(parser, args, settings.workspace)
     if args.validation_plan:
+        ensure_validation_artifacts(settings.workspace)
         print(validation_plan(settings.workspace))
         return 0
     _check_default_bind(findings, settings.host)

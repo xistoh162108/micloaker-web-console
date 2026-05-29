@@ -5,7 +5,7 @@ import signal
 import threading
 
 from fastapi import APIRouter, Form, HTTPException, Request
-from fastapi.responses import FileResponse, PlainTextResponse, RedirectResponse
+from fastapi.responses import FileResponse, RedirectResponse
 
 from ..services.lab_validation import (
     VALIDATION_GATE_EVIDENCE,
@@ -13,7 +13,6 @@ from ..services.lab_validation import (
     ensure_validation_artifacts,
     list_validation_records,
     record_lab_validation,
-    validation_plan,
     validation_summary,
 )
 from ..services.readiness import lab_readiness, write_readiness_artifacts
@@ -80,26 +79,32 @@ def validation_status(request: Request):
 
 @router.get("/validation/plan")
 def validation_plan_text(request: Request):
-    return PlainTextResponse(
-        validation_plan(request.app.state.settings.workspace),
-        headers={"Content-Disposition": 'attachment; filename="hardware_validation_plan.txt"'},
-    )
+    paths = ensure_validation_artifacts(request.app.state.settings.workspace)
+    return FileResponse(paths["plan"], filename="hardware_validation_plan.txt", media_type="text/plain")
 
 
 @router.get("/validation/files/{filename}")
 def download_validation_file(request: Request, filename: str):
-    if filename not in {"hardware_validation.jsonl", "hardware_validation_report.md"}:
+    if filename not in {"hardware_validation.jsonl", "hardware_validation_report.md", "hardware_validation_plan.txt"}:
         raise HTTPException(
             status_code=404,
             detail={
                 "error_code": "VALIDATION_FILE_NOT_FOUND",
                 "message": "The requested validation evidence file is not available.",
-                "suggestion": "Download hardware_validation.jsonl or hardware_validation_report.md.",
+                "suggestion": "Download hardware_validation.jsonl, hardware_validation_report.md, or hardware_validation_plan.txt.",
             },
         )
     paths = ensure_validation_artifacts(request.app.state.settings.workspace)
-    path = paths["jsonl"] if filename.endswith(".jsonl") else paths["report"]
-    return FileResponse(path, filename=filename, media_type="text/markdown" if filename.endswith(".md") else "application/jsonl")
+    if filename.endswith(".jsonl"):
+        path = paths["jsonl"]
+        media_type = "application/jsonl"
+    elif filename.endswith(".txt"):
+        path = paths["plan"]
+        media_type = "text/plain"
+    else:
+        path = paths["report"]
+        media_type = "text/markdown"
+    return FileResponse(path, filename=filename, media_type=media_type)
 
 
 @router.post("/validation")

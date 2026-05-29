@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Iterable
 
 from ..config import APP_VERSION
-from .lab_validation import validation_paths, validation_plan
+from .lab_validation import ensure_validation_artifacts
 from .metadata import regenerate_session_report, regenerate_summary
 from .readiness import readiness_paths
 from .text_store import append_app_event, now_iso, read_json_or_default, session_dir
@@ -180,14 +180,11 @@ def _expected_comparison_files(base: Path, comparison_json_path: Path) -> list[s
 
 
 def _add_validation_package(zf: zipfile.ZipFile, workspace: Path, arc_prefix: str, included: list[str], missing: list[str]) -> None:
-    paths = [*validation_paths(workspace).values(), *readiness_paths(workspace).values()]
+    paths = [*ensure_validation_artifacts(workspace).values(), *readiness_paths(workspace).values()]
     for path in paths:
         arc = f"{arc_prefix}/{path.name}"
         if path.exists() and path.is_file() and _path_inside(workspace, path):
             _write_member(zf, path, arc, included, missing)
-    plan_arc = f"{arc_prefix}/hardware_validation_plan.txt"
-    zf.writestr(plan_arc, validation_plan(workspace))
-    included.append(plan_arc)
 
 
 def _range_wav_fallback(base: Path, run_id: str) -> str:

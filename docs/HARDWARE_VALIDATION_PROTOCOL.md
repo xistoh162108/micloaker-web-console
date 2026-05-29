@@ -33,6 +33,7 @@ Record physical validation evidence in `/ops` under **Hardware Validation Record
 ```text
 workspace/.micloaker/hardware_validation.jsonl
 workspace/.micloaker/hardware_validation_report.md
+workspace/.micloaker/hardware_validation_plan.txt
 workspace/.micloaker/lab_readiness_report.json
 workspace/.micloaker/lab_readiness_report.md
 ```

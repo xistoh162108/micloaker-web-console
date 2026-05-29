@@ -1191,6 +1191,9 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert "raw .bin path" in report
     assert "Linux DAQ smoke capture" in report
     assert "written_samples matched expected duration" in report
+    plan_artifact = (tmp_path / ".micloaker" / "hardware_validation_plan.txt").read_text(encoding="utf-8")
+    assert "MiCloaker Physical Validation Plan" in plan_artifact
+    assert "scripts/lab_readiness_check.py --record-gate daq_smoke" in plan_artifact
 
     status = client.get("/ops/validation").json()
     assert status["summary"]["record_count"] == 1
@@ -1216,6 +1219,10 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert "hardware_validation_plan.txt" in plan_download.headers["content-disposition"]
     assert "MiCloaker Physical Validation Plan" in plan_download.text
     assert "scripts/lab_readiness_check.py --record-gate daq_smoke" in plan_download.text
+    plan_file_download = client.get("/ops/validation/files/hardware_validation_plan.txt")
+    assert plan_file_download.status_code == 200
+    assert "hardware_validation_plan.txt" in plan_file_download.headers["content-disposition"]
+    assert "MiCloaker Physical Validation Plan" in plan_file_download.text
     report_download = client.get("/ops/validation/files/hardware_validation_report.md")
     assert report_download.status_code == 200
     assert "MiCloaker Hardware Validation Records" in report_download.text
@@ -1315,6 +1322,7 @@ def test_lab_readiness_cli_reflects_validation_gate_status(tmp_path: Path):
     assert "scripts/lab_readiness_check.py --record-gate daq_smoke --record-status <pass|warn|fail|na> --record-evidence-file evidence.txt" in plan.stdout
     assert "checklist: session_id, run_id, DAQ channel/range/input mode" in plan.stdout
     assert "JSONL:" in plan.stdout
+    assert (tmp_path / ".micloaker" / "hardware_validation_plan.txt").is_file()
 
     cli_record = subprocess.run(
         [
