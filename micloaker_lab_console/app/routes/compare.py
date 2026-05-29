@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import wave
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
@@ -42,10 +43,11 @@ def compare_page(request: Request, session_id: str):
     finalized_uj0_runs = [run for run in runs if run.get("condition", {}).get("uj") == "uj0" and run.get("analysis", {}).get("status") == "finalized"]
     finalized_uj1_runs = [run for run in runs if run.get("condition", {}).get("uj") == "uj1" and run.get("analysis", {}).get("status") == "finalized"]
     comparisons = []
-    for path in sorted((base / "comparisons").glob("*.json"), reverse=True):
+    for path in sorted((base / "comparisons").glob("*.json"), key=_comparison_sort_key, reverse=True):
         result = read_json_or_default(path, {})
         if not result:
             continue
+        _decorate_comparison(result)
         result["json_file"] = f"comparisons/{path.name}"
         result["csv_file"] = f"comparisons/{path.with_suffix('.csv').name}"
         comparisons.append(result)
@@ -58,6 +60,7 @@ def compare_page(request: Request, session_id: str):
             "finalized_uj0_runs": finalized_uj0_runs,
             "finalized_uj1_runs": finalized_uj1_runs,
             "comparisons": comparisons,
+            "compare_alert": _alert_from_query(request),
         },
     )
 
@@ -80,12 +83,15 @@ def compare_submit(
     base = session_dir(workspace, session_id)
     run0 = load_run(workspace, session_id, uj0_run_id)
     run1 = load_run(workspace, session_id, uj1_run_id)
-    _validate_compare_runs(run0, run1)
-    band_hz = _band_from_form(band_mode, custom_low_hz, custom_high_hz)
-    _validate_band_with_sample_rates(run0, run1, band_hz)
-    metrics0, metrics1 = _load_compare_metrics(base, run0, run1, source, band_hz)
-    _save_compare(workspace, session_id, base, run0, metrics0, run1, metrics1, source=source, band_hz=band_hz)
-    return RedirectResponse(f"/compare/{session_id}", status_code=303)
+    try:
+        _validate_compare_runs(run0, run1)
+        band_hz = _band_from_form(band_mode, custom_low_hz, custom_high_hz)
+        _validate_band_with_sample_rates(run0, run1, band_hz)
+        metrics0, metrics1 = _load_compare_metrics(base, run0, run1, source, band_hz)
+        _save_compare(workspace, session_id, base, run0, metrics0, run1, metrics1, source=source, band_hz=band_hz)
+    except HTTPException as exc:
+        return _compare_error_redirect(session_id, exc.detail)
+    return RedirectResponse(f"/compare/{session_id}?notice=compare_saved", status_code=303)
 
 
 @router.post("/{session_id}/auto-pair")
@@ -94,11 +100,17 @@ def compare_auto_pair(request: Request, session_id: str):
     _require_session(workspace, session_id)
     base = session_dir(workspace, session_id)
     runs = load_runs(workspace, session_id)
-    for run0, run1 in auto_pair_runs(runs):
-        metrics0 = _read_metrics_json(base, run0)
-        metrics1 = _read_metrics_json(base, run1)
-        _save_compare(workspace, session_id, base, run0, metrics0, run1, metrics1)
-    return RedirectResponse(f"/compare/{session_id}", status_code=303)
+    try:
+        created = 0
+        for run0, run1 in auto_pair_runs(runs):
+            metrics0 = _read_metrics_json(base, run0)
+            metrics1 = _read_metrics_json(base, run1)
+            _save_compare(workspace, session_id, base, run0, metrics0, run1, metrics1)
+            created += 1
+    except HTTPException as exc:
+        return _compare_error_redirect(session_id, exc.detail)
+    notice = "auto_pair_saved" if created else "auto_pair_none"
+    return RedirectResponse(f"/compare/{session_id}?notice={notice}", status_code=303)
 
 
 def _save_compare(workspace, session_id: str, base, run0: dict, metrics0: dict, run1: dict, metrics1: dict, *, source: str = "bin", band_hz: tuple[float, float] = (300.0, 3400.0)) -> dict:
@@ -106,6 +118,7 @@ def _save_compare(workspace, session_id: str, base, run0: dict, metrics0: dict, 
     result["created_at"] = now_iso()
     result.update(_comparison_provenance(source))
     result.update(_comparison_source_paths(run0, run1, source))
+    _decorate_comparison(result)
     band_tag = f"{int(band_hz[0])}-{int(band_hz[1])}"
     base_compare_id = f"{run0['run_id']}__vs__{run1['run_id']}__{source}__{band_tag}Hz"
     compare_id = _unique_compare_id(base / "comparisons", base_compare_id)
@@ -136,6 +149,8 @@ def _save_compare(workspace, session_id: str, base, run0: dict, metrics0: dict, 
             "uj1_run_id",
             "uj0_power",
             "uj1_power",
+            "uj0_relative_energy_percent",
+            "uj1_relative_energy_percent",
             "attenuation_db",
             "remaining_fraction",
             "reduction_percent",
@@ -186,6 +201,23 @@ def _comparison_provenance(source: str) -> dict:
         "result_grade": "not-report-grade",
         "source_label": "This source is not valid for final attenuation reporting.",
     }
+
+
+def _decorate_comparison(result: dict) -> dict:
+    result["uj0_relative_energy_percent"] = 100.0
+    remaining = float(result.get("remaining_fraction", 0.0) or 0.0)
+    result["uj1_relative_energy_percent"] = remaining * 100.0
+    result["warning_messages"] = [_friendly_warning_message(warning) for warning in result.get("warnings", [])]
+    return result
+
+
+def _friendly_warning_message(warning: str) -> str:
+    messages = {
+        "range_wav_cross_check_not_report_grade": "Range WAV was used only as a cross-check. It is not report-grade because WAV scaling depends on the configured full-scale voltage. Use BIN primary for final attenuation.",
+        "peak_wav_used_for_quantitative_analysis_warning": "Peak-normalized WAV is for listening only and cannot be used for attenuation reporting.",
+        "metadata_mismatch": "The selected uj0/uj1 runs have different metadata. Check frequency, ordinary sound, mic, room, distance, angle, DAQ range, and sample rate before trusting the comparison.",
+    }
+    return messages.get(warning, warning.replace("_", " "))
 
 
 def _validate_compare_runs(run0: dict, run1: dict) -> None:
@@ -287,12 +319,11 @@ def _load_compare_metrics(base, run0: dict, run1: dict, source: str, band_hz: tu
     if source == "peak_wav":
         raise HTTPException(
             status_code=400,
-            detail={
-                "error_code": "PEAK_WAV_NOT_QUANTITATIVE",
-                "message": "Peak-normalized WAV is listening-only and cannot be used for quantitative comparison.",
-                "warning": "peak_wav_used_for_quantitative_analysis_warning",
-                "suggestion": "Use saved .bin metrics for report-grade attenuation, or range WAV only as a cross-check with known full-scale voltage.",
-            },
+            detail=_compare_error(
+                "PEAK_WAV_NOT_QUANTITATIVE",
+                "Peak-normalized WAV is listening-only and cannot be used for quantitative comparison.",
+                "Use saved .bin metrics for report-grade attenuation, or range WAV only as a cross-check with known full-scale voltage.",
+            ),
         )
     if source == "bin":
         return _read_metrics_json(base, run0), _read_metrics_json(base, run1)
@@ -346,16 +377,53 @@ def _range_metrics(base, run: dict, band_hz: tuple[float, float]) -> dict:
     except (EOFError, ValueError, OSError, wave.Error) as exc:
         raise HTTPException(
             status_code=400,
-            detail={
-                "error_code": "INVALID_RANGE_WAV_CROSS_CHECK",
-                "message": f"Range WAV for {run['run_id']} could not be analyzed: {exc}",
-                "suggestion": "Regenerate WAVs from the saved .bin, or use saved .bin as the report-grade comparison source.",
-            },
+            detail=_compare_error(
+                "INVALID_RANGE_WAV_CROSS_CHECK",
+                f"Range WAV for {run['run_id']} could not be analyzed: {exc}",
+                "Regenerate WAVs from the saved .bin, or use saved .bin as the report-grade comparison source.",
+            ),
         ) from exc
 
 
 def _compare_error(error_code: str, message: str, suggestion: str) -> dict[str, str]:
     return {"error_code": error_code, "message": message, "suggestion": suggestion}
+
+
+def _compare_error_redirect(session_id: str, detail) -> RedirectResponse:
+    if not isinstance(detail, dict):
+        detail = _compare_error("COMPARE_FAILED", str(detail), "Review the selected runs and try again.")
+    query = urlencode({
+        "alert_code": detail.get("error_code", "COMPARE_FAILED"),
+        "alert_message": detail.get("message", "Compare failed."),
+        "alert_suggestion": detail.get("suggestion", "Review the selected runs and try again."),
+    })
+    return RedirectResponse(f"/compare/{session_id}?{query}", status_code=303)
+
+
+def _alert_from_query(request: Request) -> dict[str, str] | None:
+    params = request.query_params
+    if params.get("alert_code"):
+        return {
+            "kind": "error",
+            "code": params.get("alert_code", ""),
+            "message": params.get("alert_message", ""),
+            "suggestion": params.get("alert_suggestion", ""),
+        }
+    notice = params.get("notice", "")
+    notices = {
+        "compare_saved": ("Comparison saved.", "Newest saved result is shown first below."),
+        "auto_pair_saved": ("Auto-pair comparisons saved.", "Newest saved results are shown first below."),
+        "auto_pair_none": ("No auto-pair comparison was created.", "Finalize matching uj0 and uj1 runs with compatible metadata, then try auto-pair again."),
+    }
+    if notice in notices:
+        message, suggestion = notices[notice]
+        return {"kind": "success", "code": notice, "message": message, "suggestion": suggestion}
+    return None
+
+
+def _comparison_sort_key(path) -> tuple[str, int]:
+    result = read_json_or_default(path, {})
+    return (str(result.get("created_at") or ""), path.stat().st_mtime_ns)
 
 
 def _require_session(workspace, session_id: str) -> None:

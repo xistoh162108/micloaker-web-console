@@ -37,11 +37,11 @@
 - Add DAQ health check.
 - Add one-recording-at-a-time guard.
 - Add real recording route/job.
-- Keep mock mode available.
+- Keep offline developer validation available.
 
 ## Phase 4 — v0.2 Live Monitor
 
-- Add mock live monitor first.
+- Add offline developer live monitor first.
 - Add DAQ monitor-only mode if safe.
 - Add recording + live monitor through shared acquisition loop.
 - Add preview/final result UI distinction.

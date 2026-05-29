@@ -8,7 +8,7 @@ from fastapi.responses import RedirectResponse
 from ..services.daq import DaqNotConfiguredError, DaqUnavailableError
 from ..services.mac_helper_client import MacHelperClient
 from ..services.metadata import load_run, save_run
-from ..services.recorder import RecordingBusyError, record_daq_and_finalize, record_mock_and_finalize
+from ..services.recorder import RecordingBusyError, record_daq_and_finalize, record_daq_capture_only, record_mock_and_finalize, record_mock_capture_only
 from ..services.tailscale import discover_helpers
 from ..services.text_store import append_app_event, append_log, atomic_write_json, read_json_or_default, safe_name, session_dir
 
@@ -174,6 +174,33 @@ def play_and_record_mock(
     )
 
 
+@router.post("/sessions/{session_id}/runs/{run_id}/play-and-capture-mock")
+def play_and_capture_mock(
+    request: Request,
+    session_id: str,
+    run_id: str,
+    file: str = Form(...),
+    device_id: int = Form(...),
+    sample_rate: int = Form(...),
+    channels: int = Form(1),
+    gain: float = Form(1.0),
+    delay_ms: int = Form(500),
+):
+    return _play_and_record(
+        request,
+        session_id,
+        run_id,
+        recorder=record_mock_capture_only,
+        recorder_label="mock_capture_only",
+        file=file,
+        device_id=device_id,
+        sample_rate=sample_rate,
+        channels=channels,
+        gain=gain,
+        delay_ms=delay_ms,
+    )
+
+
 @router.post("/sessions/{session_id}/runs/{run_id}/play-and-record-daq")
 def play_and_record_daq(
     request: Request,
@@ -192,6 +219,33 @@ def play_and_record_daq(
         run_id,
         recorder=record_daq_and_finalize,
         recorder_label="daq",
+        file=file,
+        device_id=device_id,
+        sample_rate=sample_rate,
+        channels=channels,
+        gain=gain,
+        delay_ms=delay_ms,
+    )
+
+
+@router.post("/sessions/{session_id}/runs/{run_id}/play-and-capture-daq")
+def play_and_capture_daq(
+    request: Request,
+    session_id: str,
+    run_id: str,
+    file: str = Form(...),
+    device_id: int = Form(...),
+    sample_rate: int = Form(...),
+    channels: int = Form(1),
+    gain: float = Form(1.0),
+    delay_ms: int = Form(500),
+):
+    return _play_and_record(
+        request,
+        session_id,
+        run_id,
+        recorder=record_daq_capture_only,
+        recorder_label="daq_capture_only",
         file=file,
         device_id=device_id,
         sample_rate=sample_rate,
@@ -251,12 +305,12 @@ def _play_and_record(
         _store_helper_result(workspace, session_id, run_id, "play_and_record_failed", payload, {"ok": False, **detail})
         raise HTTPException(status_code=409, detail=detail) from exc
     except DaqUnavailableError as exc:
-        detail = {"error_code": "DAQ_UNAVAILABLE", "message": str(exc), "suggestion": "Use Play & Record Mock, or install/configure uldaq drivers before DAQ recording."}
+        detail = {"error_code": "DAQ_UNAVAILABLE", "message": str(exc), "suggestion": "Install/configure uldaq drivers before DAQ recording, or import a saved raw .bin file."}
         _stop_helper_after_failed_recording(workspace, session_id, run_id, client)
         _store_helper_result(workspace, session_id, run_id, "play_and_record_failed", payload, {"ok": False, **detail})
         raise HTTPException(status_code=503, detail=detail) from exc
     except DaqNotConfiguredError as exc:
-        detail = {"error_code": "DAQ_NOT_CONFIGURED", "message": str(exc), "suggestion": "Configure the DAQ-specific acquisition code for this hardware, or use mock recording."}
+        detail = {"error_code": "DAQ_NOT_CONFIGURED", "message": str(exc), "suggestion": "Configure the DAQ-specific acquisition code for this hardware, or import a saved raw .bin file."}
         _stop_helper_after_failed_recording(workspace, session_id, run_id, client)
         _store_helper_result(workspace, session_id, run_id, "play_and_record_failed", payload, {"ok": False, **detail})
         raise HTTPException(status_code=501, detail=detail) from exc

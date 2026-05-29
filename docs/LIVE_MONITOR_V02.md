@@ -78,7 +78,7 @@ Browser rendering should avoid unnecessary allocation during experiments:
 
 ## 7. Acceptance criteria
 
-- Mock live monitor runs without DAQ.
+- Offline developer live monitor runs without DAQ.
 - Explicit DAQ live preview can be requested and degrades cleanly when DAQ is unavailable.
 - DAQ live preview is blocked while recording is active, preventing a second DAQ reader.
 - Browser updates waveform continuously.

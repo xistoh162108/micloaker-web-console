@@ -88,7 +88,7 @@ Documentation must be usable by another lab operator, not only the original deve
 Required documentation:
 
 - Repository root README as a GitHub landing page.
-- Hardware validation protocol for DAQ smoke capture, Mac Helper physical playback validation, short play-and-record trial, and attenuation pair check.
+- Hardware validation protocol for DAQ validation capture, Mac Helper physical playback validation, short play-and-record trial, and attenuation pair check.
 - Linux console manual with:
   - install steps
   - safe start/status/stop
@@ -117,7 +117,7 @@ Mac playback:
 Linux recording:
 
 - Real recording requires DAQ hardware and `uldaq` support.
-- Mock mode must remain available for setup, demos, and tests without hardware.
+- Offline developer validation must remain available for setup, demos, and tests without hardware.
 
 ## 7. GitHub Delivery
 

@@ -26,6 +26,15 @@ def recording_status() -> dict:
 
 
 def record_mock_and_finalize(workspace: Path, run: dict) -> dict:
+    return _record_mock(workspace, run, finalize_after_capture=True, job_type="mock_record_and_finalize")
+
+
+def record_mock_capture_only(workspace: Path, run: dict) -> dict:
+    """Record mock data and stop after raw `.bin` plus WAV preview generation."""
+    return _record_mock(workspace, run, finalize_after_capture=False, job_type="mock_record_capture_only")
+
+
+def _record_mock(workspace: Path, run: dict, *, finalize_after_capture: bool, job_type: str) -> dict:
     global _active_recording
     base = session_dir(workspace, run["session_id"])
     bin_path = base / run["files"]["bin"]
@@ -51,11 +60,14 @@ def record_mock_and_finalize(workspace: Path, run: dict) -> dict:
         run["recording"]["finished_at"] = now_iso()
         save_run(workspace, run)
         append_log(log_path, f"wrote raw float64 bin {bin_path.name} samples={data.size}")
-        _finalize_after_capture(workspace, run, trigger="recording_finished")
+        if finalize_after_capture:
+            _finalize_after_capture(workspace, run, trigger="recording_finished")
+        else:
+            mark_capture_awaiting_approval(workspace, run, source="mock")
         return run
 
     try:
-        return run_job(workspace, "mock_record_and_finalize", log_path, _work)
+        return run_job(workspace, job_type, log_path, _work)
     finally:
         _active_recording = None
         _recording_lock.release()
@@ -98,6 +110,15 @@ def validate_raw_bin_source(source_path: Path) -> dict:
 
 
 def record_daq_and_finalize(workspace: Path, run: dict) -> dict:
+    return _record_daq(workspace, run, finalize_after_capture=True, job_type="daq_record_and_finalize")
+
+
+def record_daq_capture_only(workspace: Path, run: dict) -> dict:
+    """Record DAQ data and stop after raw `.bin` plus WAV preview generation."""
+    return _record_daq(workspace, run, finalize_after_capture=False, job_type="daq_record_capture_only")
+
+
+def _record_daq(workspace: Path, run: dict, *, finalize_after_capture: bool, job_type: str) -> dict:
     global _active_recording
     base = session_dir(workspace, run["session_id"])
     bin_path = base / run["files"]["bin"]
@@ -137,11 +158,14 @@ def record_daq_and_finalize(workspace: Path, run: dict) -> dict:
         run["recording"]["finished_at"] = now_iso()
         save_run(workspace, run)
         append_log(log_path, f"wrote DAQ raw float64 bin {bin_path.name} samples={data.size} source_channels={source_channels} recorded_channel={recorded_channel}")
-        _finalize_after_capture(workspace, run, trigger="recording_finished")
+        if finalize_after_capture:
+            _finalize_after_capture(workspace, run, trigger="recording_finished")
+        else:
+            mark_capture_awaiting_approval(workspace, run, source="daq")
         return run
 
     try:
-        return run_job(workspace, "daq_record_and_finalize", log_path, _work)
+        return run_job(workspace, job_type, log_path, _work)
     finally:
         _active_recording = None
         _recording_lock.release()
@@ -170,7 +194,7 @@ def mark_recording_failed(workspace: Path, run: dict, *, source: str, exc: Excep
         "failed_at": failed_at,
         "last_error": str(exc),
         "error_log": f"logs/{run['run_id']}.log",
-        "label": f"{source.upper()} recording failed before raw .bin capture; use mock/upload or fix DAQ setup and retry with a new run.",
+        "label": f"{source.upper()} recording failed before raw .bin capture; import a saved raw .bin file or fix DAQ setup and retry with a new run.",
     })
     flags = set(run.get("quality_flags", []))
     flags.add("recording_failed")
@@ -181,6 +205,44 @@ def mark_recording_failed(workspace: Path, run: dict, *, source: str, exc: Excep
     append_jsonl(base / "events.jsonl", event)
     append_app_event(workspace, "run_recording_failed", session_id=run["session_id"], run_id=run["run_id"], source=source, error=str(exc))
     append_log(log_path, f"recording_failed source={source} metadata_saved=true: {exc}")
+
+
+def mark_capture_awaiting_approval(workspace: Path, run: dict, *, source: str) -> dict:
+    """Persist post-capture preview artifacts while deferring report-grade finalization."""
+    base = session_dir(workspace, run["session_id"])
+    log_path = base / "logs" / f"{run['run_id']}.log"
+    bin_path = base / run["files"]["bin"]
+    raw_info = validate_raw_float64_bin(bin_path, source_label="saved raw .bin")
+    run.setdefault("recording", {}).update({
+        "raw_size_bytes": raw_info["size_bytes"],
+        "raw_sample_count": raw_info["sample_count"],
+        "raw_dtype": raw_info["dtype"],
+        "raw_validated_at": now_iso(),
+    })
+    preview_files = converter.convert_run_bin(run, base, overwrite=False)
+    run["files"].update(preview_files)
+    captured_at = now_iso()
+    run.setdefault("analysis", {}).update({
+        "status": "awaiting_approval",
+        "source": "bin",
+        "preview_only": True,
+        "result_grade": "preview",
+        "finalized_from_saved_bin": False,
+        "capture_source": source,
+        "captured_at": captured_at,
+        "label": "Raw .bin captured and WAV previews generated; operator approval required before report-grade finalization.",
+    })
+    flags = set(run.get("quality_flags", []))
+    flags.add("awaiting_operator_approval")
+    run["quality_flags"] = sorted(flags)
+    save_run(workspace, run)
+    regenerate_summary(workspace, run["session_id"])
+    event = {"event": "run_capture_awaiting_approval", "run_id": run["run_id"], "source": source, "captured_at": captured_at, "bin_path": run["files"]["bin"]}
+    append_jsonl(base / "runs.jsonl", event)
+    append_jsonl(base / "events.jsonl", event)
+    append_app_event(workspace, "run_capture_awaiting_approval", session_id=run["session_id"], run_id=run["run_id"], source=source, bin_path=run["files"]["bin"])
+    append_log(log_path, "capture_awaiting_approval preview_wavs=true report_grade=false")
+    return run
 
 
 def finalize_run(workspace: Path, run: dict, *, trigger: str = "manual", overwrite_derived: bool = False) -> dict:
@@ -196,8 +258,9 @@ def finalize_run(workspace: Path, run: dict, *, trigger: str = "manual", overwri
         "raw_dtype": raw_info["dtype"],
         "raw_validated_at": now_iso(),
     })
+    allow_preview_overwrite = overwrite_derived or run.get("analysis", {}).get("status") == "awaiting_approval"
     _ensure_metrics_outputs_available(base, run, overwrite=overwrite_derived)
-    wavs = converter.convert_run_bin(run, base, overwrite=overwrite_derived)
+    wavs = converter.convert_run_bin(run, base, overwrite=allow_preview_overwrite)
     run["files"].update(wavs)
     remove_dc = bool(run["conversion"].get("remove_dc", True))
     band = run.get("analysis", {}).get("primary_band_hz", [300.0, 3400.0])
@@ -249,6 +312,8 @@ def finalize_run(workspace: Path, run: dict, *, trigger: str = "manual", overwri
     })
     if plot_error:
         metrics["plot_error"] = plot_error
+    run["quality_flags"] = [flag for flag in run["quality_flags"] if flag != "awaiting_operator_approval"]
+    metrics["quality_flags"] = run["quality_flags"]
     analyzer.save_metrics(base, run, metrics)
     run["analysis"].update({
         "status": "finalized",

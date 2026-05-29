@@ -351,7 +351,7 @@ def audit_mac_helper_mock(wav_root: Path) -> tuple[bool, list[str]]:
         json={"file": "tone.wav", "device_id": 1, "sample_rate": 8000, "channels": 2, "gain": 0.5},
     ).json()
     if not valid.get("ok") or valid.get("will_channel_map") is not True:
-        failures.append("Mac Helper did not validate mono-to-stereo channel mapping in mock mode")
+        failures.append("Mac Helper did not validate mono-to-stereo channel mapping in offline developer validation")
     traversal = client.post(
         "/validate-playback",
         json={"file": "../tone.wav", "device_id": 1, "sample_rate": 8000, "channels": 1, "gain": 0.5},
@@ -441,7 +441,7 @@ def main() -> int:
         for term in missing_operator_terms:
             print(f"  missing operator UI term: {term}")
     hardware_protocol_terms = [
-        "Linux DAQ Smoke Capture",
+        "Linux DAQ Validation Capture",
         "Mac Helper Playback Validation",
         "End-to-End Play And Record Trial",
         "Attenuation Pair Check",
@@ -555,6 +555,8 @@ def main() -> int:
         "playback only",
         "recording only",
         "play and record",
+        "play and capture",
+        "awaiting_approval",
         "Require explicit operator approval",
     ]
     missing_experiment_flow_terms = [term for term in experiment_flow_terms if term not in experiment_flow_doc]
@@ -570,6 +572,7 @@ def main() -> int:
         "scientific instrument",
         "Matplotlib/MATLAB/Origin figures",
         "Core experiment controls must not be hidden",
+        "Capture-only and Play & Capture modes",
         "data cursors",
         "Run-level Mac Helper validation/play/play-and-record must reject mismatched jamming files",
     ]
@@ -598,7 +601,7 @@ def main() -> int:
         "Automated evidence complete",
         "Lab verification required",
         "Latest recorded result: `139 passed`",
-        "Run a short real DAQ smoke capture",
+        "Run a short real DAQ validation capture",
         "Run explicit DAQ live preview on the real DAQ",
         "Run Mac Helper on the actual macOS playback machine",
         "Record one finalized real `uj0`/`uj1` attenuation pair",
@@ -620,7 +623,7 @@ def main() -> int:
         "cached `ImageData` spectrogram buffers",
         "hover readouts and crosshair inspection",
         "WER/CER exploratory plots marked as downstream analysis",
-        "CLI server/static asset smoke evidence",
+        "CLI server/static asset validation evidence",
         "CLI Server Routes",
         "hardware_validation_plan.txt` is persisted under `.micloaker",
         "scripts/lab_readiness_check.py --record-gate",
@@ -644,10 +647,10 @@ def main() -> int:
         "ops_validation/lab_readiness_report.json",
         "ops_validation/lab_readiness_report.md",
         "CLI Server Routes",
-        "server/static asset smoke result",
+        "server/static asset validation result",
     ]
     missing_export_terms = [term for term in export_terms if term not in export_spec_doc]
-    checks.append(report(not missing_export_terms, "export spec preserves readiness and CLI smoke evidence"))
+    checks.append(report(not missing_export_terms, "export spec preserves readiness and CLI validation evidence"))
     if missing_export_terms:
         for term in missing_export_terms:
             print(f"  missing export spec term: {term}")
@@ -709,7 +712,7 @@ def main() -> int:
             for failure in failures:
                 print(f"  workflow failure: {failure}")
             helper_ok, helper_failures = audit_mac_helper_mock(temp_root / "helper_wavs")
-            checks.append(report(helper_ok, "Mac Helper mock mode validates wav_root playback safety"))
+            checks.append(report(helper_ok, "Mac Helper offline developer validation validates wav_root playback safety"))
             for failure in helper_failures:
                 print(f"  helper failure: {failure}")
         finally:

@@ -27,10 +27,11 @@ The primary dashboard must support the working flow from one screen:
 2. Jamming signal metadata and ordinary sound metadata.
 3. Mac Helper connection, jamming WAV selection, playback sample rate, device, channels, gain, and delay.
 4. Playback-only test, recording-only test, and synchronized Play & Record.
-5. Visual playback/recording status.
-6. Live waveform, RMS/peak, clipping, PSD, and scrolling spectrogram.
-7. Latest `.bin`, WAV preview, plots, metrics, and finalization status.
-8. Operator approval gate before downstream report-grade processing when that mode is enabled.
+5. Capture-only and Play & Capture modes that stop at `awaiting_approval` for operator review before finalization.
+6. Visual playback/recording status.
+7. Live waveform, RMS/peak, clipping, PSD, and scrolling spectrogram.
+8. Latest `.bin`, WAV preview, plots, metrics, and finalization status.
+9. Operator approval gate before downstream report-grade processing when that mode is enabled.
 
 Core experiment controls must not be hidden behind mutually exclusive tabs during a run.
 

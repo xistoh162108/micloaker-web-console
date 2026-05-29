@@ -26,8 +26,8 @@ from app.services.text_store import atomic_write_text, read_json_or_default  # n
 DB_SUFFIXES = {".db", ".duckdb", ".sqlite", ".sqlite3"}
 DB_DEPENDENCIES = {"asyncpg", "databases", "duckdb", "psycopg", "psycopg2", "sqlalchemy", "tinydb"}
 SKIP_DIRS = {".git", ".mypy_cache", ".pytest_cache", ".ruff_cache", ".venv", "__pycache__"}
-SMOKE_ROUTES = ["/", "/sessions", "/runs/new", "/compare", "/mac-helper", "/files", "/logs", "/ops", "/ops/readiness", "/daq/health", "/recording/status", "/live", "/live/snapshot"]
-SMOKE_ASSETS = {
+VALIDATION_ROUTES = ["/", "/sessions", "/runs/new", "/compare", "/mac-helper", "/files", "/logs", "/ops", "/ops/readiness", "/daq/health", "/recording/status", "/live", "/live/snapshot"]
+VALIDATION_ASSETS = {
     "/static/css/app.css": ["DaisyUI component vocabulary", "content-visibility: auto"],
     "/static/js/live.js": ["requestAnimationFrame(renderCharts)", "cachedSpectrogramImage"],
 }
@@ -248,7 +248,7 @@ def _check_helper_endpoints(findings: list[tuple[str, str, str]], config: dict[s
 def _check_server_routes(findings: list[tuple[str, str, str]], server_url: str) -> None:
     failed = []
     with httpx.Client(timeout=3.0, follow_redirects=False) as client:
-        for route in SMOKE_ROUTES:
+        for route in VALIDATION_ROUTES:
             try:
                 response = client.get(server_url.rstrip("/") + route)
             except Exception as exc:
@@ -256,7 +256,7 @@ def _check_server_routes(findings: list[tuple[str, str, str]], server_url: str) 
                 continue
             if response.status_code != 200:
                 failed.append(f"{route}: HTTP {response.status_code}")
-        for asset, required_terms in SMOKE_ASSETS.items():
+        for asset, required_terms in VALIDATION_ASSETS.items():
             try:
                 response = client.get(server_url.rstrip("/") + asset)
             except Exception as exc:
@@ -269,9 +269,9 @@ def _check_server_routes(findings: list[tuple[str, str, str]], server_url: str) 
             if missing_terms:
                 failed.append(f"{asset}: missing {', '.join(missing_terms)}")
     if failed:
-        findings.append(("FAIL", "server_routes", "Route smoke failures: " + "; ".join(failed)))
+        findings.append(("FAIL", "server_routes", "Route validation failures: " + "; ".join(failed)))
     else:
-        findings.append(("PASS", "server_routes", f"All smoke routes and UI assets returned expected content at {server_url}."))
+        findings.append(("PASS", "server_routes", f"All validation routes and UI assets returned expected content at {server_url}."))
 
 
 def _requirement_names(path: Path) -> set[str]:

@@ -30,10 +30,11 @@ This document fixes the intended lab workflow for the MiCloaker console.
    - playback only, for checking the ultrasonic speaker path;
    - recording only, for checking Linux microphone/DAQ capture;
    - play and record, for synchronized Mac playback plus Linux measurement.
+   - play and capture, for synchronized Mac playback plus Linux measurement with operator approval before report-grade finalization.
 7. Show visual status for Mac playback, Linux capture, live waveform, RMS/peak, clipping, PSD, and spectrogram on the same console page.
 8. Write the raw `.bin` first and never overwrite it silently.
 9. Convert `.bin` to WAV previews so the operator can listen and confirm that the microphone captured the expected signal.
-10. Require explicit operator approval before downstream report-grade processing when approval-gated mode is enabled.
+10. Require explicit operator approval before downstream report-grade processing when approval-gated mode is enabled. The capture-only routes write raw `.bin`, create WAV previews, and set the run status to `awaiting_approval`; the operator then listens/inspects and clicks Finalize From `.bin`.
 11. After approval, finalize from the saved `.bin`, generate WAV previews, plots, metrics, logs, and exportable artifacts.
 
 ## Analysis intent

@@ -9,21 +9,21 @@ The UI standard is DaisyUI component vocabulary implemented locally in vanilla C
 ## What This App Does
 
 - Create experiment sessions and runs.
-- Record raw float64 voltage `.bin` data from mock mode or DAQ.
+- Record raw float64 voltage `.bin` data from DAQ hardware.
 - Import existing raw `.bin` recordings.
 - Convert `.bin` to listening-preview peak WAV and range cross-check WAV.
 - Generate waveform, PSD, spectrogram, PSD overlay, and attenuation plots.
 - Finalize report-grade RMS, Welch PSD, band power, dominant-tone, and quality metrics from saved `.bin`.
 - Compare `uj0` and `uj1` runs and export JSON/CSV/PNG/SVG/ZIP artifacts.
 - Show logs, tracebacks, live preview, and optional Mac Helper playback status.
-- Run mock live preview by default, with an explicit DAQ live preview sanity-check mode when DAQ hardware is available.
+- Run explicit DAQ live preview when DAQ hardware is available.
 
 ## Operator Console
 
 The Dashboard is the primary experiment console. It is organized by operating priority instead of by disconnected feature tabs:
 
 1. Setup: active session, acquisition mode, and optional Mac playback state.
-2. Capture And Live Preview: quick metadata, mock/DAQ live preview, mock/DAQ record buttons, waveform, RMS/peak, clipping, live PSD, spectrogram, and finalization status.
+2. Capture And Live Preview: quick metadata, DAQ live preview, DAQ record buttons, waveform, RMS/peak, clipping, live PSD, spectrogram, and finalization status.
 3. Results, Compare, Export: latest run, latest comparison, latest finalized visual artifacts, audio preview, metrics link, and export shortcuts.
 4. Recent Runs and Operations: fast run access, readiness, and safe shutdown/status links.
 
@@ -73,7 +73,7 @@ Tailscale 네트워크
 Linux recording side:
 
 - Linux machine with Python 3.10 or newer.
-- DAQ supported by `uldaq` for real recording. Mock mode works without DAQ.
+- DAQ supported by `uldaq` for real recording. Offline developer validation remains available only when explicitly enabled.
 - Sufficient disk space for raw `.bin` files and plot/export artifacts.
 - Tailscale if direct browser access or Mac Helper control is needed.
 
@@ -208,7 +208,7 @@ Session ZIP and multi-session ZIP exports include these files under `ops_validat
 The `/ops` page also provides direct JSONL/Markdown downloads for validation records and point-in-time readiness snapshots.
 It also provides `Download Validation Plan`, a text copy of the ordered physical validation gates and terminal record commands.
 The `/ops` validation form shows gate-specific checklist fields and includes a `Use checklist draft` button that fills the evidence box with field labels before the operator records measured values.
-The `/ops` Evidence Hints table also links gate-specific evidence template downloads such as `/ops/validation/templates/daq_smoke`.
+The `/ops` Evidence Hints table also links gate-specific evidence template downloads from the Hardware Validation Records table.
 Terminal-only operators can append the same validation records with `scripts/lab_readiness_check.py --record-gate <gate> --record-status <pass|warn|fail|na> --record-evidence "..."`; use `--record-evidence-file evidence.txt` for longer copied lab notes.
 Use `scripts/lab_readiness_check.py --validation-plan` to print the ordered physical validation gates, checklist fields, next-action screens, and terminal record commands before a lab run.
 Use `scripts/lab_readiness_check.py --write-evidence-template <gate> --evidence-template-file evidence.txt` to create a fillable gate-specific evidence note before recording it with `--record-evidence-file`.
@@ -309,8 +309,8 @@ Typical full experiment:
    - scale mode and full-scale voltage
    - notes and safety fields
 6. For Mac playback, validate the WAV/device/sample-rate settings.
-7. Record mock, record DAQ, upload `.bin`, or use Play & Record.
-8. After recording, finalization reloads the saved `.bin` and recomputes report-grade metrics.
+7. Record DAQ, upload `.bin`, or use Play & Record. Use Capture Only or Play & Capture when the operator should approve the WAV preview before report-grade processing.
+8. After normal recording, finalization reloads the saved `.bin` and recomputes report-grade metrics. After capture-only recording, the run remains `awaiting_approval` until Finalize From `.bin` is clicked.
 9. Preview WAVs and plots on the run page.
 10. Repeat for matching `uj0` and `uj1` runs.
 11. Use Compare to compute attenuation.
@@ -326,7 +326,7 @@ Typical full experiment:
 4. Session을 만듭니다.
 5. Run metadata를 입력합니다.
 6. Mac playback을 쓸 경우 WAV/device/sample-rate를 Validate 합니다.
-7. Mock/DAQ/upload/Play & Record 중 하나로 기록합니다.
+7. DAQ/upload/Play & Record 중 하나로 기록합니다.
 8. 기록 후 saved `.bin`에서 report-grade metrics가 재계산됩니다.
 9. Run page에서 WAV/plot/metrics/log를 확인합니다.
 10. `uj0`/`uj1` pair를 만든 뒤 Compare 합니다.
@@ -371,7 +371,7 @@ When combined with `--write-report`, CLI preflight findings such as server route
 
 See [docs_alignment_report.md](docs_alignment_report.md) for the implementation-to-docs alignment map and [../docs/COMPLETION_AUDIT.md](../docs/COMPLETION_AUDIT.md) for the requirement-by-requirement evidence map and remaining lab verification items.
 
-Before using real hardware for report-grade experiments, follow the lab protocol in [../docs/HARDWARE_VALIDATION_PROTOCOL.md](../docs/HARDWARE_VALIDATION_PROTOCOL.md). It covers DAQ smoke capture, Mac Helper playback validation, short play-and-record trials, and attenuation pair checks.
+Before using real hardware for report-grade experiments, follow the lab protocol in [../docs/HARDWARE_VALIDATION_PROTOCOL.md](../docs/HARDWARE_VALIDATION_PROTOCOL.md). It covers DAQ validation capture, Mac Helper playback validation, short play-and-record trials, and attenuation pair checks.
 
 ## Troubleshooting
 
@@ -384,7 +384,7 @@ Tailscale URL does not open:
 
 DAQ unavailable:
 
-- Mock mode still works.
+- Offline developer validation still works when explicitly enabled.
 - Install/configure `uldaq` and DAQ drivers.
 - Use `/daq/health` to inspect backend state.
 

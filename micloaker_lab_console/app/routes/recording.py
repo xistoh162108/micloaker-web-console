@@ -5,7 +5,7 @@ from fastapi.responses import RedirectResponse
 
 from ..services.daq import DaqNotConfiguredError, DaqUnavailableError, daq_health
 from ..services.metadata import load_run
-from ..services.recorder import RecordingBusyError, record_daq_and_finalize, record_mock_and_finalize, recording_status
+from ..services.recorder import RecordingBusyError, record_daq_and_finalize, record_daq_capture_only, record_mock_and_finalize, record_mock_capture_only, recording_status
 from ..services.text_store import safe_name, session_dir
 
 router = APIRouter(tags=["recording"])
@@ -25,6 +25,20 @@ def record_mock(request: Request, session_id: str, run_id: str):
     return RedirectResponse(f"/sessions/{session_id}/runs/{run_id}", status_code=303)
 
 
+@router.post("/sessions/{session_id}/runs/{run_id}/record-mock-capture")
+def record_mock_capture(request: Request, session_id: str, run_id: str):
+    workspace = request.app.state.settings.workspace
+    _require_run(workspace, session_id, run_id)
+    run = load_run(workspace, session_id, run_id)
+    try:
+        record_mock_capture_only(workspace, run)
+    except RecordingBusyError as exc:
+        raise HTTPException(status_code=409, detail=_recording_busy_error(str(exc))) from exc
+    except FileExistsError as exc:
+        raise HTTPException(status_code=409, detail=_raw_bin_exists_error(str(exc))) from exc
+    return RedirectResponse(f"/sessions/{session_id}/runs/{run_id}", status_code=303)
+
+
 @router.post("/sessions/{session_id}/runs/{run_id}/record-daq")
 def record_daq(request: Request, session_id: str, run_id: str):
     workspace = request.app.state.settings.workspace
@@ -37,7 +51,25 @@ def record_daq(request: Request, session_id: str, run_id: str):
     except FileExistsError as exc:
         raise HTTPException(status_code=409, detail=_raw_bin_exists_error(str(exc))) from exc
     except DaqUnavailableError as exc:
-        raise HTTPException(status_code=503, detail={"error_code": "DAQ_UNAVAILABLE", "message": str(exc), "suggestion": "Use mock mode or install/configure uldaq drivers."}) from exc
+        raise HTTPException(status_code=503, detail={"error_code": "DAQ_UNAVAILABLE", "message": str(exc), "suggestion": "Install/configure uldaq drivers or import a saved raw .bin file."}) from exc
+    except DaqNotConfiguredError as exc:
+        raise HTTPException(status_code=501, detail={"error_code": "DAQ_NOT_CONFIGURED", "message": str(exc), "suggestion": "Configure the DAQ-specific acquisition code for this hardware."}) from exc
+    return RedirectResponse(f"/sessions/{session_id}/runs/{run_id}", status_code=303)
+
+
+@router.post("/sessions/{session_id}/runs/{run_id}/record-daq-capture")
+def record_daq_capture(request: Request, session_id: str, run_id: str):
+    workspace = request.app.state.settings.workspace
+    _require_run(workspace, session_id, run_id)
+    run = load_run(workspace, session_id, run_id)
+    try:
+        record_daq_capture_only(workspace, run)
+    except RecordingBusyError as exc:
+        raise HTTPException(status_code=409, detail=_recording_busy_error(str(exc))) from exc
+    except FileExistsError as exc:
+        raise HTTPException(status_code=409, detail=_raw_bin_exists_error(str(exc))) from exc
+    except DaqUnavailableError as exc:
+        raise HTTPException(status_code=503, detail={"error_code": "DAQ_UNAVAILABLE", "message": str(exc), "suggestion": "Install/configure uldaq drivers or import a saved raw .bin file."}) from exc
     except DaqNotConfiguredError as exc:
         raise HTTPException(status_code=501, detail={"error_code": "DAQ_NOT_CONFIGURED", "message": str(exc), "suggestion": "Configure the DAQ-specific acquisition code for this hardware."}) from exc
     return RedirectResponse(f"/sessions/{session_id}/runs/{run_id}", status_code=303)

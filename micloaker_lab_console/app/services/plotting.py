@@ -71,11 +71,18 @@ def plot_compare(result: dict, out_dir: Path, compare_id: str) -> dict[str, str]
     out_dir.mkdir(parents=True, exist_ok=True)
     bar = out_dir / f"{compare_id}_attenuation.png"
     bar_svg = out_dir / f"{compare_id}_attenuation.svg"
-    fig, ax = plt.subplots(figsize=(5, 3), constrained_layout=True)
-    ax.bar(["attenuation"], [result["attenuation_db"]], color="#0a8793")
-    ax.set_ylabel("dB")
-    ax.set_title("UJ0 to UJ1 attenuation")
+    uj0_pct = float(result.get("uj0_relative_energy_percent", 100.0))
+    uj1_pct = float(result.get("uj1_relative_energy_percent", float(result.get("remaining_fraction", 0.0)) * 100.0))
+    reduction = float(result.get("reduction_percent", 0.0))
+    attenuation = float(result.get("attenuation_db", 0.0))
+    fig, ax = plt.subplots(figsize=(5.8, 3.4), constrained_layout=True)
+    bars = ax.bar(["UJ0 reference", "UJ1 measured"], [uj0_pct, uj1_pct], color=["#2f5f93", "#0a8793"])
+    ax.set_ylabel("Relative band energy (%)")
+    ax.set_ylim(0, max(110.0, uj0_pct * 1.12, uj1_pct * 1.12))
+    ax.set_title(f"UJ1 remaining energy {uj1_pct:.1f}% ({reduction:.1f}% reduction, {attenuation:.2f} dB)")
     ax.grid(axis="y", alpha=0.25)
+    for rect, value in zip(bars, [uj0_pct, uj1_pct]):
+        ax.text(rect.get_x() + rect.get_width() / 2.0, rect.get_height(), f"{value:.1f}%", ha="center", va="bottom", fontsize=9)
     fig.savefig(bar, dpi=160)
     fig.savefig(bar_svg)
     plt.close(fig)

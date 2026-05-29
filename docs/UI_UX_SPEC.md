@@ -40,7 +40,7 @@ Show warnings clearly:
 
 ```text
 Mac Helper disconnected — Linux-only recording and analysis are available.
-DAQ unavailable — mock mode and file upload are available.
+DAQ unavailable — offline developer validation and file upload are available.
 ```
 
 ## 4. Sessions page
@@ -192,6 +192,7 @@ Sections:
 - Store playback metadata
 - Target one-page flow: create one run, validate/select Mac sound file, start/stop Mac playback, start/stop Linux recording, watch playback/recording status visually, then require operator approval before final report-grade processing when approval-gated mode is enabled.
 - Separate controls must remain available for playback-only speaker checks and recording-only Linux microphone/DAQ checks.
+- Capture-only and Play & Capture controls must stop at `awaiting_approval` after raw `.bin` plus WAV preview generation, leaving Finalize From `.bin` as the explicit approval action.
 - The operator should be able to confirm ultrasonic speaker playback, Linux microphone detection, raw `.bin` creation, and WAV preview plausibility before approving downstream analysis/export work.
 
 Disconnected state:

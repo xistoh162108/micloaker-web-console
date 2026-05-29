@@ -25,7 +25,7 @@ from app.services.jobs import mark_unfinished_jobs_interrupted, run_job
 from app.services.lab_validation import record_lab_validation
 from app.services.mac_helper_client import MacHelperClient
 from app.services.metadata import create_run_metadata, create_session, load_run, load_runs, rebuild_indexes, regenerate_summary, save_run
-from app.services.recorder import RecordingBusyError, _recording_lock, finalize_run, import_bin_and_finalize, record_daq_and_finalize, record_mock_and_finalize, recording_status, validate_raw_bin_source
+from app.services.recorder import RecordingBusyError, _recording_lock, finalize_run, import_bin_and_finalize, record_daq_and_finalize, record_mock_and_finalize, record_mock_capture_only, recording_status, validate_raw_bin_source
 from app.services.readiness import write_readiness_artifacts
 from app.services.tailscale import discover_helpers
 from app.services.text_store import append_app_event, append_jsonl, atomic_write_json, atomic_write_text, ensure_workspace, read_json, read_jsonl, session_dir, write_csv
@@ -858,7 +858,7 @@ def test_session_zip_includes_hardware_validation_records(tmp_path: Path):
                 "key": "cli_server_routes",
                 "label": "CLI Server Routes",
                 "level": "PASS",
-                "message": "All smoke routes and UI assets returned expected content at http://100.88.179.43:8000.",
+                "message": "All validation routes and UI assets returned expected content at http://100.88.179.43:8000.",
             }
         ],
     )
@@ -888,7 +888,7 @@ def test_session_zip_includes_hardware_validation_records(tmp_path: Path):
     assert "selected device_id" in report
     assert "MiCloaker Lab Readiness Report" in readiness_report
     assert "CLI Server Routes" in readiness_report
-    assert "All smoke routes and UI assets returned expected content" in readiness_report
+    assert "All validation routes and UI assets returned expected content" in readiness_report
     assert any(check["key"] == "cli_server_routes" for check in readiness_json["checks"])
 
 
@@ -904,7 +904,7 @@ def test_multi_session_zip_and_no_database_files(tmp_path: Path):
                 "key": "cli_server_routes",
                 "label": "CLI Server Routes",
                 "level": "PASS",
-                "message": "All smoke routes and UI assets returned expected content at http://100.88.179.43:8000.",
+                "message": "All validation routes and UI assets returned expected content at http://100.88.179.43:8000.",
             }
         ],
     )
@@ -1267,7 +1267,7 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert "Gate Evidence Checklist" in report
     assert "selected device_id" in report
     assert "raw .bin path" in report
-    assert "Linux DAQ smoke capture" in report
+    assert "Linux DAQ validation capture" in report
     assert "Checklist complete" in report
     assert "raw .bin path: bin/260529-DAQ-smoke.bin" in report
     plan_artifact = (tmp_path / ".micloaker" / "hardware_validation_plan.txt").read_text(encoding="utf-8")
@@ -1309,7 +1309,7 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     template_download = client.get("/ops/validation/templates/daq_smoke")
     assert template_download.status_code == 200
     assert "daq_smoke_evidence_template.txt" in template_download.headers["content-disposition"]
-    assert "Evidence Template: Linux DAQ smoke capture" in template_download.text
+    assert "Evidence Template: Linux DAQ validation capture" in template_download.text
     assert "- expected vs written sample count:" in template_download.text
     assert "Evidence Completeness Rule" in template_download.text
     blocked_template = client.get("/ops/validation/templates/bad_gate")
@@ -1386,7 +1386,7 @@ def test_lab_readiness_cli_reflects_validation_gate_status(tmp_path: Path):
     assert no_records.returncode == 0
     assert "WARN: hardware_validation_records: No physical validation records saved yet" in no_records.stdout
     assert "Hardware validation gate status:" in no_records.stdout
-    assert "Linux DAQ smoke capture: missing; missing checklist: session_id, run_id" in no_records.stdout
+    assert "Linux DAQ validation capture: missing; missing checklist: session_id, run_id" in no_records.stdout
     assert "next: Create DAQ validation run (/runs/new)" in no_records.stdout
     assert "Mac Helper playback validation: missing; missing checklist: Helper URL, selected device_id" in no_records.stdout
     assert "next: Open Mac Helper (/mac-helper)" in no_records.stdout
@@ -1440,7 +1440,7 @@ def test_lab_readiness_cli_reflects_validation_gate_status(tmp_path: Path):
     assert template.returncode == 0
     assert "evidence template written: gate=daq_smoke" in template.stdout
     template_text = template_path.read_text(encoding="utf-8")
-    assert "Evidence Template: Linux DAQ smoke capture" in template_text
+    assert "Evidence Template: Linux DAQ validation capture" in template_text
     assert "- expected vs written sample count:" in template_text
     assert "scripts/lab_readiness_check.py --record-gate daq_smoke" in template_text
     duplicate_template = subprocess.run(
@@ -1583,13 +1583,13 @@ def test_lab_readiness_server_check_verifies_static_ui_assets(tmp_path: Path, mo
     monkeypatch.setattr(module.httpx, "Client", FakeClient)
     findings = []
     module._check_server_routes(findings, "http://127.0.0.1:8000")
-    assert findings == [("PASS", "server_routes", "All smoke routes and UI assets returned expected content at http://127.0.0.1:8000.")]
+    assert findings == [("PASS", "server_routes", "All validation routes and UI assets returned expected content at http://127.0.0.1:8000.")]
     paths = write_readiness_artifacts(Settings(workspace=tmp_path), extra_checks=module._readiness_checks_from_findings(findings))
     readiness_json = read_json(paths["json"])
     assert any(check["key"] == "cli_server_routes" for check in readiness_json["checks"])
     readiness_report = paths["report"].read_text(encoding="utf-8")
     assert "CLI Server Routes" in readiness_report
-    assert "All smoke routes and UI assets returned expected content" in readiness_report
+    assert "All validation routes and UI assets returned expected content" in readiness_report
 
     class MissingAssetTermClient(FakeClient):
         def get(self, url: str):
@@ -1908,7 +1908,7 @@ def test_run_detail_renders_metrics_table_and_quality_flags(tmp_path: Path, monk
         "Quality Flags",
         "Raw Metrics JSON",
         "Report-grade metrics recomputed from saved .bin",
-        "DAQ unavailable - mock recording and raw .bin upload remain available.",
+        "DAQ unavailable - connect/configure DAQ hardware or import a saved raw .bin file.",
         "Peak WAV: listening preview only.",
         "Range WAV: scale-valid cross-check if full-scale voltage is correct.",
         "Final waveform",
@@ -2060,7 +2060,9 @@ def test_compare_route_saves_and_renders_result(tmp_path: Path, monkeypatch: pyt
     assert response.status_code == 200
     assert "Saved Results" in response.text
     assert "dB" in response.text
-    assert "remaining fraction" in response.text
+    assert "UJ0 100.0%" in response.text
+    assert "UJ1" in response.text
+    assert "% reduction" in response.text
     assert "Bar PNG" in response.text
     assert "Bar SVG" in response.text
     assert "PSD PNG" in response.text
@@ -2084,6 +2086,8 @@ def test_compare_route_saves_and_renders_result(tmp_path: Path, monkeypatch: pyt
     assert result["uj1_metrics_path"] == final1["files"]["metrics_json"]
     assert "remaining_fraction" in result
     assert "reduction_percent" in result
+    assert result["uj0_relative_energy_percent"] == 100.0
+    assert "uj1_relative_energy_percent" in result
     assert "report-grade" in response.text
     assert "Report-grade comparison from saved .bin voltage metrics." in response.text
     assert "10*log10(uj0_power/uj1_power)" in response.text
@@ -2176,42 +2180,49 @@ def test_compare_route_rejects_wrong_or_unfinalized_run_pairings(tmp_path: Path,
     same_condition = client.post(
         f"/compare/{session['session_id']}",
         data={"uj0_run_id": final0a["run_id"], "uj1_run_id": final0b["run_id"], "source": "bin", "band_mode": "primary"},
+        follow_redirects=False,
     )
-    assert same_condition.status_code == 400
-    detail = same_condition.json()["detail"]
-    assert detail["error_code"] == "INVALID_COMPARE_PAIR"
-    assert "first run to be uj0" in detail["message"]
-    assert "uj0 selector" in detail["suggestion"]
+    assert same_condition.status_code == 303
+    page = client.get(same_condition.headers["location"])
+    assert "INVALID_COMPARE_PAIR" in page.text
+    assert "first run to be uj0" in page.text
+    assert "uj0 selector" in page.text
 
     unfinalized = client.post(
         f"/compare/{session['session_id']}",
         data={"uj0_run_id": final0a["run_id"], "uj1_run_id": pending_uj1["run_id"], "source": "bin", "band_mode": "primary"},
+        follow_redirects=False,
     )
-    assert unfinalized.status_code == 400
-    detail = unfinalized.json()["detail"]
-    assert detail["error_code"] == "RUN_NOT_FINALIZED"
-    assert "must be finalized" in detail["message"]
-    assert "saved .bin" in detail["suggestion"]
+    assert unfinalized.status_code == 303
+    page = client.get(unfinalized.headers["location"])
+    assert "RUN_NOT_FINALIZED" in page.text
+    assert "must be finalized" in page.text
+    assert "saved .bin" in page.text
 
     peak = client.post(
         f"/compare/{session['session_id']}",
         data={"uj0_run_id": final0a["run_id"], "uj1_run_id": final1["run_id"], "source": "peak_wav", "band_mode": "primary"},
+        follow_redirects=False,
     )
-    assert peak.status_code == 400
-    assert peak.json()["detail"]["error_code"] == "PEAK_WAV_NOT_QUANTITATIVE"
-    assert peak.json()["detail"]["warning"] == "peak_wav_used_for_quantitative_analysis_warning"
+    assert peak.status_code == 303
+    page = client.get(peak.headers["location"])
+    assert "PEAK_WAV_NOT_QUANTITATIVE" in page.text
     bad_band = client.post(
         f"/compare/{session['session_id']}",
         data={"uj0_run_id": final0a["run_id"], "uj1_run_id": final1["run_id"], "source": "bin", "band_mode": "custom", "custom_low_hz": "3400", "custom_high_hz": "300"},
+        follow_redirects=False,
     )
-    assert bad_band.status_code == 400
-    assert bad_band.json()["detail"]["error_code"] == "INVALID_COMPARE_BAND"
+    assert bad_band.status_code == 303
+    page = client.get(bad_band.headers["location"])
+    assert "INVALID_COMPARE_BAND" in page.text
     bad_source = client.post(
         f"/compare/{session['session_id']}",
         data={"uj0_run_id": final0a["run_id"], "uj1_run_id": final1["run_id"], "source": "rms_text", "band_mode": "primary"},
+        follow_redirects=False,
     )
-    assert bad_source.status_code == 400
-    assert bad_source.json()["detail"]["error_code"] == "INVALID_COMPARE_SOURCE"
+    assert bad_source.status_code == 303
+    page = client.get(bad_source.headers["location"])
+    assert "INVALID_COMPARE_SOURCE" in page.text
     assert not list((session_dir(tmp_path, session["session_id"]) / "comparisons").glob("*.json"))
 
 
@@ -2228,13 +2239,14 @@ def test_compare_route_rejects_band_above_pair_nyquist(tmp_path: Path, monkeypat
     response = client.post(
         f"/compare/{session['session_id']}",
         data={"uj0_run_id": final0["run_id"], "uj1_run_id": final1["run_id"], "source": "bin", "band_mode": "primary"},
+        follow_redirects=False,
     )
 
-    assert response.status_code == 400
-    detail = response.json()["detail"]
-    assert detail["error_code"] == "INVALID_COMPARE_BAND"
-    assert "Nyquist" in detail["message"]
-    assert "actual sample rate" in detail["suggestion"]
+    assert response.status_code == 303
+    page = client.get(response.headers["location"])
+    assert "INVALID_COMPARE_BAND" in page.text
+    assert "Nyquist" in page.text
+    assert "actual sample rate" in page.text
     assert not list((session_dir(tmp_path, session["session_id"]) / "comparisons").glob("*.json"))
 
 
@@ -2267,11 +2279,12 @@ def test_compare_routes_return_structured_missing_target_and_artifact_errors(tmp
     missing_metrics = client.post(
         f"/compare/{session['session_id']}",
         data={"uj0_run_id": final0["run_id"], "uj1_run_id": final1["run_id"], "source": "bin", "band_mode": "primary"},
+        follow_redirects=False,
     )
-    assert missing_metrics.status_code == 400
-    detail = missing_metrics.json()["detail"]
-    assert detail["error_code"] == "METRICS_JSON_MISSING"
-    assert "Finalize the run" in detail["suggestion"]
+    assert missing_metrics.status_code == 303
+    page = client.get(missing_metrics.headers["location"])
+    assert "METRICS_JSON_MISSING" in page.text
+    assert "Finalize the run" in page.text
 
     # Restore the missing metrics from the saved .bin so range checks can isolate their own errors.
     final1 = read_json(base / "metadata" / f"{final1['run_id']}.json")
@@ -2281,10 +2294,11 @@ def test_compare_routes_return_structured_missing_target_and_artifact_errors(tmp
     missing_range = client.post(
         f"/compare/{session['session_id']}",
         data={"uj0_run_id": final0["run_id"], "uj1_run_id": final1["run_id"], "source": "range_wav", "band_mode": "primary"},
+        follow_redirects=False,
     )
-    assert missing_range.status_code == 400
-    detail = missing_range.json()["detail"]
-    assert detail["error_code"] == "RANGE_WAV_MISSING"
+    assert missing_range.status_code == 303
+    page = client.get(missing_range.headers["location"])
+    assert "RANGE_WAV_MISSING" in page.text
 
     final1["conversion"]["full_scale_volts"] = 0.0
     save_run(tmp_path, final1)
@@ -2296,9 +2310,11 @@ def test_compare_routes_return_structured_missing_target_and_artifact_errors(tmp
     missing_full_scale = client.post(
         f"/compare/{session['session_id']}",
         data={"uj0_run_id": final0["run_id"], "uj1_run_id": final1["run_id"], "source": "range_wav", "band_mode": "primary"},
+        follow_redirects=False,
     )
-    assert missing_full_scale.status_code == 400
-    assert missing_full_scale.json()["detail"]["error_code"] == "FULL_SCALE_VOLTAGE_MISSING"
+    assert missing_full_scale.status_code == 303
+    page = client.get(missing_full_scale.headers["location"])
+    assert "FULL_SCALE_VOLTAGE_MISSING" in page.text
 
 
 def test_compare_page_only_lists_finalized_matching_uj_runs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -2422,12 +2438,14 @@ def test_range_wav_compare_returns_structured_error_for_invalid_wav(tmp_path: Pa
             "source": "range_wav",
             "band_mode": "primary",
         },
+        follow_redirects=False,
     )
-    assert response.status_code == 400
-    detail = response.json()["detail"]
-    assert detail["error_code"] == "INVALID_RANGE_WAV_CROSS_CHECK"
-    assert final1["run_id"] in detail["message"]
-    assert "saved .bin" in detail["suggestion"]
+    assert response.status_code == 303
+    page = client.get(response.headers["location"])
+    assert page.status_code == 200
+    assert "INVALID_RANGE_WAV_CROSS_CHECK" in page.text
+    assert final1["run_id"] in page.text
+    assert "saved .bin" in page.text
     assert not list((base / "comparisons").glob("*.json"))
 
 
@@ -2517,7 +2535,8 @@ def test_live_snapshot_contains_preview_psd_and_spectrogram(tmp_path: Path, monk
     page = client.get("/live")
     assert page.status_code == 200
     assert "Recording State" in page.text
-    assert "Start Mock Live" in page.text
+    assert "Start Mock Live" not in page.text
+    assert "Start Dev Preview" not in page.text
     assert "Start DAQ Live" in page.text
     assert "Finalization Status" in page.text
     assert "Latest Finalization Result" in page.text
@@ -2878,7 +2897,7 @@ def test_mac_helper_run_actions_validate_session_and_run_targets(tmp_path: Path,
     assert detail["error_code"] == "SESSION_NOT_FOUND"
     assert "Mac Helper run controls" in detail["suggestion"]
 
-    for action in ["validate-playback", "play", "stop", "play-and-record-mock", "play-and-record-daq"]:
+    for action in ["validate-playback", "play", "stop", "play-and-record-mock", "play-and-record-daq", "play-and-capture-mock", "play-and-capture-daq"]:
         data = dict(payload)
         if action not in {"validate-playback", "stop"}:
             data["delay_ms"] = "0"
@@ -3085,6 +3104,32 @@ def test_daq_record_success_path_finalizes_from_saved_bin(tmp_path: Path, monkey
     assert final["analysis"]["finalization_trigger"] == "recording_finished"
     assert final["analysis"]["finalized_from_saved_bin"] is True
     assert (base / final["files"]["bin"]).exists()
+
+
+def test_capture_only_waits_for_operator_approval_before_finalize(tmp_path: Path):
+    ensure_workspace(tmp_path)
+    session = create_session(tmp_path, "approval gate")
+    run = create_run_metadata(tmp_path, session["session_id"], carrier_freq_khz=25, uj="uj0", duration_s=0.1)
+
+    captured = record_mock_capture_only(tmp_path, run)
+    base = session_dir(tmp_path, session["session_id"])
+    assert captured["analysis"]["status"] == "awaiting_approval"
+    assert captured["analysis"]["result_grade"] == "preview"
+    assert captured["analysis"]["finalized_from_saved_bin"] is False
+    assert "awaiting_operator_approval" in captured["quality_flags"]
+    assert (base / captured["files"]["bin"]).exists()
+    assert (base / captured["files"]["wav_peak"]).exists()
+    assert (base / captured["files"]["wav_range"]).exists()
+    assert "metrics_json" not in captured["files"] or not (base / captured["files"]["metrics_json"]).exists()
+    events = read_jsonl(base / "events.jsonl")
+    assert any(row["event"] == "run_capture_awaiting_approval" for row in events)
+
+    finalized = finalize_run(tmp_path, load_run(tmp_path, session["session_id"], run["run_id"]))
+    assert finalized["analysis"]["status"] == "finalized"
+    assert finalized["analysis"]["result_grade"] == "report-grade"
+    assert finalized["analysis"]["finalized_from_saved_bin"] is True
+    assert "awaiting_operator_approval" not in finalized["quality_flags"]
+    assert (base / finalized["files"]["metrics_json"]).exists()
 
 
 def test_daq_record_persists_channel_traceability(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -3559,6 +3604,41 @@ def test_play_and_record_success_finalizes_and_preserves_helper_metadata(tmp_pat
     assert (base / saved["files"]["metrics_json"]).exists()
 
 
+def test_play_and_capture_success_waits_for_manual_finalize(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("MICLOAKER_WORKSPACE", str(tmp_path))
+    ensure_workspace(tmp_path)
+    session = create_session(tmp_path, "helper play capture")
+    run = create_run_metadata(tmp_path, session["session_id"], carrier_freq_khz=25, uj="uj0", duration_s=0.2)
+
+    class FakeHelper:
+        def validate_playback(self, payload):
+            return {"ok": True, "duration_s": 1.0, "device_exists": True}
+
+        def play(self, payload):
+            return {"ok": True, "play_id": "play_capture_001", **payload}
+
+    monkeypatch.setattr(mac_helper_routes, "_client_from_config", lambda workspace: FakeHelper())
+    client = TestClient(create_app())
+    payload = {"file": "jamming_sound/25khz_1hr.wav", "device_id": 4, "sample_rate": 8000, "channels": 1, "gain": 0.4}
+    assert client.post(f"/mac-helper/sessions/{session['session_id']}/runs/{run['run_id']}/validate-playback", data=payload).json()["ok"] is True
+    response = client.post(
+        f"/mac-helper/sessions/{session['session_id']}/runs/{run['run_id']}/play-and-capture-mock",
+        data={**payload, "delay_ms": 25},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["ok"] is True
+    assert body["recording_source"] == "mock_capture_only"
+    assert body["run"]["analysis_status"] == "awaiting_approval"
+    saved = load_run(tmp_path, session["session_id"], run["run_id"])
+    base = session_dir(tmp_path, session["session_id"])
+    assert saved["analysis"]["status"] == "awaiting_approval"
+    assert saved["mac_helper"]["play_id"] == "play_capture_001"
+    assert (base / saved["files"]["bin"]).exists()
+    assert (base / saved["files"]["wav_peak"]).exists()
+    assert "metrics_json" not in saved["files"] or not (base / saved["files"]["metrics_json"]).exists()
+
+
 def test_daq_play_and_record_uses_validated_helper_settings_and_daq_recorder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("MICLOAKER_WORKSPACE", str(tmp_path))
     ensure_workspace(tmp_path)
@@ -3813,9 +3893,9 @@ def test_new_run_form_exposes_analysis_and_safety_fields(tmp_path: Path, monkeyp
     client = TestClient(create_app())
     page = client.get(f"/sessions/{session['session_id']}")
     assert page.status_code == 200
-    assert "carrier-frequency-presets" in page.text
-    assert 'value="25"' in page.text
-    assert 'value="32.8"' in page.text
+    assert '<select name="carrier_freq_khz">' in page.text
+    assert '<option value="25" selected>25 kHz</option>' in page.text
+    assert '<option value="32.8">32.8 kHz</option>' in page.text
     upload_form = page.text.split(f'action="/sessions/{session["session_id"]}/runs/upload-bin"', 1)[1].split("Import + Finalize", 1)[0]
     assert "Advanced upload metadata" in upload_form
     for field in [
@@ -3897,12 +3977,13 @@ def test_new_run_form_exposes_analysis_and_safety_fields(tmp_path: Path, monkeyp
 
 def test_create_run_form_can_record_mock_immediately(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("MICLOAKER_WORKSPACE", str(tmp_path))
+    monkeypatch.setenv("MICLOAKER_ENABLE_DEV_MOCK_UI", "1")
     ensure_workspace(tmp_path)
     session = create_session(tmp_path, "create and record")
     client = TestClient(create_app())
     page = client.get(f"/sessions/{session['session_id']}")
     assert page.status_code == 200
-    assert "Create + Record Mock" in page.text
+    assert "Create + Dev Capture" in page.text
 
     response = client.post(
         f"/sessions/{session['session_id']}/runs",
@@ -3911,7 +3992,7 @@ def test_create_run_form_can_record_mock_immediately(tmp_path: Path, monkeypatch
             "uj": "uj1",
             "sample_rate_hz": "8000",
             "duration_s": "0.1",
-            "record_after_create": "true",
+            "record_after_create_source": "mock",
         },
         follow_redirects=False,
     )
@@ -3942,7 +4023,7 @@ def test_dashboard_quick_capture_returns_to_command_console(tmp_path: Path, monk
             "sound_condition": "sound1",
             "sample_rate_hz": "8000",
             "duration_s": "0.1",
-            "record_after_create": "true",
+            "record_after_create_source": "mock",
             "return_to_dashboard": "true",
         },
         follow_redirects=False,
@@ -4375,7 +4456,7 @@ def test_core_run_actions_validate_session_and_run_targets(tmp_path: Path, monke
     ensure_workspace(tmp_path)
     session = create_session(tmp_path, "stale run action targets")
     client = TestClient(create_app())
-    actions = ["record-mock", "record-daq", "convert", "finalize"]
+    actions = ["record-mock", "record-daq", "record-mock-capture", "record-daq-capture", "convert", "finalize"]
 
     for action in actions:
         response = client.post(f"/sessions/missing_session/runs/missing_run/{action}")
@@ -4532,8 +4613,7 @@ def test_dashboard_shows_lab_status_cards_and_shortcuts(tmp_path: Path, monkeypa
         "Scrolling Spectrogram",
         "Live monitor",
         "Detailed Live Page",
-        "Create + Record Mock",
-        "Create + Record DAQ",
+                "Create + Record DAQ",
         "Advanced Metadata",
         "Latest Run",
         "Latest Comparison",

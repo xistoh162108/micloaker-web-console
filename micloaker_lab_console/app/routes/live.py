@@ -12,7 +12,11 @@ router = APIRouter(prefix="/live", tags=["live"])
 
 @router.get("")
 def live_page(request: Request):
-    return request.app.state.templates.TemplateResponse(name="live.html", request=request, context={})
+    return request.app.state.templates.TemplateResponse(
+        name="live.html",
+        request=request,
+        context={"enable_dev_mock_ui": request.app.state.settings.enable_dev_mock_ui},
+    )
 
 
 @router.post("/start")
@@ -49,7 +53,7 @@ def live_start(
             detail={
                 "error_code": "INVALID_LIVE_SOURCE",
                 "message": str(exc),
-                "suggestion": "Choose mock for DAQ-free preview or daq for a short real DAQ preview scan.",
+                "suggestion": "Choose daq for a short real DAQ preview scan.",
             },
         ) from exc
     return _snapshot(request)

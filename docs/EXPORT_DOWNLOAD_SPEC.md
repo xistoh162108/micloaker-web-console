@@ -50,7 +50,7 @@ A session ZIP contains:
   export_manifest.json
 ```
 
-When `scripts/lab_readiness_check.py --check-server --write-report` was run before export, the readiness JSON/Markdown must preserve the CLI server/static asset smoke result, including the `CLI Server Routes` check.
+When `scripts/lab_readiness_check.py --check-server --write-report` was run before export, the readiness JSON/Markdown must preserve the CLI server/static asset validation result, including the `CLI Server Routes` check.
 
 ## 4. Multi-session ZIP
 

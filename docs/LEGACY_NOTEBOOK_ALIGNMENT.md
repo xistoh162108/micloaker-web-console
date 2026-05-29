@@ -27,9 +27,9 @@ The notebooks in `docs/legacy/` are historical workflow references. They are not
 - WAV files are derived artifacts. Peak-normalized WAV is for listening only.
 - Plots must be clear enough for reports and saved as durable files, not only displayed in a notebook.
 - Live charts may be interactive for operator inspection, but saved `.bin` data remains the quantitative source.
-- DAQ-related code must degrade to mock mode when hardware or `uldaq` is unavailable.
+- DAQ-related code must degrade to offline developer validation when hardware or `uldaq` is unavailable.
 - Exact numeric parity with a notebook is not assumed until a known legacy `.bin` fixture and notebook output are provided.
 
 ## Verification Status
 
-Automated tests and `scripts/acceptance_audit.py` verify the current replacements in mock mode. Physical DAQ capture, physical Mac playback, and optional exact parity against historical notebook outputs remain lab-validation items.
+Automated tests and `scripts/acceptance_audit.py` verify the current replacements in offline developer validation. Physical DAQ capture, physical Mac playback, and optional exact parity against historical notebook outputs remain lab-validation items.

@@ -18,12 +18,12 @@ Expected automated state as of this audit:
 
 - Full test suite: `139 passed`
 - Acceptance audit: `PASS`
-- Tailscale lab console smoke route: `http://100.88.179.43:8000` returns HTTP 200 when started explicitly with `--tailscale`
+- Tailscale lab console validation route: `http://100.88.179.43:8000` returns HTTP 200 when started explicitly with `--tailscale`
 - Default configured bind remains `127.0.0.1`
 
 ## Status Definitions
 
-- **Proven**: Current repository files, tests, acceptance audit, or runtime smoke checks directly verify the requirement.
+- **Proven**: Current repository files, tests, acceptance audit, or runtime validation checks directly verify the requirement.
 - **Code proven, lab verification required**: Code path and failure handling are covered, but physical DAQ/audio behavior cannot be proven without hardware.
 - **Protocol only**: The app records the required evidence, but the user must execute the physical procedure.
 
@@ -37,7 +37,7 @@ Expected automated state as of this audit:
 | No database | Proven | Acceptance audit scans for database-like files and forbidden DB dependencies; requirements exclude database packages. |
 | Plain text persistence only | Proven | `app/services/text_store.py`; workspace files use JSON, JSONL, CSV, Markdown, and `.log`. |
 | Restart rebuilds lists by reading text files | Proven | Metadata rebuild/index tests and acceptance workflow stale-index checks. |
-| Mock DAQ works without hardware | Proven | Mock DAQ service and full test suite run without DAQ. |
+| Offline developer validation works without hardware | Proven | Offline developer validation service and full test suite run without DAQ. |
 | `uldaq` imported lazily only inside DAQ-specific functions | Proven | DAQ service lazy import tests and acceptance audit assert app startup does not import `uldaq`. |
 | Create/open session and run workflow | Proven | Session/run routes, metadata helpers, templates, and tests. |
 | Raw `.bin` float64 voltage is saved and primary quantitative source | Proven | Recorder/finalizer validates raw `.bin`; metrics source is `bin`; compare report grade depends on BIN source. |
@@ -68,7 +68,7 @@ Expected automated state as of this audit:
 | Helper status/playback info stored in run JSON/log files | Proven | Linux Helper integration and play-and-record tests, including best-effort Helper stop logging when playback starts but Linux recording fails before capture. |
 | Manual Helper URL first, Tailscale discovery optional | Proven | Mac Helper UI/config and best-effort discovery tests. |
 | Hardware validation records with workflow navigation | Proven for text persistence | `/ops` and `scripts/lab_readiness_check.py --record-gate ...` record operator-entered validation evidence, `hardware_validation_plan.txt` is persisted under `.micloaker`, `--validation-plan` and `/ops/validation/plan` provide ordered lab gate instructions, `--write-evidence-template` and `/ops/validation/templates/<gate>` provide fillable gate evidence notes, readiness Markdown includes record commands, `--record-evidence-file` supports longer terminal evidence notes, gate-specific evidence hints are exposed, the Use checklist draft helper fills fields, evidence completeness records present/missing checklist labels, Next action links route to DAQ run creation/Mac Helper/Compare/file review, and exports include JSONL/Markdown evidence. |
-| CLI server/static asset smoke evidence | Proven | `scripts/lab_readiness_check.py --check-server` checks core routes plus required `app.css` and `live.js` content; `--write-report` persists CLI findings such as `CLI Server Routes` into readiness JSON/Markdown evidence. |
+| CLI server/static asset validation evidence | Proven | `scripts/lab_readiness_check.py --check-server` checks core routes plus required `app.css` and `live.js` content; `--write-report` persists CLI findings such as `CLI Server Routes` into readiness JSON/Markdown evidence. |
 | README, requirements files, tests, clear run commands | Proven | `README.md`, `requirements.txt`, `requirements-mac-helper.txt`, test suite, and acceptance audit. |
 | Docs and legacy notebooks considered authoritative references | Proven | `docs/LEGACY_NOTEBOOK_ALIGNMENT.md`, `docs_alignment_report.md`, and acceptance audit documentation checks. Legacy details preserved include float64 little-endian `.bin` handling, 8000 Hz/channel metadata, RMS/SJR-style ratios, and WER/CER exploratory plots marked as downstream analysis rather than core console requirements. |
 
@@ -76,7 +76,7 @@ Expected automated state as of this audit:
 
 These are not code gaps; they require physical devices and operator evidence:
 
-1. Real DAQ smoke capture: record channel, range, input mode, actual sample count, saved `.bin`, and finalization result in `/ops`.
+1. Real DAQ validation capture: record channel, range, input mode, actual sample count, saved `.bin`, and finalization result in `/ops`.
 2. Real DAQ live preview: confirm expected waveform/PSD behavior and record evidence in `/ops`.
 3. Real macOS playback: validate/play/stop on the intended `device_id`, confirm physical routing, and confirm system default output is unchanged.
 4. End-to-end play-and-record: run a short synchronized Mac playback + Linux DAQ capture when that workflow is required.

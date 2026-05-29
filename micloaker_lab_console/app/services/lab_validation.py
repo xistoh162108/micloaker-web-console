@@ -7,7 +7,7 @@ from .text_store import append_app_event, append_jsonl, atomic_write_text, now_i
 
 
 VALIDATION_GATES = {
-    "daq_smoke": "Linux DAQ smoke capture",
+    "daq_smoke": "Linux DAQ validation capture",
     "mac_playback": "Mac Helper playback validation",
     "play_and_record": "End-to-end play and record trial",
     "attenuation_pair": "uj0/uj1 attenuation pair check",

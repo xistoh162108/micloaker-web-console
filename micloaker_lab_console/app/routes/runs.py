@@ -30,7 +30,7 @@ def new_run_page(request: Request):
     return request.app.state.templates.TemplateResponse(
         name="new_run.html",
         request=request,
-        context={"sessions": sessions, "selected_session_id": selected_session_id},
+        context={"sessions": sessions, "selected_session_id": selected_session_id, "enable_dev_mock_ui": request.app.state.settings.enable_dev_mock_ui},
     )
 
 
@@ -41,7 +41,7 @@ def create_run(
     carrier_freq_khz: float = Form(25.0),
     uj: str = Form("uj0"),
     sound_condition: str = Form("sound0"),
-    mic_id: str = Form("mock_ch0"),
+    mic_id: str = Form("daq_ch0"),
     room: str = Form("lab"),
     distance_cm: float | None = Form(None),
     angle_deg: float = Form(0.0),
@@ -110,7 +110,7 @@ def create_run(
         full_scale_volts=full_scale_volts,
         scale_mode=scale_mode,
         remove_dc=remove_dc,
-        source=record_source if record_source in {"mock", "daq"} else "mock",
+        source=record_source if record_source in {"mock", "daq"} else "daq",
         sample_rate_hz=sample_rate_hz,
         duration_s=duration_s,
         trim_start_s=trim_start_s,
@@ -281,6 +281,7 @@ def run_detail(request: Request, session_id: str, run_id: str):
             "artifacts": _run_artifacts(run, file_set),
             "log_text": log_text,
             "daq_status": daq_health(),
+            "enable_dev_mock_ui": request.app.state.settings.enable_dev_mock_ui,
         },
     )
 
@@ -344,8 +345,8 @@ def _validate_run_form(
     allow_zero_duration: bool,
 ) -> None:
     errors = []
-    if not _nonnegative(carrier_freq_khz):
-        errors.append("carrier_freq_khz must be zero or positive")
+    if not _valid_carrier_frequency(carrier_freq_khz):
+        errors.append("carrier_freq_khz must be one of 0, 25, or 32.8 kHz")
     if sample_rate_hz <= 0:
         errors.append("sample_rate_hz must be positive")
     if duration_s < 0 or (duration_s == 0 and not allow_zero_duration):
@@ -388,7 +389,7 @@ def _validate_run_form(
 def _record_after_create_source(record_after_create: bool, source: str) -> str:
     value = (source or "").strip().lower()
     if not value and record_after_create:
-        return "mock"
+        return "daq"
     if value in {"", "mock", "daq"}:
         return value
     raise HTTPException(
@@ -396,9 +397,13 @@ def _record_after_create_source(record_after_create: bool, source: str) -> str:
         detail={
             "error_code": "INVALID_RECORD_SOURCE",
             "message": f"Unknown create-and-record source: {source}",
-            "suggestion": "Use mock mode when hardware is unavailable, or DAQ mode when uldaq hardware is configured.",
+            "suggestion": "Use DAQ mode when uldaq hardware is configured, or import a saved raw .bin file.",
         },
     )
+
+
+def _valid_carrier_frequency(value: float) -> bool:
+    return any(abs(float(value) - allowed) < 1e-9 for allowed in (0.0, 25.0, 32.8))
 
 
 def _invalid_raw_bin_error(message: str) -> dict[str, str]:
@@ -429,7 +434,7 @@ def _daq_unavailable_error(message: str) -> dict[str, str]:
     return {
         "error_code": "DAQ_UNAVAILABLE",
         "message": message,
-        "suggestion": "Use Create + Record Mock or install/configure uldaq drivers before DAQ recording.",
+        "suggestion": "Install/configure uldaq drivers before DAQ recording, or import a saved raw .bin file.",
     }
 
 
@@ -437,7 +442,7 @@ def _daq_not_configured_error(message: str) -> dict[str, str]:
     return {
         "error_code": "DAQ_NOT_CONFIGURED",
         "message": message,
-        "suggestion": "Configure DAQ acquisition for this hardware, or use mock recording.",
+        "suggestion": "Configure DAQ acquisition for this hardware, or import a saved raw .bin file.",
     }
 
 

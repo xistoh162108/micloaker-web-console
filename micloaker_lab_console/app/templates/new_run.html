@@ -46,12 +46,11 @@
     <form method="post" action="/sessions/{{ selected_session_id }}/runs" class="form grid-form">
       <label>Session <input value="{{ selected_session_id }}" readonly></label>
       <label>Jamming carrier kHz
-        <input name="carrier_freq_khz" type="number" step="0.1" value="25" list="new-run-carrier-frequency-presets">
-        <datalist id="new-run-carrier-frequency-presets">
-          <option value="0" label="0 kHz - no jamming playback"></option>
-          <option value="25" label="25 kHz"></option>
-          <option value="32.8" label="32.8 kHz"></option>
-        </datalist>
+        <select name="carrier_freq_khz">
+          <option value="0">0 kHz - no jamming playback</option>
+          <option value="25" selected>25 kHz</option>
+          <option value="32.8">32.8 kHz</option>
+        </select>
       </label>
       <label>UJ <select name="uj"><option>uj0</option><option>uj1</option></select></label>
       <label>Ordinary recorded sound
@@ -73,7 +72,7 @@
           <label>DAQ range <input name="ai_range" value="BIP10VOLTS"></label>
           <label>Input mode <input name="input_mode" value="SINGLE_ENDED"></label>
           <label>Channel <input name="channel" type="number" min="0" value="0"></label>
-          <label>Mic <input name="mic_id" value="mock_ch0"></label>
+          <label>Mic <input name="mic_id" value="daq_ch0"></label>
           <label>Room <input name="room" value="lab"></label>
           <label>Distance cm <input name="distance_cm" type="number" min="0" step="0.1"></label>
           <label>Angle deg <input name="angle_deg" type="number" step="0.1" value="0"></label>
@@ -96,7 +95,9 @@
       </details>
       <div class="form-actions">
         <button type="submit" class="btn btn-outline">Create Run</button>
-        <button type="submit" name="record_after_create" value="true" class="btn btn-primary">Create + Record Mock</button>
+        {% if enable_dev_mock_ui %}
+        <button type="submit" name="record_after_create_source" value="mock" class="btn btn-outline">Create + Dev Capture</button>
+        {% endif %}
         <button type="submit" name="record_after_create_source" value="daq" class="btn btn-primary">Create + Record DAQ</button>
       </div>
     </form>

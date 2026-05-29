@@ -26,6 +26,57 @@ document.querySelectorAll("[data-tabs]").forEach((tabs) => {
   });
 });
 
+document.querySelectorAll("form").forEach((form) => {
+  const method = (form.getAttribute("method") || "get").toLowerCase();
+  if (method !== "post" || form.dataset.nativeSubmit === "true") return;
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const submitter = event.submitter;
+    const action = submitter?.getAttribute("formaction") || form.getAttribute("action") || window.location.href;
+    const formMethod = (submitter?.getAttribute("formmethod") || method).toUpperCase();
+    const body = new FormData(form);
+    if (submitter?.name) {
+      body.append(submitter.name, submitter.value || "");
+    }
+    const buttons = Array.from(form.querySelectorAll('button[type="submit"], input[type="submit"]'));
+    buttons.forEach((button) => {
+      button.disabled = true;
+    });
+    try {
+      const response = await fetch(action, {
+        method: formMethod,
+        body,
+        headers: { Accept: "application/json, text/html;q=0.9" },
+      });
+      if (response.ok) {
+        window.location.href = response.redirected ? response.url : window.location.href;
+        return;
+      }
+      let message = `Request failed (${response.status})`;
+      try {
+        const data = await response.json();
+        const detail = data.detail || data;
+        if (typeof detail === "string") {
+          message = detail;
+        } else {
+          const parts = [detail.error_code, detail.message, detail.suggestion].filter(Boolean);
+          message = parts.join("\n\n") || message;
+        }
+      } catch {
+        const text = await response.text();
+        if (text.trim()) message = text.trim().slice(0, 800);
+      }
+      window.alert(message);
+    } catch (error) {
+      window.alert(`Network or server error.\n\n${error?.message || error}`);
+    } finally {
+      buttons.forEach((button) => {
+        button.disabled = false;
+      });
+    }
+  });
+});
+
 document.querySelectorAll('form[action="/ops/validation"]').forEach((form) => {
   const gate = form.querySelector('select[name="gate"]');
   const evidence = form.querySelector('textarea[name="evidence"]');

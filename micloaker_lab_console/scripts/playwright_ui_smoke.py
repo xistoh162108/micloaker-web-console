@@ -76,11 +76,11 @@ def main() -> int:
             browser.close()
 
     if failures:
-        print("FAIL: Playwright UI smoke found issues")
+        print("FAIL: Playwright UI validation found issues")
         for failure in failures:
             print(f"  {failure}")
         return 1
-    print(f"PASS: Playwright UI smoke completed for {base_url}")
+    print(f"PASS: Playwright UI validation completed for {base_url}")
     print(f"Screenshots: {out_dir}")
     return 0
 

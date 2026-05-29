@@ -312,6 +312,21 @@ button, .btn-primary, .button.primary, .actions a {
 .badge-success, .badge.ok { background: #dff1e7; color: var(--success); }
 .badge-warning, .badge.warn-badge, .badge.recording { background: #f4e6cd; color: var(--warning); }
 .badge-error { background: #f2d8d8; color: var(--error); }
+.alert {
+  display: grid;
+  gap: 4px;
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--rounded-box);
+  background: var(--surface-strong);
+  box-shadow: var(--shadow-sm);
+}
+.alert h2, .alert h3 { margin-bottom: 4px; font-size: 1rem; }
+.alert p { margin: 2px 0; }
+.alert-error { border-color: #d9aaaa; background: #fff5f5; color: #5f1c1c; }
+.alert-warning { border-color: #dfc490; background: #fff8eb; color: #5d3d0a; }
+.alert-success { border-color: #a8d4bb; background: #effaf4; color: #174d31; }
 .warn { color: var(--error); font-weight: 700; }
 .result-number { font-size: 2rem; font-weight: 850; color: var(--bc); }
 

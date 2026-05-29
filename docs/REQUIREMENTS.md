@@ -65,7 +65,7 @@ workspace/
 ### A5. Recording
 
 - Real DAQ mode if hardware/dependencies exist.
-- Mock DAQ mode for tests/demo.
+- Offline developer validation mode for tests/demo.
 - Only one recording job at a time.
 - Store raw `.bin` as float64 voltage.
 - Never overwrite `.bin` silently.
@@ -119,7 +119,7 @@ workspace/
 - Show live RMS/peak and clipping warning.
 - Show live PSD.
 - Show scrolling spectrogram.
-- Use mock live source if no DAQ.
+- Use offline developer live source if no DAQ.
 - Live values are preview-only.
 - After recording ends, run finalization from saved `.bin` and update UI.
 

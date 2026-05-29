@@ -38,13 +38,13 @@ workspace/.micloaker/lab_readiness_report.json
 workspace/.micloaker/lab_readiness_report.md
 ```
 
-Use one record per gate: DAQ smoke capture, Mac Helper playback validation, play-and-record trial, attenuation pair check, and optional legacy notebook parity check.
+Use one record per gate: DAQ validation capture, Mac Helper playback validation, play-and-record trial, attenuation pair check, and optional legacy notebook parity check.
 Session ZIP and multi-session ZIP exports include these records, the validation plan, and readiness snapshots under `ops_validation/` when they exist.
 The `/ops` page also provides direct downloads for `hardware_validation.jsonl`, `hardware_validation_report.md`, `lab_readiness_report.json`, and `lab_readiness_report.md`.
 The `/ops` page also provides **Download Validation Plan** as `hardware_validation_plan.txt`, matching the `scripts/lab_readiness_check.py --validation-plan` terminal output.
 The `/ops` page displays **Evidence Hints** for each validation gate so the operator can record the expected IDs, file paths, measured values, Helper/device details, and unresolved warnings consistently.
 The same table also shows structured checklist fields for each gate, such as `selected device_id`, `raw .bin path`, and expected-versus-written sample count, to reduce missing evidence in the lab notebook.
-The Evidence Hints table links gate-specific template downloads such as `/ops/validation/templates/daq_smoke`, which return fillable text notes equivalent to `--write-evidence-template`.
+The Evidence Hints table links gate-specific template downloads from the Hardware Validation Records table, which return fillable text notes equivalent to `--write-evidence-template`.
 The validation form has a **Use checklist draft** button that pre-fills the evidence field with gate-specific checklist labels, so the operator can fill measured values without retyping the field names.
 Each validation record also stores **Evidence completeness**: the console records which checklist labels are present and which are still missing in JSONL, Markdown reports, readiness reports, and exported evidence packages. A `pass` record still reflects operator judgment, but incomplete checklist evidence remains visible for review.
 Terminal-only runs can append validation evidence with `scripts/lab_readiness_check.py --record-gate <gate> --record-status <pass|warn|fail|na> --record-evidence "..."`; use `--record-evidence-file evidence.txt` for longer copied lab notes. The CLI writes the same JSONL/Markdown evidence files as `/ops`.
@@ -57,7 +57,7 @@ The `scripts/lab_readiness_check.py` CLI also prints the hardware validation gat
 The latest record for each gate controls the readiness status: any `fail` gate makes readiness fail, any `warn` or missing gate keeps readiness in warning state, and each gate must be `pass` or explicitly marked `not applicable` before the hardware validation section is green.
 The same gate status logic is used by `scripts/lab_readiness_check.py`; a failed validation gate makes the CLI exit non-zero.
 
-## 2. Linux DAQ Smoke Capture
+## 2. Linux DAQ Validation Capture
 
 Use a short, low-risk DAQ run before the real experiment.
 
@@ -75,7 +75,7 @@ Required evidence:
 - DAQ channel/range/input mode in run JSON match the physical wiring.
 - Run log has no traceback.
 - Waveform, PSD, and spectrogram plots are present as PNG/SVG.
-- `/ops` Hardware Validation Records contains a DAQ smoke entry with the session/run IDs and sample-count evidence.
+- `/ops` Hardware Validation Records contains a DAQ validation entry with the session/run IDs and sample-count evidence.
 
 Do not reuse a failed raw `.bin` filename. Create a new run after DAQ wiring or driver changes.
 
@@ -109,7 +109,7 @@ Use a short trial before collecting final data.
 
 1. Create or select a validation run.
 2. On the run detail page, use `Validate Playback`.
-3. Use `Play & Record Mock` first to confirm control flow.
+3. Use `Play & Record DAQ` first to confirm control flow.
 4. Use `Play & Record DAQ` for a short physical capture.
 5. Confirm finalization from saved `.bin`.
 6. Confirm WAV previews are present but not used for report-grade attenuation.
@@ -147,7 +147,7 @@ Required evidence:
 The setup is ready for a real experiment only when:
 
 - Linux console readiness has no failures.
-- A real DAQ smoke capture succeeds, if DAQ recording is required.
+- A real DAQ validation capture succeeds, if DAQ recording is required.
 - Mac Helper validates and plays/stops on the intended output device, if Mac playback is required.
 - A short end-to-end play-and-record DAQ trial succeeds, if synchronized playback and recording is required.
 - Export ZIP contains raw `.bin`, metadata JSON, logs, metrics, plots, WAV previews, and manifest.
@@ -156,7 +156,7 @@ If any item fails, keep using mock/import workflows only until the physical issu
 
 ## Korean Operator Notes
 
-- 실제 DAQ 녹음은 mock 테스트와 별개로 반드시 짧은 smoke capture를 먼저 해야 합니다.
+- 실제 DAQ 녹음은 offline developer validation와 별개로 반드시 짧은 validation capture를 먼저 해야 합니다.
 - Mac Helper의 `Validate Playback`은 파일/장치/샘플레이트 설정 검증입니다. 실제 초음파 출력은 DAQ/마이크 경로로 확인해야 합니다.
 - 최종 attenuation 보고에는 saved `.bin`에서 재계산된 metrics만 사용합니다. Peak WAV는 청취 preview 전용입니다.
 - 실패한 run의 raw `.bin`을 덮어쓰지 말고 새 run을 만드세요.

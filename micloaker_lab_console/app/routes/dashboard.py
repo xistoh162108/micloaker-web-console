@@ -49,6 +49,7 @@ def dashboard(request: Request):
             "mac_status": mac_status,
             "daq_status": daq_status,
             "recording_status": recording_status(),
+            "enable_dev_mock_ui": request.app.state.settings.enable_dev_mock_ui,
         },
     )
 

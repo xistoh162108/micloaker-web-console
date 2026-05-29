@@ -143,7 +143,7 @@ function metricReadoutHtml(data) {
       <div><span class="metric-label">RMS</span><strong>${rms}</strong></div>
       <div><span class="metric-label">Peak</span><strong>${peak}</strong></div>
       <div><span class="metric-label">Sample rate</span><strong>${rate}</strong></div>
-      <div><span class="metric-label">Preview</span><strong>${escapeHtml(data.preview_source || "mock")}</strong></div>
+      <div><span class="metric-label">Preview</span><strong>${escapeHtml(data.preview_source || "daq")}</strong></div>
     </div>
     <p class="muted small-text">${escapeHtml(data.preview_label || "Preview only")}</p>
     <details><summary>Preview payload</summary><pre class="scroll-pre">${escapeHtml(JSON.stringify({
@@ -395,7 +395,7 @@ bindChartReadout(specCanvas, specReadout, "spectrogram", spectrogramReadoutText)
 document.querySelectorAll("[data-live-start]").forEach((button) => {
   button.addEventListener("click", async () => {
     const payload = new FormData();
-    payload.set("source", button.dataset.liveSource || "mock");
+    payload.set("source", button.dataset.liveSource || "daq");
     payload.set("sample_rate_hz", button.dataset.liveSampleRate || "8000");
     payload.set("channel", button.dataset.liveChannel || "0");
     payload.set("input_mode", button.dataset.liveInputMode || "SINGLE_ENDED");

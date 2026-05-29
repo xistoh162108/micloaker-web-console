@@ -22,7 +22,7 @@
   <div class="stat"><span class="stat-value">{{ stats.run_count }}</span><small class="stat-title">Runs</small></div>
   <div class="stat"><span class="stat-value">{{ stats.finalized_count }}</span><small class="stat-title">Finalized</small></div>
   <div class="stat"><span class="stat-value">{{ stats.failed_count }}</span><small class="stat-title">Needs review</small></div>
-  <div class="stat"><span class="stat-value">{{ "DAQ" if daq_status.available else "MOCK" }}</span><small class="stat-title">Acquisition</small></div>
+  <div class="stat"><span class="stat-value">{{ "DAQ" if daq_status.available else "DAQ OFF" }}</span><small class="stat-title">Acquisition</small></div>
   <div class="stat"><span class="stat-value">{{ "ON" if mac_status.connected else "OFF" }}</span><small class="stat-title">Mac Helper</small></div>
 </section>
 
@@ -54,7 +54,7 @@
           </div>
           <div class="panel operator-panel">
             <h3>Acquisition</h3>
-            <p><span class="badge {{ 'badge-success' if daq_status.available else 'badge-warning' }}">{{ daq_status.mode }}</span></p>
+            <p><span class="badge {{ 'badge-success' if daq_status.available else 'badge-warning' }}">{{ "ready" if daq_status.available else "not connected" }}</span></p>
             <p>{{ daq_status.message or daq_status.backend }}</p>
             <div class="button-row">
               <a class="btn btn-outline" href="/daq/health">DAQ Health</a>
@@ -89,7 +89,9 @@
             <p class="muted">Keep this dashboard open during the run.</p>
           </div>
           <div class="button-row">
-            <button id="live-start" class="btn btn-primary" type="button" data-live-start data-live-source="mock">Start Mock Live</button>
+            {% if enable_dev_mock_ui %}
+            <button id="live-start" class="btn btn-outline" type="button" data-live-start data-live-source="mock">Start Dev Preview</button>
+            {% endif %}
             <button id="live-start-daq" class="btn btn-outline" type="button" data-live-start data-live-source="daq">Start DAQ Live</button>
             <button id="live-stop" class="btn btn-outline" type="button">Stop Live</button>
             <a class="btn btn-outline" href="/live">Detailed Live Page</a>
@@ -98,12 +100,11 @@
         {% if active_session %}
         <form method="post" action="/sessions/{{ active_session.session_id }}/runs" class="quick-capture-form" data-recording-guard>
           <label>Jamming carrier kHz
-            <input name="carrier_freq_khz" type="number" step="0.1" value="25" list="dashboard-carrier-frequency-presets">
-            <datalist id="dashboard-carrier-frequency-presets">
-              <option value="0" label="0 kHz - no jamming playback"></option>
-              <option value="25" label="25 kHz"></option>
-              <option value="32.8" label="32.8 kHz"></option>
-            </datalist>
+            <select name="carrier_freq_khz">
+              <option value="0">0 kHz - no jamming playback</option>
+              <option value="25" selected>25 kHz</option>
+              <option value="32.8">32.8 kHz</option>
+            </select>
           </label>
           <label>UJ <select name="uj"><option>uj0</option><option>uj1</option></select></label>
           <label>Ordinary recorded sound
@@ -120,7 +121,9 @@
           <input name="scale_mode" type="hidden" value="both">
           <input name="remove_dc" type="hidden" value="true">
           <input name="return_to_dashboard" type="hidden" value="true">
-          <button class="btn btn-primary" type="submit" name="record_after_create" value="true" data-recording-submit {% if recording_status.active %}disabled{% endif %}>Create + Record Mock</button>
+          {% if enable_dev_mock_ui %}
+          <button class="btn btn-outline" type="submit" name="record_after_create_source" value="mock" data-recording-submit {% if recording_status.active %}disabled{% endif %}>Create + Dev Capture</button>
+          {% endif %}
           <button class="btn btn-primary" type="submit" name="record_after_create_source" value="daq" data-recording-submit {% if recording_status.active %}disabled{% endif %}>Create + Record DAQ</button>
           <a class="btn btn-outline" href="/runs/new?session_id={{ active_session.session_id }}">Advanced Metadata</a>
         </form>
@@ -146,7 +149,13 @@
               <button type="submit" class="btn btn-outline" data-helper-action="Validate Playback" formaction="/mac-helper/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}/validate-playback">Validate Playback</button>
               <button type="submit" class="btn btn-primary" data-helper-action="Play" formaction="/mac-helper/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}/play">Play Only</button>
               <button type="submit" class="btn btn-outline" data-helper-action="Stop Playback" formaction="/mac-helper/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}/stop">Stop Playback</button>
-              <button type="submit" class="btn btn-primary" data-helper-action="Play & Record Mock" formaction="/mac-helper/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}/play-and-record-mock" data-recording-submit {% if recording_status.active %}disabled{% endif %}>Play & Record Mock</button>
+              {% if enable_dev_mock_ui %}
+              <button type="submit" class="btn btn-outline" data-helper-action="Play & Dev Capture" formaction="/mac-helper/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}/play-and-capture-mock" data-recording-submit {% if recording_status.active %}disabled{% endif %}>Play & Dev Capture</button>
+              {% endif %}
+              <button type="submit" class="btn btn-outline" data-helper-action="Play & Capture DAQ" formaction="/mac-helper/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}/play-and-capture-daq" data-recording-submit {% if recording_status.active %}disabled{% endif %}>Play & Capture DAQ</button>
+              {% if enable_dev_mock_ui %}
+              <button type="submit" class="btn btn-outline" data-helper-action="Play & Dev Record" formaction="/mac-helper/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}/play-and-record-mock" data-recording-submit {% if recording_status.active %}disabled{% endif %}>Play & Dev Record</button>
+              {% endif %}
               <button type="submit" class="btn btn-primary" data-helper-action="Play & Record DAQ" formaction="/mac-helper/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}/play-and-record-daq" data-recording-submit {% if recording_status.active %}disabled{% endif %}>Play & Record DAQ</button>
             </div>
           </form>

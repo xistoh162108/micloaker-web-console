@@ -9,6 +9,15 @@
     <button type="submit" class="btn btn-primary">Auto-Pair Finalized UJ0/UJ1</button>
   </form>
 </section>
+{% if compare_alert %}
+<section class="alert {{ 'alert-error' if compare_alert.kind == 'error' else 'alert-success' }}" role="alert">
+  <div>
+    <h2>{{ compare_alert.message }}</h2>
+    {% if compare_alert.code %}<p class="mono">{{ compare_alert.code }}</p>{% endif %}
+    <p>{{ compare_alert.suggestion }}</p>
+  </div>
+</section>
+{% endif %}
 <section class="card">
   <div class="card-body">
   <h2 class="card-title">Manual Comparison</h2>
@@ -50,7 +59,7 @@
     {% for item in comparisons %}
     <li>
       <span>{{ item.uj0_run_id }} vs {{ item.uj1_run_id }}</span>
-      <span>{{ item.source }} {{ item.band_hz }}: {{ "%.2f"|format(item.attenuation_db) }} dB, remaining fraction {{ "%.4g"|format(item.remaining_fraction) }}, {{ "%.1f"|format(item.reduction_percent) }}% reduction</span>
+      <span>{{ item.source }} {{ item.band_hz }}: {{ "%.2f"|format(item.attenuation_db) }} dB, UJ0 {{ "%.1f"|format(item.uj0_relative_energy_percent) }}%, UJ1 {{ "%.1f"|format(item.uj1_relative_energy_percent) }}%, {{ "%.1f"|format(item.reduction_percent) }}% reduction</span>
       <span class="badge">{{ item.result_grade or "unknown-grade" }}</span>
       {% if item.source_label %}<span class="muted">{{ item.source_label }}</span>{% endif %}
       <span class="muted">{{ item.attenuation_formula or "10*log10(uj0_power/uj1_power)" }}; {{ item.power_units or "V^2 integrated Welch PSD band power" }}</span>
@@ -67,7 +76,18 @@
         <a class="btn btn-outline" href="/sessions/{{ session_id }}/files/{{ item.plots.psd_overlay_svg }}?download=1" download>PSD SVG</a>
         {% endif %}
       </span>
-      {% if item.warnings %}<span class="warn">{{ item.warnings|join(", ") }}</span>{% endif %}
+      {% if item.warning_messages %}
+      <div class="alert alert-warning">
+        <div>
+          <h3>Comparison warning</h3>
+          {% for warning in item.warning_messages %}
+          <p>{{ warning }}</p>
+          {% endfor %}
+        </div>
+      </div>
+      {% elif item.warnings %}
+      <span class="warn">{{ item.warnings|join(", ") }}</span>
+      {% endif %}
       {% if item.plots %}
       <div class="plots">
         {% if item.plots.attenuation_png %}

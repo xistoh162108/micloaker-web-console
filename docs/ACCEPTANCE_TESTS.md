@@ -10,7 +10,7 @@
 - User can create a mock run.
 - Run metadata is stored as `metadata/<run_id>.json`.
 - Session/run events are appended to JSONL files.
-- Mock run saves `.bin`.
+- Offline validation run saves `.bin`.
 - Conversion creates `__scale-peak.wav` and `__scale-range-fs10V.wav`.
 - Peak WAV is labeled listening-only.
 - Range WAV is labeled cross-check.
@@ -39,7 +39,7 @@
 
 ## 4. Live Monitor tests
 
-- Mock live monitor starts and stops.
+- Offline developer live monitor starts and stops.
 - Waveform updates.
 - RMS/peak updates.
 - PSD and spectrogram update.

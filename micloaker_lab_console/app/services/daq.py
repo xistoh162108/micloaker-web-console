@@ -32,14 +32,14 @@ def daq_health() -> dict:
         "available": False,
         "backend": "mock",
         "mode": "mock",
-        "message": "uldaq is unavailable; mock DAQ mode remains available.",
+        "message": "uldaq is unavailable; connect/configure DAQ hardware or import a saved raw .bin file.",
     }
 
 
 def record_voltage(*args, **kwargs):
     """Record float64 voltage samples from the first available ULDAQ device.
 
-    Importing uldaq stays inside this function so tests and mock mode work on
+    Importing uldaq stays inside this function so tests and offline validation work on
     machines without DAQ hardware or vendor libraries.
 
     This is intentionally a small generic USB analog-input path. Hardware with
@@ -49,7 +49,7 @@ def record_voltage(*args, **kwargs):
     try:
         import uldaq  # type: ignore
     except Exception as exc:
-        raise DaqUnavailableError("uldaq is unavailable; use mock recording or install/configure DAQ drivers.") from exc
+        raise DaqUnavailableError("uldaq is unavailable; install/configure DAQ drivers or import a saved raw .bin file.") from exc
 
     sample_rate_hz = int(kwargs["sample_rate_hz"])
     duration_s = float(kwargs["duration_s"])
@@ -63,7 +63,7 @@ def record_voltage(*args, **kwargs):
 
     descriptors = uldaq.get_daq_device_inventory(uldaq.InterfaceType.USB)
     if not descriptors:
-        raise DaqUnavailableError("No ULDAQ USB devices found; use mock recording or connect/configure DAQ hardware.")
+        raise DaqUnavailableError("No ULDAQ USB devices found; connect/configure DAQ hardware or import a saved raw .bin file.")
 
     device = uldaq.DaqDevice(descriptors[0])
     try:

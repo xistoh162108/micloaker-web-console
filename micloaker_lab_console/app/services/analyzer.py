@@ -267,6 +267,8 @@ def compare_metrics(
         "uj1_power": p1,
         "attenuation_db": attenuation,
         "remaining_fraction": remaining,
+        "uj0_relative_energy_percent": 100.0,
+        "uj1_relative_energy_percent": float(remaining * 100.0),
         "reduction_percent": float((1.0 - remaining) * 100.0),
         "warnings": sorted(set(warnings)),
     }

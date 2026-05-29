@@ -33,7 +33,7 @@ The system should be recoverable by scanning the workspace folders.
 - Vanilla JS
 - JSON/JSONL/CSV/Markdown/text logs
 - Background jobs with thread + queue or simple worker abstraction
-- Mock DAQ
+- Offline developer validation
 - Matplotlib static plots
 - ZIP exports
 - Manual Mac Helper URL connection if simple
@@ -61,7 +61,7 @@ The system should be recoverable by scanning the workspace folders.
 
 | Missing component | Required behavior |
 |---|---|
-| DAQ missing | mock mode and file upload still work |
+| DAQ missing | offline developer validation and file upload still work |
 | `uldaq` missing | app starts; DAQ page shows unavailable |
 | Mac Helper disconnected | Linux record/analyze/export works |
 | Tailscale missing | manual Helper URL still works |
@@ -102,7 +102,7 @@ Every run must be interpretable later. Always store:
 ## 8. Implementation ordering
 
 1. Stable text-file storage layer.
-2. Mock-data workflow.
+2. Offline developer validation workflow.
 3. Bin/wav/analysis/export.
 4. Real DAQ integration.
 5. Live monitor.

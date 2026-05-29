@@ -17,6 +17,7 @@ class Settings:
     port: int = DEFAULT_PORT
     app_version: str = APP_VERSION
     allow_web_shutdown: bool = False
+    enable_dev_mock_ui: bool = False
 
 
 def get_settings() -> Settings:
@@ -24,4 +25,5 @@ def get_settings() -> Settings:
     host = os.environ.get("MICLOAKER_HOST", DEFAULT_HOST)
     port = int(os.environ.get("MICLOAKER_PORT", str(DEFAULT_PORT)))
     allow_web_shutdown = os.environ.get("MICLOAKER_ALLOW_WEB_SHUTDOWN", "").strip().lower() in {"1", "true", "yes", "on"}
-    return Settings(workspace=root.resolve(), host=host, port=port, allow_web_shutdown=allow_web_shutdown)
+    enable_dev_mock_ui = os.environ.get("MICLOAKER_ENABLE_DEV_MOCK_UI", "").strip().lower() in {"1", "true", "yes", "on"}
+    return Settings(workspace=root.resolve(), host=host, port=port, allow_web_shutdown=allow_web_shutdown, enable_dev_mock_ui=enable_dev_mock_ui)

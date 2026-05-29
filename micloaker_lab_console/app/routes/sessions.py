@@ -74,6 +74,7 @@ def session_detail(request: Request, session_id: str):
             "comparison_count": len(comparisons),
             "summary_files": summary_files,
             "filters": filters,
+            "enable_dev_mock_ui": request.app.state.settings.enable_dev_mock_ui,
         },
     )
 

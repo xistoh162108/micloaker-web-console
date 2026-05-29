@@ -2,7 +2,7 @@
 
 Status language:
 
-- **Automated evidence complete** means the implementation is covered by current tests, `scripts/acceptance_audit.py`, docs alignment, or runtime smoke checks.
+- **Automated evidence complete** means the implementation is covered by current tests, `scripts/acceptance_audit.py`, docs alignment, or runtime validation checks.
 - **Lab verification required** means the code path exists, but physical DAQ/audio behavior must still be proven with real hardware before report-grade experiments.
 
 ## Build order
@@ -26,8 +26,8 @@ Status language:
 - [x] Implement web routes and templates. Automated evidence complete.
 - [x] Implement logs/debug UI. Automated evidence complete.
 - [x] Implement real DAQ functions with lazy `uldaq` import. Code path and lazy import are tested; physical DAQ capture remains lab verification.
-- [x] Implement v0.2 live monitor. Mock source and DAQ-degradation behavior are tested; physical DAQ live signal remains lab verification.
-- [x] Implement optional Mac Helper standalone service. Mock/test evidence complete; physical output routing remains lab verification.
+- [x] Implement v0.2 live monitor. Offline developer source and DAQ-degradation behavior are tested; physical DAQ live signal remains lab verification.
+- [x] Implement optional Mac Helper standalone service. Offline developer validation evidence complete; physical output routing remains lab verification.
 - [x] Implement Linux Mac Helper client and UI. Automated evidence complete.
 - [x] Add tests. Automated evidence complete.
 - [x] Run tests. Latest recorded result: `139 passed`.
@@ -46,7 +46,7 @@ Status language:
 
 ## Remaining lab verification
 
-- [ ] Run a short real DAQ smoke capture and record `/ops` evidence for channel, range, sample count, and saved `.bin` finalization.
+- [ ] Run a short real DAQ validation capture and record `/ops` evidence for channel, range, sample count, and saved `.bin` finalization.
 - [ ] Run explicit DAQ live preview on the real DAQ and record `/ops` evidence for expected waveform/PSD behavior.
 - [ ] Run Mac Helper on the actual macOS playback machine, validate/play/stop on the intended `device_id`, and confirm the macOS system default output is unchanged.
 - [ ] Run a short play-and-record DAQ trial if synchronized Mac playback and Linux DAQ recording are required.

@@ -8,7 +8,9 @@
     <span class="badge badge-warning">Preview only</span>
   </div>
   <nav class="hero-actions">
-    <button id="live-start" class="btn btn-primary" data-live-start data-live-source="mock">Start Mock Live</button>
+    {% if enable_dev_mock_ui %}
+    <button id="live-start" class="btn btn-outline" data-live-start data-live-source="mock">Start Dev Preview</button>
+    {% endif %}
     <button id="live-start-daq" class="btn btn-outline" data-live-start data-live-source="daq">Start DAQ Live</button>
     <button id="live-stop" class="btn btn-outline">Stop</button>
   </nav>
