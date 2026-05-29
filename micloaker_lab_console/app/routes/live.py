@@ -24,6 +24,17 @@ def live_start(
     input_mode: str = Form("SINGLE_ENDED"),
     ai_range: str = Form("BIP10VOLTS"),
 ):
+    if source == "daq":
+        active = recording_status()
+        if active["active"]:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "error_code": "LIVE_DAQ_RECORDING_ACTIVE",
+                    "message": "DAQ live preview cannot start while a recording is active.",
+                    "suggestion": "Wait for recording/finalization to finish, or use the current recording/finalization status instead of opening a second DAQ reader.",
+                },
+            )
     try:
         live_monitor.start(
             source=source,

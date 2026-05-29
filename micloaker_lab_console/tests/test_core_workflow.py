@@ -31,6 +31,7 @@ import app.services.recorder as recorder_module
 import app.services.plotting as plotting_module
 import app.services.live_monitor as live_monitor_module
 import app.routes.compare as compare_routes
+import app.routes.live as live_routes
 import app.routes.mac_helper as mac_helper_routes
 import app.services.tailscale as tailscale_module
 import app.services.daq as daq_module
@@ -2053,6 +2054,7 @@ def test_live_snapshot_contains_preview_psd_and_spectrogram(tmp_path: Path, monk
     assert "preview_source" in live_js
     assert "data-live-start" in page.text
     assert 'payload.set("source"' in live_js
+    assert 'button.dataset.liveSource === "daq"' in live_js
     assert "final_metrics_source" in live_js
     assert "recommended_update_rates_hz" in live_js
     assert "client_poll_intervals_ms" in live_js
@@ -2103,6 +2105,7 @@ def test_live_snapshot_contains_preview_psd_and_spectrogram(tmp_path: Path, monk
     stopped = client.post("/live/stop").json()
     assert stopped["running"] is False
     assert stopped["recording_state"] == "Stopped"
+    assert stopped["preview_source"] == "mock"
 
 
 def test_live_daq_preview_is_explicit_and_degrades_without_hardware(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -2124,6 +2127,27 @@ def test_live_daq_preview_is_explicit_and_degrades_without_hardware(tmp_path: Pa
     invalid = client.post("/live/start", data={"source": "invalid"})
     assert invalid.status_code == 400
     assert invalid.json()["detail"]["error_code"] == "INVALID_LIVE_SOURCE"
+
+
+def test_live_daq_preview_refuses_second_daq_reader_while_recording(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("MICLOAKER_WORKSPACE", str(tmp_path))
+    ensure_workspace(tmp_path)
+    monkeypatch.setattr(
+        live_routes,
+        "recording_status",
+        lambda: {"active": True, "recording": {"session_id": "s1", "run_id": "r1", "source": "daq"}},
+    )
+    client = TestClient(create_app())
+    response = client.post("/live/start", data={"source": "daq"})
+    assert response.status_code == 409
+    detail = response.json()["detail"]
+    assert detail["error_code"] == "LIVE_DAQ_RECORDING_ACTIVE"
+    assert "second DAQ reader" in detail["suggestion"]
+
+    mock_preview = client.post("/live/start", data={"source": "mock"})
+    assert mock_preview.status_code == 200
+    assert mock_preview.json()["preview_source"] == "mock"
+    client.post("/live/stop")
 
 
 def test_live_daq_preview_uses_short_daq_scan_when_available(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

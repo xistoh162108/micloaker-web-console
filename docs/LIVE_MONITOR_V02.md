@@ -50,7 +50,7 @@ DAQ/mock source
   └── quick metric calculator
 ```
 
-Avoid two competing DAQ readers during a recording. DAQ live preview is an explicit setup/sanity-check mode, not a replacement for saved `.bin` capture and finalization.
+Avoid two competing DAQ readers during a recording. DAQ live preview is an explicit setup/sanity-check mode, not a replacement for saved `.bin` capture and finalization. The server must reject DAQ live preview while a recording is active.
 
 ## 6. Data transfer
 
@@ -73,6 +73,7 @@ Keep payload compact:
 
 - Mock live monitor runs without DAQ.
 - Explicit DAQ live preview can be requested and degrades cleanly when DAQ is unavailable.
+- DAQ live preview is blocked while recording is active, preventing a second DAQ reader.
 - Browser updates waveform continuously.
 - RMS/peak and clipping status update.
 - PSD and spectrogram update.

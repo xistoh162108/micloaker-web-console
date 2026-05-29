@@ -74,6 +74,7 @@ class LiveMonitor:
 
     def stop(self) -> None:
         self.running = False
+        self.source = "mock"
 
     def snapshot(self) -> dict[str, Any]:
         if not self.running:

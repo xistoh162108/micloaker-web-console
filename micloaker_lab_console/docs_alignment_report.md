@@ -20,7 +20,7 @@ done
 
 Most recent observed results:
 
-- Full test suite: `131 passed`
+- Full test suite: `132 passed`
 - Acceptance audit: `PASS`
 - Smoke routes: all listed routes returned `200`
 
@@ -56,7 +56,7 @@ Most recent observed results:
 | Logs/debug UI | Proven | `/logs` displays app/job events, run logs, tracebacks, and diagnostic downloads; tests cover traceback capture. |
 | Dashboard command center UI | Proven | `app/templates/dashboard.html` has always-visible Setup, Capture And Live Preview, Results/Compare/Export, live canvases, latest artifacts, recent runs, and operations; dashboard workflow controls are not hidden behind tabs. |
 | Live monitor v0.2 | Proven for mock source | `/live` and `/live/snapshot` expose waveform, RMS/peak, clipping, PSD, spectrogram, preview-only labels, finalization status, and final artifact pointers. |
-| Live monitor with real DAQ source | Code path proven, not physically verified | Default live preview remains mock. Explicit DAQ live preview performs short lazy-`uldaq` scans and degrades to structured preview errors when hardware/drivers are unavailable. Physical DAQ live signal quality still needs lab verification. |
+| Live monitor with real DAQ source | Code path proven, not physically verified | Default live preview remains mock. Explicit DAQ live preview performs short lazy-`uldaq` scans, is blocked while recording is active to avoid a second DAQ reader, and degrades to structured preview errors when hardware/drivers are unavailable. Physical DAQ live signal quality still needs lab verification. |
 | Post-record finalization | Proven | Recording/import flows finalize from saved `.bin`; live snapshot surfaces latest finalized report-grade run and artifacts. |
 | Optional Mac Helper APIs | Proven in mock/test mode | `/health`, `/devices`, `/files`, `/validate-playback`, `/play`, `/stop`, `/status`; standalone tests cover structured responses. |
 | Mac Helper path safety | Proven | Relative-only `wav_root` validation, traversal rejection, symlink-outside exclusion, optional bearer token tests. |

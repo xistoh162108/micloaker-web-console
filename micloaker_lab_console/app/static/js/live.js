@@ -58,6 +58,10 @@ function updateRecordingGuard(data) {
   document.querySelectorAll("[data-recording-submit]").forEach((button) => {
     button.disabled = locked;
   });
+  document.querySelectorAll("[data-live-start]").forEach((button) => {
+    const isDaqPreview = button.dataset.liveSource === "daq";
+    button.disabled = isDaqPreview && Boolean(data.active_recording || data.recording_state === "Recording");
+  });
   if (recordingGuardMessage) {
     recordingGuardMessage.hidden = !locked;
     recordingGuardMessage.textContent = locked ? "Recording/finalization is active. Wait before starting another capture." : "";
