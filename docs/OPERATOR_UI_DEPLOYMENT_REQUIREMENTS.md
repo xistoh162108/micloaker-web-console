@@ -31,12 +31,12 @@ Required characteristics:
   - latest comparison
   - export and operations shortcuts
 - Pages should not force the experiment operator to jump through many disconnected tabs for routine work.
-- Dashboard tabs should group the workflow:
-  - Run setup
-  - Live monitor
-  - Results/compare
-  - Export
-  - Operations
+- The dashboard must not hide core experiment controls behind tabs during operation.
+- The first screen should expose the prioritized workflow as always-visible sections:
+  - Setup
+  - Capture and live preview
+  - Results, compare, and export
+  - Operations/readiness
 - Controls must have consistent size, alignment, spacing, and visual weight.
 - UI elements must not overlap on desktop or mobile.
 - Logs are secondary diagnostic tools; visual artifacts and experiment progress are primary.

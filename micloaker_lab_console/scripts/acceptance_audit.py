@@ -411,12 +411,15 @@ def main() -> int:
     if missing_hardware_protocol_terms:
         for term in missing_hardware_protocol_terms:
             print(f"  missing hardware protocol term: {term}")
-    daisy_terms = ["btn btn-primary", "btn btn-outline", "btn btn-error", "card", "card-body", "tabs", "tab-active", "stats", "stat-value", "badge-success", "badge-warning"]
+    daisy_terms = ["btn btn-primary", "btn btn-outline", "btn btn-error", "card", "card-body", "stats", "stat-value", "badge-success", "badge-warning", "Capture And Live Preview", "live-waveform", "live-psd", "live-spectrogram"]
     missing_daisy_terms = [term for term in daisy_terms if term not in dashboard_template]
-    checks.append(report(not missing_daisy_terms and "DaisyUI component vocabulary" in app_css and "shadcn" not in app_css.lower(), "dashboard uses local DaisyUI component vocabulary"))
+    hidden_tab_dashboard = "tab-panel" in dashboard_template or "data-tabs" in dashboard_template
+    checks.append(report(not missing_daisy_terms and not hidden_tab_dashboard and "DaisyUI component vocabulary" in app_css and "shadcn" not in app_css.lower(), "dashboard uses local DaisyUI command console vocabulary without hidden workflow tabs"))
     if missing_daisy_terms:
         for term in missing_daisy_terms:
             print(f"  missing DaisyUI dashboard term: {term}")
+    if hidden_tab_dashboard:
+        print("  dashboard still contains hidden tab workflow markup")
     helper_doc_terms = [
         "cp config.example.json config.json",
         "python helper.py --config config.json",

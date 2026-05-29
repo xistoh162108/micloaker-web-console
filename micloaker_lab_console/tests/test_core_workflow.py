@@ -3734,14 +3734,20 @@ def test_dashboard_shows_lab_status_cards_and_shortcuts(tmp_path: Path, monkeypa
         "Session",
         "Acquisition",
         "Mac Playback",
-        "Recording State",
+        "Capture And Live Preview",
+        "RMS/Peak Meter",
+        "Scrolling Spectrogram",
         "Latest Run",
         "Latest Comparison",
-        "Session Export",
+        "Results, Compare, Export",
         "preview only",
         "Export active session ZIP",
     ]:
         assert text in page.text
+    assert "tab-panel" not in page.text
+    assert "data-tabs" not in page.text
+    assert "live-waveform" in page.text
+    assert "Record Latest Mock" in page.text
     assert session["session_id"] in page.text
     assert final1["run_id"] in page.text
     assert "dB" in page.text

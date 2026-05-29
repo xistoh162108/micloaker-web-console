@@ -89,6 +89,14 @@ p { margin: 8px 0; }
   align-items: center;
   gap: 8px;
 }
+.capture-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0 12px;
+}
+.capture-actions form { margin: 0; }
 .actions form {
   display: inline-flex;
   align-items: center;
@@ -180,6 +188,25 @@ button, .btn-primary, .button.primary, .actions a {
   gap: 12px;
 }
 .workflow-grid.two-strong, .grid.two { grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr); }
+.command-console {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  gap: 14px;
+  align-items: start;
+}
+.console-main, .console-side {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.priority-card { overflow: visible; }
+.live-console-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
+  gap: 12px;
+  align-items: stretch;
+}
+.live-plot-panel canvas { height: 220px; }
 .card-body, .panel, .status-card {
   min-width: 0;
   background: #fff;
@@ -197,7 +224,9 @@ button, .btn-primary, .button.primary, .actions a {
   justify-content: space-between;
   gap: 12px;
   margin-bottom: 8px;
+  min-width: 0;
 }
+.card-title h2, .card-title h3 { min-width: 0; overflow-wrap: anywhere; }
 .visual-panel { min-height: 180px; }
 
 .badge {
@@ -295,7 +324,7 @@ pre {
 canvas { width: 100%; max-width: 100%; background: white; border: 1px solid var(--border); border-radius: var(--rounded-btn); }
 
 @media (max-width: 980px) {
-  .topbar, .command-hero, .workflow-grid.two-strong, .grid.two { grid-template-columns: 1fr; }
+  .topbar, .command-hero, .workflow-grid.two-strong, .grid.two, .command-console, .live-console-grid { grid-template-columns: 1fr; }
   .topbar nav { justify-content: flex-start; }
   .metric-strip, .workflow-grid, .status-grid, .grid-form { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
@@ -303,6 +332,6 @@ canvas { width: 100%; max-width: 100%; background: white; border: 1px solid var(
   .page { padding: 10px; }
   .metric-strip, .workflow-grid, .status-grid, .grid-form { grid-template-columns: 1fr; }
   .grid-form .wide { grid-column: auto; }
-  .hero-actions .button, .button-row .button, button { width: 100%; }
+  .hero-actions .button, .hero-actions .btn, .button-row .button, .button-row .btn, .capture-actions .btn, .capture-actions button, button { width: 100%; }
   .tab-button { min-width: 92px; }
 }

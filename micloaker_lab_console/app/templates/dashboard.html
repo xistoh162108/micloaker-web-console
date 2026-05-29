@@ -3,7 +3,7 @@
 <section class="command-hero">
   <div>
     <h1>Experiment Command Center</h1>
-    <p>Run setup, recording, live preview, final metrics, comparison, and export from one screen.</p>
+    <p>Operate setup, capture, live preview, results, comparison, export, and safety checks from one screen.</p>
   </div>
   <div class="hero-actions">
     {% if active_session %}
@@ -12,7 +12,7 @@
     {% else %}
     <a class="btn btn-primary" href="#new-session">Create Session</a>
     {% endif %}
-    <a class="btn btn-outline" href="/live">Live Monitor</a>
+    <a class="btn btn-outline" href="/ops">Readiness</a>
     <a class="btn btn-error" href="/ops">Ops</a>
   </div>
 </section>
@@ -26,184 +26,181 @@
   <div class="stat"><span class="stat-value">{{ "ON" if mac_status.connected else "OFF" }}</span><small class="stat-title">Mac Helper</small></div>
 </section>
 
-<section class="lab-tabs card" data-tabs>
-  <div class="tabs tab-list" role="tablist" aria-label="Experiment workflow">
-    <button class="tab tab-button active tab-active" type="button" data-tab-target="tab-run">Run</button>
-    <button class="tab tab-button" type="button" data-tab-target="tab-live">Live</button>
-    <button class="tab tab-button" type="button" data-tab-target="tab-results">Results</button>
-    <button class="tab tab-button" type="button" data-tab-target="tab-export">Export</button>
-    <button class="tab tab-button" type="button" data-tab-target="tab-ops">Ops</button>
-  </div>
-
-  <div id="tab-run" class="tab-panel active">
-    <div class="workflow-grid">
-      <div class="card-body panel">
-        <div class="card-title panel-head">
-          <h2>Session</h2>
-          {% if active_session %}<span class="badge badge-success ok">active</span>{% else %}<span class="badge badge-warning warn-badge">needed</span>{% endif %}
+<section class="command-console">
+  <div class="console-main">
+    <div class="card priority-card">
+      <div class="card-body">
+        <div class="card-title">
+          <h2>1. Setup</h2>
+          {% if active_session %}<span class="badge badge-success">session ready</span>{% else %}<span class="badge badge-warning">session needed</span>{% endif %}
         </div>
-        {% if active_session %}
-        <p class="strong"><a href="/sessions/{{ active_session.session_id }}">{{ active_session.session_id }}</a></p>
-        <p class="muted">{{ active_session.title }}</p>
-        {% else %}
-        <form id="new-session" method="post" action="/sessions" class="compact-form">
-          <label>Title <input name="title" required value="r25k_test"></label>
-          <label>Notes <textarea name="notes" rows="3"></textarea></label>
-          <button type="submit">Create Session</button>
-        </form>
-        {% endif %}
+        <div class="workflow-grid">
+          <div class="panel">
+            <h3>Session</h3>
+            {% if active_session %}
+            <p class="strong"><a href="/sessions/{{ active_session.session_id }}">{{ active_session.session_id }}</a></p>
+            <p class="muted">{{ active_session.title }}</p>
+            <div class="button-row">
+              <a class="btn btn-primary" href="/runs/new?session_id={{ active_session.session_id }}">Prepare New Run</a>
+              <a class="btn btn-outline" href="/sessions/{{ active_session.session_id }}">Session Detail</a>
+            </div>
+            {% else %}
+            <form id="new-session" method="post" action="/sessions" class="compact-form">
+              <label>Title <input name="title" required value="r25k_test"></label>
+              <label>Notes <textarea name="notes" rows="3"></textarea></label>
+              <button type="submit" class="btn btn-primary">Create Session</button>
+            </form>
+            {% endif %}
+          </div>
+          <div class="panel">
+            <h3>Acquisition</h3>
+            <p><span class="badge {{ 'badge-success' if daq_status.available else 'badge-warning' }}">{{ daq_status.mode }}</span></p>
+            <p>{{ daq_status.message or daq_status.backend }}</p>
+            <div class="button-row">
+              <a class="btn btn-outline" href="/daq/health">DAQ Health</a>
+              <a class="btn btn-outline" href="/runs/new{% if active_session %}?session_id={{ active_session.session_id }}{% endif %}">Edit Run Metadata</a>
+            </div>
+          </div>
+          <div class="panel">
+            <h3>Mac Playback</h3>
+            <p><span class="badge {{ 'badge-success' if mac_status.connected else 'badge-warning' }}">{{ "connected" if mac_status.connected else "optional" }}</span></p>
+            {% if not mac_status.connected %}
+            <p class="warn">Mac Helper disconnected - Linux-only recording and analysis are available.</p>
+            {% endif %}
+            <p>{{ mac_status.message or mac_status.hostname or "Helper reachable" }}</p>
+            <div class="button-row">
+              <a class="btn btn-outline" href="/mac-helper">Helper Setup</a>
+              {% if active_session and last_run %}<a class="btn btn-outline" href="/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}#mac-helper">Run Playback Controls</a>{% endif %}
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="card-body panel">
-        <div class="card-title panel-head">
-          <h2>Acquisition</h2>
-          <span class="badge {{ 'badge-success ok' if daq_status.available else 'badge-warning warn-badge' }}">{{ daq_status.mode }}</span>
+    </div>
+
+    <div class="card priority-card live-command-card">
+      <div class="card-body">
+        <div class="card-title">
+          <h2>2. Capture And Live Preview</h2>
+          <span class="badge badge-warning">preview only</span>
         </div>
-        <p>{{ daq_status.message or daq_status.backend }}</p>
+        <div class="capture-actions">
+          <button id="live-start" class="btn btn-primary" type="button">Start Mock Live</button>
+          <button id="live-stop" class="btn btn-outline" type="button">Stop Live</button>
+          {% if last_run %}
+          <form method="post" action="/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}/record-mock"><button class="btn btn-primary" type="submit">Record Latest Mock</button></form>
+          <form method="post" action="/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}/record-daq"><button class="btn btn-primary" type="submit">Record Latest DAQ</button></form>
+          <a class="btn btn-outline" href="/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}">Open Latest Run</a>
+          {% else %}
+          <a class="btn btn-outline" href="/runs/new{% if active_session %}?session_id={{ active_session.session_id }}{% endif %}">Create a Run First</a>
+          {% endif %}
+          <a class="btn btn-outline" href="/live">Full Live View</a>
+        </div>
+        <div class="live-console-grid">
+          <div class="panel live-plot-panel">
+            <div class="card-title"><h3>Waveform</h3><span id="live-state" class="badge">Stopped</span></div>
+            <canvas id="live-waveform" width="700" height="220"></canvas>
+          </div>
+          <div class="panel">
+            <h3>RMS/Peak Meter</h3>
+            <pre id="live-levels" class="compact-pre">stopped</pre>
+          </div>
+          <div class="panel live-plot-panel">
+            <div class="card-title"><h3>Live PSD</h3><span id="live-clipping" class="badge">unknown</span></div>
+            <canvas id="live-psd" width="700" height="220"></canvas>
+          </div>
+          <div class="panel live-plot-panel">
+            <h3>Scrolling Spectrogram</h3>
+            <canvas id="live-spectrogram" width="700" height="220"></canvas>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="card-title"><h3>Finalization Status</h3><span class="badge {{ 'badge-warning' if recording_status.active else 'badge-success' }}">{{ "recording" if recording_status.active else "stopped" }}</span></div>
+          <pre id="live-finalization" class="compact-pre">Start recording from this console or a run page.</pre>
+          <nav class="actions">
+            <a id="live-final-run-link" class="btn btn-outline" href="#" hidden>Open finalized run</a>
+            <a id="live-final-metrics-link" class="btn btn-outline" href="#" hidden>Metrics JSON</a>
+            <a id="live-final-log-link" class="btn btn-outline" href="#" hidden>Run log</a>
+          </nav>
+          <pre id="live-final-run" class="compact-pre">none</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="card priority-card">
+      <div class="card-body">
+        <div class="card-title">
+          <h2>3. Results, Compare, Export</h2>
+          {% if last_comparison %}<span class="badge badge-success">comparison ready</span>{% else %}<span class="badge badge-warning">needs pair</span>{% endif %}
+        </div>
+        <div class="workflow-grid two-strong">
+          <div class="panel">
+            <h3>Latest Run</h3>
+            {% if last_run %}
+            <p class="strong"><a href="/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}">{{ last_run.run_id }}</a></p>
+            <p>{{ last_run.condition.uj }} / {{ last_run.condition.carrier_freq_khz }} kHz / {{ last_run.recording.source }} / {{ last_run.analysis.status }}</p>
+            <div class="button-row">
+              <a class="btn btn-outline" href="/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}">Run Detail</a>
+              <a class="btn btn-outline" href="/sessions/{{ last_run.session_id }}/browser">Files</a>
+            </div>
+            {% else %}
+            <p>No runs yet.</p>
+            {% endif %}
+          </div>
+          <div class="panel">
+            <h3>Latest Comparison</h3>
+            {% if last_comparison %}
+            <p class="result-number">{{ "%.2f"|format(last_comparison.attenuation_db) }} dB</p>
+            <p>{{ last_comparison.uj0_run_id }} vs {{ last_comparison.uj1_run_id }}</p>
+            <a class="btn btn-outline" href="/sessions/{{ last_comparison.session_id }}/files/{{ last_comparison.json_file }}?download=1" download>Download JSON</a>
+            {% else %}
+            <p>No saved comparisons yet.</p>
+            <a class="btn btn-outline" href="/compare{% if active_session %}/{{ active_session.session_id }}{% endif %}">Open Compare</a>
+            {% endif %}
+          </div>
+        </div>
         <div class="button-row">
-          <a class="btn btn-outline" href="/daq/health">DAQ health</a>
-          <a class="btn btn-outline" href="/runs/new{% if active_session %}?session_id={{ active_session.session_id }}{% endif %}">Prepare run</a>
-        </div>
-      </div>
-      <div class="card-body panel">
-        <div class="card-title panel-head">
-          <h2>Mac Playback</h2>
-          <span class="badge {{ 'badge-success ok' if mac_status.connected else 'badge-warning warn-badge' }}">{{ "connected" if mac_status.connected else "optional" }}</span>
-        </div>
-        {% if not mac_status.connected %}
-        <p class="warn">Mac Helper disconnected - Linux-only recording and analysis are available.</p>
-        {% endif %}
-        <p>{{ mac_status.message or mac_status.hostname or "Helper reachable" }}</p>
-        <div class="button-row">
-          <a class="btn btn-outline" href="/mac-helper">Helper setup</a>
-          {% if active_session and last_run %}<a class="btn btn-outline" href="/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}#mac-helper">Run controls</a>{% endif %}
+          {% if active_session %}<a class="btn btn-primary" href="/exports/sessions/{{ active_session.session_id }}.zip">Export active session ZIP</a>{% endif %}
+          <a class="btn btn-outline" href="/sessions">Multi-Session Export</a>
+          <a class="btn btn-outline" href="/files">Global Files</a>
+          <a class="btn btn-outline" href="/logs">Logs</a>
         </div>
       </div>
     </div>
   </div>
 
-  <div id="tab-live" class="tab-panel">
-    <div class="workflow-grid two-strong">
-      <div class="card-body panel visual-panel">
-        <div class="card-title panel-head">
-          <h2>Live Monitor</h2>
-          <span class="badge badge-warning warn-badge">preview only</span>
-        </div>
-        <p>Use live waveform, RMS/peak, clipping, PSD, and spectrogram for setup only. Final report metrics come from saved raw .bin.</p>
-        <div class="button-row">
-          <a class="btn btn-primary" href="/live">Open Live Monitor</a>
-          <a class="btn btn-outline" href="/recording/status">Recording JSON</a>
-        </div>
-      </div>
-      <div class="card-body panel">
-        <div class="card-title panel-head">
-          <h2>Recording State</h2>
-          <span class="badge {{ 'badge-warning recording' if recording_status.active else 'badge-success ok' }}">{{ "recording" if recording_status.active else "stopped" }}</span>
-        </div>
-        {% if recording_status.recording %}
-        <pre class="compact-pre">{{ recording_status.recording }}</pre>
-        {% else %}
-        <p>One recording job is allowed at a time. Finalization starts after capture and recomputes from saved .bin.</p>
-        {% endif %}
+  <aside class="console-side">
+    <div class="card">
+      <div class="card-body">
+        <h2 class="card-title">Recent Runs</h2>
+        <table class="data-table dense">
+          <thead><tr><th>Run</th><th>UJ</th><th>Status</th><th>Open</th></tr></thead>
+          <tbody>
+          {% for run in recent_runs %}
+            <tr>
+              <td>{{ run.run_id }}</td>
+              <td>{{ run.condition.uj }}</td>
+              <td>{{ run.analysis.status }}</td>
+              <td><a href="/sessions/{{ run.session_id }}/runs/{{ run.run_id }}">Open</a></td>
+            </tr>
+          {% else %}
+            <tr><td colspan="4">No runs yet.</td></tr>
+          {% endfor %}
+          </tbody>
+        </table>
       </div>
     </div>
-  </div>
-
-  <div id="tab-results" class="tab-panel">
-    <div class="workflow-grid two-strong">
-      <div class="card-body panel">
-        <div class="card-title panel-head">
-          <h2>Latest Run</h2>
-          {% if last_run %}<span class="badge badge-success ok">{{ last_run.analysis.status }}</span>{% endif %}
-        </div>
-        {% if last_run %}
-        <p class="strong"><a href="/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}">{{ last_run.run_id }}</a></p>
-        <p>{{ last_run.condition.uj }} / {{ last_run.condition.carrier_freq_khz }} kHz / {{ last_run.recording.source }}</p>
-        <div class="button-row">
-          <a class="btn btn-outline" href="/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}">Run detail</a>
-          <a class="btn btn-outline" href="/sessions/{{ last_run.session_id }}/browser">Files</a>
-        </div>
-        {% else %}
-        <p>No runs yet.</p>
-        {% endif %}
-      </div>
-      <div class="card-body panel">
-        <div class="card-title panel-head">
-          <h2>Latest Comparison</h2>
-          {% if last_comparison %}<span class="badge badge-success ok">attenuation</span>{% endif %}
-        </div>
-        {% if last_comparison %}
-        <p class="result-number">{{ "%.2f"|format(last_comparison.attenuation_db) }} dB</p>
-        <p>{{ last_comparison.uj0_run_id }} vs {{ last_comparison.uj1_run_id }}</p>
-        <a class="btn btn-outline" href="/sessions/{{ last_comparison.session_id }}/files/{{ last_comparison.json_file }}?download=1" download>Download JSON</a>
-        {% else %}
-        <p>No saved comparisons yet.</p>
-        <a class="btn btn-outline" href="/compare">Open Compare</a>
-        {% endif %}
-      </div>
-    </div>
-    <div class="card-body panel">
-      <div class="card-title panel-head"><h2>Recent Runs</h2><a href="/sessions">All sessions</a></div>
-      <table class="data-table dense">
-        <thead><tr><th>Run</th><th>UJ</th><th>Status</th><th>Source</th><th>Open</th></tr></thead>
-        <tbody>
-        {% for run in recent_runs %}
-          <tr>
-            <td>{{ run.run_id }}</td>
-            <td>{{ run.condition.uj }}</td>
-            <td>{{ run.analysis.status }}</td>
-            <td>{{ run.recording.source }}</td>
-            <td><a href="/sessions/{{ run.session_id }}/runs/{{ run.run_id }}">Open</a></td>
-          </tr>
-        {% else %}
-          <tr><td colspan="5">No runs yet.</td></tr>
-        {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <div id="tab-export" class="tab-panel">
-    <div class="workflow-grid">
-      <div class="card-body panel">
-        <h2>Session Export</h2>
-        {% if active_session %}
-        <p>Package current session metadata, raw data, WAVs, plots, metrics, logs, comparisons, and report.</p>
-        <a class="btn btn-primary" href="/exports/sessions/{{ active_session.session_id }}.zip">Export active session ZIP</a>
-        {% else %}
-        <p>Create a session before exporting.</p>
-        {% endif %}
-      </div>
-      <div class="card-body panel">
-        <h2>Multi-session Export</h2>
-        <p>Use the Sessions page to select and export multiple sessions.</p>
-        <a class="btn btn-outline" href="/sessions">Open Sessions</a>
-      </div>
-      <div class="card-body panel">
-        <h2>Global Files</h2>
-        <p>Browse generated artifacts with role labels and audio preview.</p>
-        <a class="btn btn-outline" href="/files">Open Files</a>
-      </div>
-    </div>
-  </div>
-
-  <div id="tab-ops" class="tab-panel">
-    <div class="workflow-grid">
-      <div class="card-body panel">
-        <h2>Workspace</h2>
+    <div class="card">
+      <div class="card-body">
+        <h2 class="card-title">Operations</h2>
         <p class="mono">{{ workspace }}</p>
         <p class="muted">Persistent state is plain JSON, JSONL, CSV, Markdown, .log, .bin, WAV, PNG, and SVG files.</p>
-      </div>
-      <div class="card-body panel">
-        <h2>Operations</h2>
-        <p>Start, stop, and inspect the temporary console process.</p>
-        <a class="btn btn-error" href="/ops">Open Ops</a>
-      </div>
-      <div class="card-body panel">
-        <h2>Debug</h2>
-        <p>Use logs for tracebacks and job state after something fails.</p>
-        <a class="btn btn-outline" href="/logs">Open Logs</a>
+        <div class="button-row">
+          <a class="btn btn-outline" href="/ops/readiness">Readiness JSON</a>
+          <a class="btn btn-error" href="/ops">Open Ops</a>
+        </div>
       </div>
     </div>
-  </div>
+  </aside>
 </section>
 {% endblock %}
+{% block scripts %}<script src="/static/js/live.js"></script>{% endblock %}
