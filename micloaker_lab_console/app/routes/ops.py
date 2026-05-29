@@ -5,7 +5,7 @@ import signal
 import threading
 
 from fastapi import APIRouter, Form, HTTPException, Request
-from fastapi.responses import FileResponse, RedirectResponse
+from fastapi.responses import FileResponse, PlainTextResponse, RedirectResponse
 
 from ..services.lab_validation import (
     VALIDATION_GATE_EVIDENCE,
@@ -13,6 +13,7 @@ from ..services.lab_validation import (
     ensure_validation_artifacts,
     list_validation_records,
     record_lab_validation,
+    validation_plan,
     validation_summary,
 )
 from ..services.readiness import lab_readiness, write_readiness_artifacts
@@ -75,6 +76,14 @@ def validation_status(request: Request):
         "summary": validation_summary(workspace),
         "records": list_validation_records(workspace),
     }
+
+
+@router.get("/validation/plan")
+def validation_plan_text(request: Request):
+    return PlainTextResponse(
+        validation_plan(request.app.state.settings.workspace),
+        headers={"Content-Disposition": 'attachment; filename="hardware_validation_plan.txt"'},
+    )
 
 
 @router.get("/validation/files/{filename}")

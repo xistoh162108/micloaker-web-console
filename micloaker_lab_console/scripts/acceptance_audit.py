@@ -470,6 +470,9 @@ def main() -> int:
     validation_download_terms = [
         "/ops/validation/files/hardware_validation.jsonl",
         "/ops/validation/files/hardware_validation_report.md",
+        "/ops/validation/plan",
+        "Download Validation Plan",
+        "hardware_validation_plan.txt",
         "/ops/readiness/files/lab_readiness_report.json",
         "/ops/readiness/files/lab_readiness_report.md",
         "Download Readiness Report",

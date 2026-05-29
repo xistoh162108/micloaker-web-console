@@ -1204,6 +1204,11 @@ def test_ops_records_hardware_validation_evidence(tmp_path: Path, monkeypatch: p
     assert jsonl_download.status_code == 200
     assert "hardware_validation.jsonl" in jsonl_download.headers["content-disposition"]
     assert "daq_smoke" in jsonl_download.text
+    plan_download = client.get("/ops/validation/plan")
+    assert plan_download.status_code == 200
+    assert "hardware_validation_plan.txt" in plan_download.headers["content-disposition"]
+    assert "MiCloaker Physical Validation Plan" in plan_download.text
+    assert "scripts/lab_readiness_check.py --record-gate daq_smoke" in plan_download.text
     report_download = client.get("/ops/validation/files/hardware_validation_report.md")
     assert report_download.status_code == 200
     assert "MiCloaker Hardware Validation Records" in report_download.text

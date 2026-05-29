@@ -40,6 +40,7 @@ workspace/.micloaker/lab_readiness_report.md
 Use one record per gate: DAQ smoke capture, Mac Helper playback validation, play-and-record trial, attenuation pair check, and optional legacy notebook parity check.
 Session ZIP and multi-session ZIP exports include these records and readiness snapshots under `ops_validation/` when they exist.
 The `/ops` page also provides direct downloads for `hardware_validation.jsonl`, `hardware_validation_report.md`, `lab_readiness_report.json`, and `lab_readiness_report.md`.
+The `/ops` page also provides **Download Validation Plan** as `hardware_validation_plan.txt`, matching the `scripts/lab_readiness_check.py --validation-plan` terminal output.
 The `/ops` page displays **Evidence Hints** for each validation gate so the operator can record the expected IDs, file paths, measured values, Helper/device details, and unresolved warnings consistently.
 The same table also shows structured checklist fields for each gate, such as `selected device_id`, `raw .bin path`, and expected-versus-written sample count, to reduce missing evidence in the lab notebook.
 The validation form has a **Use checklist draft** button that pre-fills the evidence field with gate-specific checklist labels, so the operator can fill measured values without retyping the field names.
