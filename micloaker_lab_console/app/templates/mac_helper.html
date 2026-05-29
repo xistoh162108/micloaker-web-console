@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Mac Helper</h1>
+<p class="muted">Optional. Linux recording, analysis, and exports keep working when disconnected.</p>
+<p class="muted">Play & Record controls are on each run detail page so playback settings are stored with the target run metadata and log.</p>
+<section>
+  <h2>Connection Status</h2>
+  <p>
+    <span class="badge">{{ "Connected" if status.connected else "Disconnected" }}</span>
+    {% if status.connected %}
+    <span class="muted">Connected to {{ status.hostname or config.mac_helper_url }}</span>
+    {% else %}
+    <span class="muted">Manual Helper URL required for Mac-side playback control.</span>
+    {% endif %}
+  </p>
+  {% if status.connected and status.service %}
+  <p class="muted">{{ status.service }}</p>
+  {% endif %}
+</section>
+{% if not status.connected %}
+<p class="warn">Mac Helper disconnected. Manual Linux-only recording and analysis remain available.</p>
+{% endif %}
+<form method="post" action="/mac-helper/config" class="form inline">
+  <input name="mac_helper_url" value="{{ config.mac_helper_url }}" placeholder="http://100.x.y.z:5050">
+  <input name="mac_helper_token" value="{{ config.mac_helper_token or '' }}" type="password" autocomplete="off" placeholder="optional token">
+  <button type="submit">Save Manual URL</button>
+</form>
+<h2>Status</h2>
+<pre>{{ status | tojson(indent=2) }}</pre>
+<section>
+  <h2>Connection</h2>
+  <nav class="actions">
+    <button id="helper-discover" type="button">Auto Discover via Tailscale</button>
+    <button id="helper-health" type="button">Health Check</button>
+  </nav>
+  <pre id="helper-connection-output">manual URL required when discovery is empty</pre>
+</section>
+<section class="grid two">
+  <div>
+    <h2>Devices</h2>
+    <button id="helper-devices" type="button">Refresh Devices</button>
+    <label>Output device
+      <select id="helper-device-select" name="device_id"></select>
+    </label>
+    <pre id="helper-devices-output">not loaded</pre>
+  </div>
+  <div>
+    <h2>Files</h2>
+    <button id="helper-files" type="button">Refresh Files</button>
+    <label>WAV file
+      <select id="helper-file-select" name="file"></select>
+    </label>
+    <pre id="helper-files-output">not loaded</pre>
+  </div>
+</section>
+<section>
+  <h2>Playback Setup</h2>
+  <form id="helper-playback-form" class="form grid-form">
+    <label>Sample rate
+      <select id="helper-sample-rate" name="sample_rate">
+        <option value="48000">48000</option>
+        <option value="96000">96000</option>
+        <option value="192000" selected>192000</option>
+        <option value="custom">custom</option>
+      </select>
+    </label>
+    <label>Custom sample rate <input id="helper-custom-sample-rate" type="number" min="1" step="1" placeholder="192000"></label>
+    <label>Channels <input name="channels" type="number" min="1" value="1"></label>
+    <label>Gain <input name="gain" type="range" min="0" max="1" step="0.01" value="1.0"></label>
+    <label>Delay ms <input name="delay_ms" type="number" min="0" value="500"></label>
+    <button id="helper-validate" type="button">Validate Playback</button>
+    <button id="helper-play" type="button">Play</button>
+  </form>
+  <pre id="helper-playback-output">not validated</pre>
+</section>
+<section>
+  <h2>Playback Status</h2>
+  <nav class="actions">
+    <button id="helper-status" type="button">Refresh Status</button>
+    <button id="helper-stop" type="button">Stop Playback</button>
+  </nav>
+  <pre id="helper-status-output">not loaded</pre>
+</section>
+<script src="/static/js/mac_helper.js"></script>
+{% endblock %}

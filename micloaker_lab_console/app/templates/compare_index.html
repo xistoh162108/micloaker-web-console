@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Compare</h1>
+<p class="muted">Select a session, then choose finalized uj0 and uj1 runs for attenuation analysis.</p>
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>session</th>
+      <th>date</th>
+      <th>description</th>
+      <th>runs</th>
+      <th>finalized</th>
+      <th>uj0</th>
+      <th>uj1</th>
+      <th>compare</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for session in sessions %}
+    <tr>
+      <td><a href="/sessions/{{ session.session_id }}">{{ session.session_id }}</a></td>
+      <td>{{ session.created_at[:10] }}</td>
+      <td>{{ session.title }}</td>
+      <td>{{ session.run_count }}</td>
+      <td>{{ session.finalized_count }}</td>
+      <td>{{ session.uj0_count }}</td>
+      <td>{{ session.uj1_count }}</td>
+      <td><a href="/compare/{{ session.session_id }}">open</a></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="8">No sessions yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

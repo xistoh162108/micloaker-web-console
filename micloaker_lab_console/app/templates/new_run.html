@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>New Run</h1>
+<p class="muted">Create a run in an existing session, or create a session first when starting a new experiment.</p>
+<section class="grid two">
+  <div>
+    <h2>Create Session</h2>
+    <form method="post" action="/sessions" class="form">
+      <label>Title <input name="title" required value="r25k_test"></label>
+      <label>Notes <textarea name="notes"></textarea></label>
+      <button type="submit">Create Session</button>
+    </form>
+  </div>
+  <div>
+    <h2>Choose a Session</h2>
+    <form method="get" action="/runs/new" class="form inline">
+      <select name="session_id" aria-label="Session">
+        {% for session in sessions %}
+        <option value="{{ session.session_id }}" {% if session.session_id == selected_session_id %}selected{% endif %}>{{ session.session_id }} ({{ session.run_count }} runs)</option>
+        {% endfor %}
+      </select>
+      <button type="submit">Use Session</button>
+    </form>
+    <ul class="list">
+      {% for session in sessions %}
+      <li>
+        <a href="/sessions/{{ session.session_id }}">{{ session.session_id }}</a>
+        <span>{{ session.run_count }} runs</span>
+      </li>
+      {% else %}
+      <li>No sessions yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% if selected_session_id %}
+<section class="band">
+  <h2>Run Metadata</h2>
+  <details open>
+    <summary>Simple</summary>
+    <form method="post" action="/sessions/{{ selected_session_id }}/runs" class="form grid-form">
+      <label>Session <input value="{{ selected_session_id }}" readonly></label>
+      <label>Frequency kHz
+        <input name="carrier_freq_khz" type="number" step="0.1" value="25" list="new-run-carrier-frequency-presets">
+        <datalist id="new-run-carrier-frequency-presets">
+          <option value="25" label="25 kHz"></option>
+          <option value="32.8" label="32.8 kHz"></option>
+        </datalist>
+      </label>
+      <label>UJ <select name="uj"><option>uj0</option><option>uj1</option></select></label>
+      <label>Sound
+        <select name="sound_condition">
+          <option value="sound0">no sound</option>
+          <option value="sound1">jamming</option>
+          <option value="speech">speech</option>
+          <option value="custom">custom</option>
+        </select>
+      </label>
+      <label>Duration <input name="duration_s" type="number" min="0.01" step="0.1" value="1.0"></label>
+      <label>Sample rate <input name="sample_rate_hz" type="number" min="1" value="8000"></label>
+      <label>Scale mode <select name="scale_mode"><option value="both">peak + range</option><option value="peak">peak</option><option value="range">range</option></select></label>
+      <label class="wide">Notes <input name="notes"></label>
+      <details class="wide">
+        <summary>Advanced</summary>
+        <div class="form grid-form nested-form">
+          <label>DAQ range <input name="ai_range" value="BIP10VOLTS"></label>
+          <label>Input mode <input name="input_mode" value="SINGLE_ENDED"></label>
+          <label>Channel <input name="channel" type="number" min="0" value="0"></label>
+          <label>Mic <input name="mic_id" value="mock_ch0"></label>
+          <label>Room <input name="room" value="lab"></label>
+          <label>Distance cm <input name="distance_cm" type="number" min="0" step="0.1"></label>
+          <label>Angle deg <input name="angle_deg" type="number" step="0.1" value="0"></label>
+          <label>Full-scale V <input name="full_scale_volts" type="number" min="0.1" step="0.1" value="10"></label>
+          <label class="inline-check"><input name="remove_dc" type="hidden" value="false"><input name="remove_dc" type="checkbox" value="true" checked> remove DC before WAV/analysis</label>
+          <label>Trim start s <input name="trim_start_s" type="number" min="0" step="0.01" value="0"></label>
+          <label>Trim end s <input name="trim_end_s" type="number" min="0" step="0.01" value="0"></label>
+          <label>Band low Hz <input name="analysis_band_low_hz" type="number" min="0" step="1" value="300"></label>
+          <label>Band high Hz <input name="analysis_band_high_hz" type="number" min="1" step="1" value="3400"></label>
+          <label>Safety operator <input name="safety_operator"></label>
+          <label>Safety max SPL dB <input name="safety_max_spl_db" type="number" min="0" step="0.1"></label>
+          <label class="wide">Safety notes <input name="safety_notes"></label>
+          <label>Mac Helper WAV file <input name="mac_helper_file" placeholder="jamming_25khz.wav"></label>
+          <label>Mac Helper device ID <input name="mac_helper_device_id" type="number" min="0"></label>
+          <label>Mac Helper sample rate <input name="mac_helper_sample_rate" type="number" min="1" placeholder="192000"></label>
+          <label>Mac Helper channels <input name="mac_helper_channels" type="number" min="1" value="1"></label>
+          <label>Mac Helper gain <input name="mac_helper_gain" type="number" min="0" max="1" step="0.01" value="1.0"></label>
+          <label>Mac Helper delay ms <input name="mac_helper_delay_ms" type="number" min="0" value="500"></label>
+        </div>
+      </details>
+      <button type="submit">Create Run</button>
+      <button type="submit" name="record_after_create" value="true">Create + Record Mock</button>
+      <button type="submit" name="record_after_create_source" value="daq">Create + Record DAQ</button>
+    </form>
+  </details>
+</section>
+{% else %}
+<section class="band">
+  <h2>Run Metadata</h2>
+  <p class="muted">Create a session before adding runs.</p>
+</section>
+{% endif %}
+{% endblock %}

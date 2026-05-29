@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Compare {{ session_id }}</h1>
+<form method="post" class="form grid-form">
+  <label>UJ0 run
+    <select name="uj0_run_id">{% for run in finalized_uj0_runs %}<option value="{{ run.run_id }}">{{ run.run_id }} finalized</option>{% endfor %}</select>
+  </label>
+  <label>UJ1 run
+    <select name="uj1_run_id">{% for run in finalized_uj1_runs %}<option value="{{ run.run_id }}">{{ run.run_id }} finalized</option>{% endfor %}</select>
+  </label>
+  <label>Source
+    <select name="source">
+      <option value="bin">BIN primary</option>
+      <option value="range_wav">Range WAV cross-check</option>
+      <option value="peak_wav" disabled>Peak WAV disabled</option>
+    </select>
+  </label>
+  <label>Band
+    <select name="band_mode">
+      <option value="primary">300-3400 Hz</option>
+      <option value="wide">20-3900 Hz</option>
+      <option value="custom">Custom</option>
+    </select>
+  </label>
+  <label>Custom low Hz <input name="custom_low_hz" type="number" step="1" placeholder="300"></label>
+  <label>Custom high Hz <input name="custom_high_hz" type="number" step="1" placeholder="3400"></label>
+  <button type="submit" {% if not finalized_uj0_runs or not finalized_uj1_runs %}disabled{% endif %}>Compute Attenuation</button>
+</form>
+{% if not finalized_uj0_runs or not finalized_uj1_runs %}
+<p class="warn">Finalize at least one uj0 run and one uj1 run before manual comparison.</p>
+{% endif %}
+<p class="muted">BIN is the report-grade source. Range WAV is a cross-check only when full-scale voltage is correct. Peak WAV is listening-only and disabled for quantitative comparison.</p>
+<form method="post" action="/compare/{{ session_id }}/auto-pair" class="form inline">
+  <button type="submit">Auto-Pair Finalized UJ0/UJ1</button>
+</form>
+<section>
+  <h2>Saved Results</h2>
+  <ul class="list">
+    {% for item in comparisons %}
+    <li>
+      <span>{{ item.uj0_run_id }} vs {{ item.uj1_run_id }}</span>
+      <span>{{ item.source }} {{ item.band_hz }}: {{ "%.2f"|format(item.attenuation_db) }} dB, remaining fraction {{ "%.4g"|format(item.remaining_fraction) }}, {{ "%.1f"|format(item.reduction_percent) }}% reduction</span>
+      <span class="badge">{{ item.result_grade or "unknown-grade" }}</span>
+      {% if item.source_label %}<span class="muted">{{ item.source_label }}</span>{% endif %}
+      <span class="muted">{{ item.attenuation_formula or "10*log10(uj0_power/uj1_power)" }}; {{ item.power_units or "V^2 integrated Welch PSD band power" }}</span>
+      {% if item.uj0_source_path or item.uj1_source_path %}
+      <span class="muted">sources: {{ item.uj0_source_path }} / {{ item.uj1_source_path }}</span>
+      {% endif %}
+      <span>
+        <a href="/sessions/{{ session_id }}/files/{{ item.json_file }}?download=1" download>JSON</a>
+        <a href="/sessions/{{ session_id }}/files/{{ item.csv_file }}?download=1" download>CSV</a>
+        {% if item.plots %}
+        <a href="/sessions/{{ session_id }}/files/{{ item.plots.attenuation_png }}?download=1" download>Bar PNG</a>
+        <a href="/sessions/{{ session_id }}/files/{{ item.plots.attenuation_svg }}?download=1" download>Bar SVG</a>
+        <a href="/sessions/{{ session_id }}/files/{{ item.plots.psd_overlay_png }}?download=1" download>PSD PNG</a>
+        <a href="/sessions/{{ session_id }}/files/{{ item.plots.psd_overlay_svg }}?download=1" download>PSD SVG</a>
+        {% endif %}
+      </span>
+      {% if item.warnings %}<span class="warn">{{ item.warnings|join(", ") }}</span>{% endif %}
+      {% if item.plots %}
+      <div class="plots">
+        {% if item.plots.attenuation_png %}
+        <figure>
+          <img src="/sessions/{{ session_id }}/files/{{ item.plots.attenuation_png }}" alt="Attenuation bar chart for {{ item.uj0_run_id }} vs {{ item.uj1_run_id }}">
+          <figcaption>Attenuation bar chart</figcaption>
+        </figure>
+        {% endif %}
+        {% if item.plots.psd_overlay_png %}
+        <figure>
+          <img src="/sessions/{{ session_id }}/files/{{ item.plots.psd_overlay_png }}" alt="PSD overlay for {{ item.uj0_run_id }} vs {{ item.uj1_run_id }}">
+          <figcaption>PSD overlay</figcaption>
+        </figure>
+        {% endif %}
+      </div>
+      {% endif %}
+    </li>
+    {% else %}
+    <li>No saved comparisons yet.</li>
+    {% endfor %}
+  </ul>
+</section>
+<ul class="list">
+  {% for run in runs %}
+  <li><a href="/sessions/{{ session_id }}/runs/{{ run.run_id }}">{{ run.run_id }}</a><span>{{ run.analysis.status }}</span></li>
+  {% endfor %}
+</ul>
+{% endblock %}

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Logs</h1>
+<section>
+  <h2>Diagnostic Downloads</h2>
+  <ul class="list">
+    {% for name in diagnostic_files %}
+    <li><a href="/logs/download/{{ name }}" download>{{ name }}</a></li>
+    {% endfor %}
+  </ul>
+</section>
+<section>
+  <h2>Job Status</h2>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>status</th>
+        <th>event</th>
+        <th>job_id</th>
+        <th>type</th>
+        <th>started</th>
+        <th>finished</th>
+        <th>log</th>
+        <th>error</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for job in job_rows %}
+      <tr>
+        <td>{{ job.status }}</td>
+        <td>{{ job.event }}</td>
+        <td>{{ job.job_id }}</td>
+        <td>{{ job.type }}</td>
+        <td>{{ job.started_at }}</td>
+        <td>{{ job.finished_at }}</td>
+        <td>
+          {% if job.log_viewable %}
+          <a href="/logs/view/{{ job.logs }}">{{ job.logs }}</a>
+          {% else %}
+          {{ job.logs }}
+          {% endif %}
+        </td>
+        <td>{{ job.error }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8">No jobs have been recorded yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+<section>
+  <h2>Mac Helper Client Logs</h2>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>time</th>
+        <th>session</th>
+        <th>run</th>
+        <th>action</th>
+        <th>ok</th>
+        <th>error</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in mac_helper_rows %}
+      <tr>
+        <td>{{ row.ts }}</td>
+        <td>{% if row.session_id %}<a href="/sessions/{{ row.session_id }}">{{ row.session_id }}</a>{% endif %}</td>
+        <td>{% if row.session_id and row.run_id %}<a href="/sessions/{{ row.session_id }}/runs/{{ row.run_id }}">{{ row.run_id }}</a>{% else %}{{ row.run_id }}{% endif %}</td>
+        <td>{{ row.action }}</td>
+        <td>{{ row.ok }}</td>
+        <td>{{ row.error_code }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6">No Mac Helper client actions have been recorded yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+<section class="grid two">
+  <div>
+    <h2>Run Logs</h2>
+    <ul class="list">
+      {% for path in run_logs %}
+      <li><a href="/logs/view/{{ path }}">{{ path }}</a></li>
+      {% else %}
+      <li>No run logs yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+  <div>
+    <h2>{% if selected_log %}{{ selected_log.path }}{% else %}Selected Log{% endif %}</h2>
+    <button class="copy-log" type="button" data-copy-target="selected-log-text">Copy Selected Log</button>
+    <pre id="selected-log-text">{% if selected_log %}{{ selected_log.text }}{% else %}Select a run log to inspect traceback/job details.{% endif %}</pre>
+  </div>
+</section>
+<section class="grid two">
+  <div>
+    <h2>Traceback Viewer</h2>
+    <button class="copy-log" type="button" data-copy-target="traceback-text">Copy Tracebacks</button>
+    <pre id="traceback-text">{{ traceback_text }}</pre>
+  </div>
+  <div>
+    <h2>App and Job Events</h2>
+    <button class="copy-log" type="button" data-copy-target="app-job-log-text">Copy App/Job Events</button>
+    <pre id="app-job-log-text">{{ log_text }}</pre>
+  </div>
+</section>
+{% endblock %}

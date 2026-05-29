@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Sessions</h1>
+<form method="post" action="/sessions" class="form inline">
+  <input name="title" required placeholder="session title">
+  <input name="notes" placeholder="notes">
+  <button type="submit">Create Session</button>
+</form>
+<form method="post" action="/sessions/rebuild-index"><button type="submit">Rebuild Index</button></form>
+{% if rebuild_status %}
+<p class="badge">Rebuilt indexes: {{ rebuild_status.sessions }} sessions, {{ rebuild_status.runs }} runs, {{ rebuild_status.comparisons }} comparisons.</p>
+{% endif %}
+<form method="get" action="/exports/multi-session.zip" class="form">
+  <h2>Multi-Session Export</h2>
+  {% for session in sessions %}
+  <label><input type="checkbox" name="session_ids" value="{{ session.session_id }}"> {{ session.session_id }}</label>
+  {% endfor %}
+  <button type="submit">Download Selected ZIP</button>
+</form>
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>session_id</th>
+      <th>date</th>
+      <th>description</th>
+      <th>runs</th>
+      <th>analyzed</th>
+      <th>comparisons</th>
+      <th>export</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for session in sessions %}
+    <tr>
+      <td><a href="/sessions/{{ session.session_id }}">{{ session.session_id }}</a></td>
+      <td>{{ session.created_at[:10] }}</td>
+      <td>{{ session.title }}{% if session.notes %}<br><span class="muted">{{ session.notes }}</span>{% endif %}</td>
+      <td>{{ session.run_count }}</td>
+      <td>{{ session.analyzed_count }}</td>
+      <td>{{ session.comparison_count }}</td>
+      <td><a href="/exports/sessions/{{ session.session_id }}.zip">ZIP</a></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="7">No sessions yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

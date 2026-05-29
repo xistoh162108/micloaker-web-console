@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MiCloaker Lab Console</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="/" class="brand">MiCloaker Lab Console</a>
+    <nav>
+      <a href="/">Dashboard</a>
+      <a href="/sessions">Sessions</a>
+      <a href="/runs/new">New Run</a>
+      <a href="/compare">Compare</a>
+      <a href="/live">Live Monitor</a>
+      <a href="/mac-helper">Mac Helper</a>
+      <a href="/files">Files</a>
+      <a href="/logs">Logs/Debug</a>
+      <a href="/ops">Ops</a>
+    </nav>
+  </header>
+  <main class="page">
+    {% block content %}{% endblock %}
+  </main>
+  <script src="/static/js/app.js"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

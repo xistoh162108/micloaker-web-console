@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Files</h1>
+<p class="muted">Workspace file browser. Downloads use session-scoped safe file routes.</p>
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>session</th>
+      <th>path</th>
+      <th>type</th>
+      <th>role</th>
+      <th>size</th>
+      <th>preview</th>
+      <th>open</th>
+      <th>download</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for file in files %}
+    <tr>
+      <td><a href="/sessions/{{ file.session_id }}">{{ file.session_id }}</a></td>
+      <td>{{ file.path }}</td>
+      <td>{{ file.kind }}</td>
+      <td>{{ file.role }}</td>
+      <td>{{ file.size_bytes }}</td>
+      <td>
+        {% if file.is_audio %}
+        <audio controls preload="none" src="{{ file.download_url }}"></audio>
+        {% else %}
+        -
+        {% endif %}
+      </td>
+      <td><a href="{{ file.download_url }}">open</a></td>
+      <td><a href="{{ file.download_url }}?download=1" download>download</a></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="8">No session files yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

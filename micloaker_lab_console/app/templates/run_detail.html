@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ run.run_id }}</h1>
+<p class="badge">{{ run.analysis.status }}</p>
+<p class="badge">{{ run.analysis.result_grade }}</p>
+<p class="muted">{{ run.analysis.label }}</p>
+{% if daq_status and not daq_status.available %}
+<p class="warn">DAQ unavailable - mock recording and raw .bin upload remain available.</p>
+{% endif %}
+<nav class="actions">
+  <form method="post" action="/sessions/{{ session_id }}/runs/{{ run.run_id }}/record-mock"><button type="submit">Record Mock + Finalize</button></form>
+  <form method="post" action="/sessions/{{ session_id }}/runs/{{ run.run_id }}/record-daq"><button type="submit">Record DAQ + Finalize</button></form>
+  <form method="post" action="/sessions/{{ session_id }}/runs/{{ run.run_id }}/finalize">
+    <label class="inline-check"><input name="overwrite_existing" type="checkbox" value="true"> overwrite derived outputs</label>
+    <button type="submit">Finalize From .bin</button>
+  </form>
+  <form method="post" action="/sessions/{{ session_id }}/runs/{{ run.run_id }}/convert">
+    <label class="inline-check"><input name="overwrite_existing" type="checkbox" value="true"> overwrite WAVs</label>
+    <button type="submit">Convert WAVs</button>
+  </form>
+  <a href="/exports/sessions/{{ session_id }}/runs/{{ run.run_id }}.zip">Run ZIP</a>
+</nav>
+<section class="grid two">
+  <div>
+    <h2>Metadata Summary</h2>
+    <table class="data-table">
+      <tbody>
+        <tr><th>Session</th><td>{{ run.session_id }}</td></tr>
+        <tr><th>Created</th><td>{{ run.created_at }}</td></tr>
+        <tr><th>Carrier</th><td>{{ run.condition.carrier_freq_khz }} kHz</td></tr>
+        <tr><th>UJ</th><td>{{ run.condition.uj }}</td></tr>
+        <tr><th>Sound</th><td>{{ run.condition.sound_condition }}</td></tr>
+        <tr><th>Mic</th><td>{{ run.condition.mic_id }}</td></tr>
+        <tr><th>Room</th><td>{{ run.condition.room }}</td></tr>
+        <tr><th>Distance / angle</th><td>{{ run.condition.distance_cm }} cm / {{ run.condition.angle_deg }} deg</td></tr>
+        <tr><th>Recording source</th><td>{{ run.recording.source }}</td></tr>
+        <tr><th>Sample rate</th><td>{{ run.recording.actual_sample_rate_hz or run.recording.sample_rate_hz }} Hz</td></tr>
+        <tr><th>Duration</th><td>{{ run.recording.duration_s }} s</td></tr>
+        <tr><th>DAQ channels</th><td>{{ run.recording.channels }}</td></tr>
+        <tr><th>DAQ range / mode</th><td>{{ run.recording.ai_range }} / {{ run.recording.input_mode }}</td></tr>
+        <tr><th>Scale modes</th><td>{{ run.conversion.scale_modes }}</td></tr>
+        <tr><th>Remove DC</th><td>{{ run.conversion.remove_dc }}</td></tr>
+        <tr><th>Full-scale voltage</th><td>{{ run.conversion.full_scale_volts }} V</td></tr>
+        <tr><th>Trim</th><td>{{ run.analysis.trim_start_s }} s / {{ run.analysis.trim_end_s }} s</td></tr>
+        <tr><th>Primary band</th><td>{{ run.analysis.primary_band_hz }} Hz</td></tr>
+        <tr><th>Safety operator</th><td>{{ run.safety.operator or "none" }}</td></tr>
+        <tr><th>Safety max SPL</th><td>{{ run.safety.max_spl_db if run.safety.max_spl_db is not none else "none" }}</td></tr>
+      </tbody>
+    </table>
+    <details>
+      <summary>Raw Run JSON</summary>
+      <pre>{{ run | tojson(indent=2) }}</pre>
+    </details>
+  </div>
+  <div>
+    <h2>Final Metrics</h2>
+    {% if metrics %}
+    <table class="data-table">
+      <tbody>
+        <tr><th>Source</th><td>{{ metrics.source }}</td></tr>
+        <tr><th>Result label</th><td>{{ metrics.label }}</td></tr>
+        <tr><th>Sample rate</th><td>{{ metrics.sample_rate_hz }} Hz</td></tr>
+        <tr><th>Samples</th><td>{{ metrics.sample_count }}</td></tr>
+        <tr><th>Trimmed samples</th><td>{{ metrics.get("trimmed_sample_count", "") }}</td></tr>
+        <tr><th>RMS</th><td>{{ "%.6g"|format(metrics.get("rms_v", 0)) }} V</td></tr>
+        <tr><th>DC offset</th><td>{{ "%.6g"|format(metrics.get("dc_offset_v", 0)) }} V</td></tr>
+        <tr><th>Primary band</th><td>{{ metrics.get("band_hz", []) }} Hz</td></tr>
+        <tr><th>Effective primary band</th><td>{{ metrics.get("effective_band_hz", metrics.get("band_hz", [])) }} Hz</td></tr>
+        <tr><th>Primary band power</th><td>{{ "%.6g"|format(metrics.get("band_power", metrics.get("band_power_300_3400", 0))) }}</td></tr>
+        <tr><th>Primary band RMS</th><td>{{ "%.6g"|format(metrics.get("band_rms_v", 0)) }} V</td></tr>
+        <tr><th>Effective 300-3400 Hz band</th><td>{{ metrics.get("effective_band_hz_300_3400", [300.0, 3400.0]) }} Hz</td></tr>
+        <tr><th>300-3400 Hz power</th><td>{{ "%.6g"|format(metrics.get("band_power_300_3400", 0)) }}</td></tr>
+        <tr><th>300-3400 Hz RMS</th><td>{{ "%.6g"|format(metrics.get("band_rms_300_3400_v", 0)) }} V</td></tr>
+        <tr><th>Effective 20-3900 Hz band</th><td>{{ metrics.get("effective_wide_band_hz", metrics.get("wide_band_hz", [20.0, 3900.0])) }} Hz</td></tr>
+        <tr><th>20-3900 Hz power</th><td>{{ "%.6g"|format(metrics.get("band_power_20_3900", 0)) }}</td></tr>
+        <tr><th>20-3900 Hz RMS</th><td>{{ "%.6g"|format(metrics.get("band_rms_20_3900_v", 0)) }} V</td></tr>
+        <tr><th>Dominant tone</th><td>{{ "%.2f"|format(metrics.get("dominant_freq_hz", 0)) }} Hz</td></tr>
+        <tr><th>Dominant tone band</th><td>{{ metrics.get("dominant_tone_band_hz", []) }} Hz</td></tr>
+        <tr><th>Dominant ±50 Hz power</th><td>{{ "%.6g"|format(metrics.get("dominant_tone_power_pm50", 0)) }}</td></tr>
+        <tr><th>Dominant ±50 Hz RMS</th><td>{{ "%.6g"|format(metrics.get("dominant_tone_rms_pm50_v", 0)) }} V</td></tr>
+      </tbody>
+    </table>
+    <h3>Quality Flags</h3>
+    <ul class="list">
+      {% for flag in metrics.quality_flags %}
+      <li><span class="warn">{{ flag }}</span></li>
+      {% else %}
+      <li>No quality flags.</li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p class="muted">No finalized metrics yet.</p>
+    {% endif %}
+    <details>
+      <summary>Raw Metrics JSON</summary>
+      <pre>{{ metrics | tojson(indent=2) }}</pre>
+    </details>
+  </div>
+</section>
+<section>
+  <h2>Preview Audio</h2>
+  <p>BIN: primary quantitative data.</p>
+  {% if run.conversion.outputs %}
+  <table class="data-table">
+    <thead><tr><th>WAV</th><th>Purpose</th><th>Quantitative Use</th></tr></thead>
+    <tbody>
+      {% for key, output in run.conversion.outputs.items() %}
+      <tr>
+        <td>{{ output.path }}</td>
+        <td>{{ output.purpose }}</td>
+        <td>{{ output.quantitative_use }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+  {% if run.files.wav_peak in file_set %}
+  <p>Peak WAV: listening preview only.</p>
+  <audio controls src="/sessions/{{ session_id }}/files/{{ run.files.wav_peak }}"></audio>
+  {% endif %}
+  {% if run.files.wav_range in file_set %}
+  <p>Range WAV: scale-valid cross-check if full-scale voltage is correct.</p>
+  <audio controls src="/sessions/{{ session_id }}/files/{{ run.files.wav_range }}"></audio>
+  {% endif %}
+</section>
+<section>
+  <h2>Optional Mac Helper</h2>
+  <div class="helper-state">
+    <p class="muted">Last action: {{ run.mac_helper.last_action or "none" }}</p>
+    <p class="muted">Last error code: {{ run.mac_helper.last_error_code or "none" }}</p>
+    <p class="muted">Last error: {{ run.mac_helper.last_error or "none" }}</p>
+    <p class="muted">Suggestion: {{ run.mac_helper.last_suggestion or "none" }}</p>
+    {% if run.mac_helper.play_id %}<p class="muted">Play ID: {{ run.mac_helper.play_id }}</p>{% endif %}
+  </div>
+  <table class="data-table">
+    <tbody>
+      <tr><th>Connected</th><td>{{ run.mac_helper.connected }}</td></tr>
+      <tr><th>Helper URL</th><td>{{ run.mac_helper.helper_url or "not configured" }}</td></tr>
+      <tr><th>WAV file</th><td>{{ run.mac_helper.file or run.mac_helper.planned_file or "none" }}</td></tr>
+      <tr><th>Device ID</th><td>{{ run.mac_helper.device_id if run.mac_helper.device_id is not none else (run.mac_helper.planned_device_id if run.mac_helper.planned_device_id is not none else "none") }}</td></tr>
+      <tr><th>Device name</th><td>{{ run.mac_helper.device_name or "unknown" }}</td></tr>
+      <tr><th>Device max output channels</th><td>{{ run.mac_helper.device_max_output_channels if run.mac_helper.device_max_output_channels is not none else "unknown" }}</td></tr>
+      <tr><th>Device default sample rate</th><td>{{ run.mac_helper.device_default_samplerate if run.mac_helper.device_default_samplerate is not none else "unknown" }}</td></tr>
+      <tr><th>Device host API</th><td>{{ run.mac_helper.device_hostapi or "unknown" }}</td></tr>
+      <tr><th>Requested sample rate</th><td>{{ run.mac_helper.requested_sample_rate if run.mac_helper.requested_sample_rate is not none else (run.mac_helper.planned_sample_rate if run.mac_helper.planned_sample_rate is not none else "none") }}</td></tr>
+      <tr><th>Source sample rate</th><td>{{ run.mac_helper.source_sample_rate if run.mac_helper.source_sample_rate is not none else "unknown" }}</td></tr>
+      <tr><th>Will resample</th><td>{{ run.mac_helper.will_resample }}</td></tr>
+      <tr><th>Channels</th><td>{{ run.mac_helper.requested_channels if run.mac_helper.requested_channels is not none else (run.mac_helper.channels if run.mac_helper.channels is not none else "none") }}</td></tr>
+      <tr><th>Source channels</th><td>{{ run.mac_helper.source_channels if run.mac_helper.source_channels is not none else "unknown" }}</td></tr>
+      <tr><th>Will channel map</th><td>{{ run.mac_helper.will_channel_map }}</td></tr>
+      <tr><th>Gain</th><td>{{ run.mac_helper.gain if run.mac_helper.gain is not none else "none" }}</td></tr>
+      <tr><th>Delay ms</th><td>{{ run.mac_helper.delay_ms if run.mac_helper.delay_ms is not none else "none" }}</td></tr>
+      <tr><th>Playback duration</th><td>{{ run.mac_helper.playback_duration_s if run.mac_helper.playback_duration_s is not none else "unknown" }}</td></tr>
+    </tbody>
+  </table>
+  <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/validate-playback" class="form grid-form">
+    <label>WAV file on Mac <input name="file" value="{{ run.mac_helper.planned_file or '' }}" placeholder="jamming_25khz.wav"></label>
+    <label>Device ID <input name="device_id" type="number" value="{{ run.mac_helper.planned_device_id if run.mac_helper.planned_device_id is not none else 0 }}"></label>
+    <label>Sample rate <input name="sample_rate" type="number" value="{{ run.mac_helper.planned_sample_rate if run.mac_helper.planned_sample_rate is not none else 192000 }}"></label>
+    <label>Channels <input name="channels" type="number" value="{{ run.mac_helper.planned_channels if run.mac_helper.planned_channels is not none else 1 }}"></label>
+    <label>Gain <input name="gain" type="number" step="0.1" value="{{ run.mac_helper.planned_gain if run.mac_helper.planned_gain is not none else 1.0 }}"></label>
+    <button type="submit">Validate Playback</button>
+  </form>
+  <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/play" class="form grid-form">
+    <label>WAV file on Mac <input name="file" value="{{ run.mac_helper.planned_file or run.mac_helper.file or '' }}" placeholder="jamming_25khz.wav"></label>
+    <label>Device ID <input name="device_id" type="number" value="{{ run.mac_helper.planned_device_id if run.mac_helper.planned_device_id is not none else (run.mac_helper.device_id if run.mac_helper.device_id is not none else 0) }}"></label>
+    <label>Sample rate <input name="sample_rate" type="number" value="{{ run.mac_helper.planned_sample_rate if run.mac_helper.planned_sample_rate is not none else (run.mac_helper.requested_sample_rate if run.mac_helper.requested_sample_rate is not none else 192000) }}"></label>
+    <label>Channels <input name="channels" type="number" value="{{ run.mac_helper.planned_channels if run.mac_helper.planned_channels is not none else (run.mac_helper.channels if run.mac_helper.channels is not none else 1) }}"></label>
+    <label>Gain <input name="gain" type="number" step="0.1" value="{{ run.mac_helper.planned_gain if run.mac_helper.planned_gain is not none else (run.mac_helper.gain if run.mac_helper.gain is not none else 1.0) }}"></label>
+    <label>Delay ms <input name="delay_ms" type="number" value="{{ run.mac_helper.planned_delay_ms if run.mac_helper.planned_delay_ms is not none else (run.mac_helper.delay_ms if run.mac_helper.delay_ms is not none else 0) }}"></label>
+    <button type="submit">Play</button>
+  </form>
+  <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/stop" class="form">
+    <button type="submit">Stop Playback</button>
+  </form>
+  <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/play-and-record-mock" class="form grid-form">
+    <label>WAV file on Mac <input name="file" value="{{ run.mac_helper.planned_file or '' }}" placeholder="jamming_25khz.wav"></label>
+    <label>Device ID <input name="device_id" type="number" value="{{ run.mac_helper.planned_device_id if run.mac_helper.planned_device_id is not none else 0 }}"></label>
+    <label>Sample rate <input name="sample_rate" type="number" value="{{ run.mac_helper.planned_sample_rate if run.mac_helper.planned_sample_rate is not none else 192000 }}"></label>
+    <label>Channels <input name="channels" type="number" value="{{ run.mac_helper.planned_channels if run.mac_helper.planned_channels is not none else 1 }}"></label>
+    <label>Gain <input name="gain" type="number" step="0.1" value="{{ run.mac_helper.planned_gain if run.mac_helper.planned_gain is not none else 1.0 }}"></label>
+    <label>Delay ms <input name="delay_ms" type="number" value="{{ run.mac_helper.planned_delay_ms if run.mac_helper.planned_delay_ms is not none else 500 }}"></label>
+    <button type="submit">Play & Record Mock</button>
+  </form>
+  <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/play-and-record-daq" class="form grid-form">
+    <label>WAV file on Mac <input name="file" value="{{ run.mac_helper.planned_file or '' }}" placeholder="jamming_25khz.wav"></label>
+    <label>Device ID <input name="device_id" type="number" value="{{ run.mac_helper.planned_device_id if run.mac_helper.planned_device_id is not none else 0 }}"></label>
+    <label>Sample rate <input name="sample_rate" type="number" value="{{ run.mac_helper.planned_sample_rate if run.mac_helper.planned_sample_rate is not none else 192000 }}"></label>
+    <label>Channels <input name="channels" type="number" value="{{ run.mac_helper.planned_channels if run.mac_helper.planned_channels is not none else 1 }}"></label>
+    <label>Gain <input name="gain" type="number" step="0.1" value="{{ run.mac_helper.planned_gain if run.mac_helper.planned_gain is not none else 1.0 }}"></label>
+    <label>Delay ms <input name="delay_ms" type="number" value="{{ run.mac_helper.planned_delay_ms if run.mac_helper.planned_delay_ms is not none else 500 }}"></label>
+    <button type="submit">Play & Record DAQ</button>
+  </form>
+</section>
+<section>
+  <h2>Plots</h2>
+  <div class="plots">
+    {% if run.files.get("waveform_png") in file_set %}
+    <figure>
+      <img src="/sessions/{{ session_id }}/files/{{ run.files.waveform_png }}" alt="Final waveform plot">
+      <figcaption>
+        Final waveform
+        <a href="/sessions/{{ session_id }}/files/{{ run.files.waveform_png }}">PNG</a>
+        {% if run.files.get("waveform_svg") in file_set %}<a href="/sessions/{{ session_id }}/files/{{ run.files.waveform_svg }}">SVG</a>{% endif %}
+      </figcaption>
+    </figure>
+    {% endif %}
+    {% if run.files.get("psd_png") in file_set %}
+    <figure>
+      <img src="/sessions/{{ session_id }}/files/{{ run.files.psd_png }}" alt="Final PSD plot">
+      <figcaption>
+        Final PSD
+        <a href="/sessions/{{ session_id }}/files/{{ run.files.psd_png }}">PNG</a>
+        {% if run.files.get("psd_svg") in file_set %}<a href="/sessions/{{ session_id }}/files/{{ run.files.psd_svg }}">SVG</a>{% endif %}
+      </figcaption>
+    </figure>
+    {% endif %}
+    {% if run.files.get("spectrogram_png") in file_set %}
+    <figure>
+      <img src="/sessions/{{ session_id }}/files/{{ run.files.spectrogram_png }}" alt="Final spectrogram plot">
+      <figcaption>
+        Final spectrogram
+        <a href="/sessions/{{ session_id }}/files/{{ run.files.spectrogram_png }}">PNG</a>
+        {% if run.files.get("spectrogram_svg") in file_set %}<a href="/sessions/{{ session_id }}/files/{{ run.files.spectrogram_svg }}">SVG</a>{% endif %}
+      </figcaption>
+    </figure>
+    {% endif %}
+    {% if not (run.files.get("waveform_png") in file_set or run.files.get("psd_png") in file_set or run.files.get("spectrogram_png") in file_set) %}
+    <p class="muted">No finalized plots yet.</p>
+    {% endif %}
+  </div>
+</section>
+<section>
+  <h2>Files</h2>
+  <table class="data-table">
+    <thead><tr><th>Artifact</th><th>Role</th><th>Path</th><th>Status</th><th>Download</th></tr></thead>
+    <tbody>
+      {% for artifact in artifacts %}
+      <tr>
+        <td>{{ artifact.label }}</td>
+        <td>{{ artifact.role }}</td>
+        <td>
+          {% if artifact.exists %}
+          <a href="/sessions/{{ session_id }}/files/{{ artifact.path }}">{{ artifact.path }}</a>
+          {% else %}
+          {{ artifact.path }}
+          {% endif %}
+        </td>
+        <td>{% if artifact.exists %}<span class="badge">available</span>{% else %}<span class="warn">missing</span>{% endif %}</td>
+        <td>{% if artifact.exists %}<a href="/sessions/{{ session_id }}/files/{{ artifact.path }}?download=1" download>download</a>{% else %}-{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <ul class="list">{% for file in files %}<li><a href="/sessions/{{ session_id }}/files/{{ file }}">{{ file }}</a></li>{% endfor %}</ul>
+</section>
+<section>
+  <h2>Log</h2>
+  <pre>{{ log_text }}</pre>
+</section>
+{% endblock %}

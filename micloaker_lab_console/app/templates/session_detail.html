@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>{{ session_id }}</h1>
+<section class="band">
+  <h2>Session Summary</h2>
+  <table class="data-table">
+    <tbody>
+      <tr><th>Title</th><td>{{ session.title }}</td></tr>
+      <tr><th>Created</th><td>{{ session.created_at }}</td></tr>
+      <tr><th>Notes</th><td>{{ session.notes or "none" }}</td></tr>
+      <tr><th>Runs</th><td>{{ run_count }}</td></tr>
+      <tr><th>Finalized</th><td>{{ finalized_count }}</td></tr>
+      <tr><th>Comparisons</th><td>{{ comparison_count }}</td></tr>
+    </tbody>
+  </table>
+  <nav class="actions">
+    {% if summary_files.summary_csv %}<a href="/sessions/{{ session_id }}/files/summary.csv?download=1" download>Download Summary CSV</a>{% endif %}
+    {% if summary_files.session_report %}<a href="/sessions/{{ session_id }}/files/session_report.md?download=1" download>Download Session Report</a>{% endif %}
+    <a href="/exports/sessions/{{ session_id }}.zip">Download Session ZIP</a>
+  </nav>
+</section>
+<section class="band">
+  <h2>New Mock Run</h2>
+  <details open>
+    <summary>Simple</summary>
+  <form method="post" action="/sessions/{{ session_id }}/runs" class="form grid-form">
+    <label>Frequency kHz
+      <input name="carrier_freq_khz" type="number" step="0.1" value="25" list="carrier-frequency-presets">
+      <datalist id="carrier-frequency-presets">
+        <option value="25" label="25 kHz"></option>
+        <option value="32.8" label="32.8 kHz"></option>
+      </datalist>
+    </label>
+    <label>UJ <select name="uj"><option>uj0</option><option>uj1</option></select></label>
+    <label>Sound
+      <select name="sound_condition">
+        <option value="sound0">no sound</option>
+        <option value="sound1">jamming</option>
+        <option value="speech">speech</option>
+        <option value="custom">custom</option>
+      </select>
+    </label>
+    <label>Sample rate <input name="sample_rate_hz" type="number" value="8000"></label>
+    <label>Duration <input name="duration_s" type="number" step="0.1" value="1.0"></label>
+    <label>Scale mode <select name="scale_mode"><option value="both">peak + range</option><option value="peak">peak</option><option value="range">range</option></select></label>
+    <label class="wide">Notes <input name="notes"></label>
+    <details class="wide">
+      <summary>Advanced</summary>
+      <div class="form grid-form nested-form">
+        <label>DAQ range <input name="ai_range" value="BIP10VOLTS"></label>
+        <label>Input mode <input name="input_mode" value="SINGLE_ENDED"></label>
+        <label>Channel <input name="channel" type="number" value="0"></label>
+        <label>Mic <input name="mic_id" value="mock_ch0"></label>
+        <label>Room <input name="room" value="lab"></label>
+        <label>Distance cm <input name="distance_cm" type="number" step="0.1"></label>
+        <label>Angle deg <input name="angle_deg" type="number" step="0.1" value="0"></label>
+        <label>Full-scale V <input name="full_scale_volts" type="number" step="0.1" value="10"></label>
+        <label class="inline-check"><input name="remove_dc" type="hidden" value="false"><input name="remove_dc" type="checkbox" value="true" checked> remove DC before WAV/analysis</label>
+        <label>Trim start s <input name="trim_start_s" type="number" min="0" step="0.01" value="0"></label>
+        <label>Trim end s <input name="trim_end_s" type="number" min="0" step="0.01" value="0"></label>
+        <label>Band low Hz <input name="analysis_band_low_hz" type="number" min="0" step="1" value="300"></label>
+        <label>Band high Hz <input name="analysis_band_high_hz" type="number" min="1" step="1" value="3400"></label>
+        <label>Safety operator <input name="safety_operator"></label>
+        <label>Safety max SPL dB <input name="safety_max_spl_db" type="number" min="0" step="0.1"></label>
+        <label class="wide">Safety notes <input name="safety_notes"></label>
+        <label>Mac Helper WAV file <input name="mac_helper_file" placeholder="jamming_25khz.wav"></label>
+        <label>Mac Helper device ID <input name="mac_helper_device_id" type="number" min="0"></label>
+        <label>Mac Helper sample rate <input name="mac_helper_sample_rate" type="number" min="1" placeholder="192000"></label>
+        <label>Mac Helper channels <input name="mac_helper_channels" type="number" min="1" value="1"></label>
+        <label>Mac Helper gain <input name="mac_helper_gain" type="number" min="0" max="1" step="0.01" value="1.0"></label>
+        <label>Mac Helper delay ms <input name="mac_helper_delay_ms" type="number" min="0" value="500"></label>
+      </div>
+    </details>
+    <button type="submit">Create Run</button>
+    <button type="submit" name="record_after_create" value="true">Create + Record Mock</button>
+  </form>
+  </details>
+</section>
+<section class="band">
+  <h2>Upload Raw .bin</h2>
+  <form method="post" action="/sessions/{{ session_id }}/runs/upload-bin" enctype="multipart/form-data" class="form grid-form">
+    <label class="wide">Raw float64 .bin <input name="file" type="file" accept=".bin" required></label>
+    <label>Frequency kHz <input name="carrier_freq_khz" type="number" step="0.1" value="25" list="carrier-frequency-presets"></label>
+    <label>UJ <select name="uj"><option>uj0</option><option>uj1</option></select></label>
+    <label>Sound <input name="sound_condition" value="sound0"></label>
+    <label>Mic <input name="mic_id" value="upload_ch0"></label>
+    <label>Sample rate <input name="sample_rate_hz" type="number" value="8000"></label>
+    <label>Expected duration s <input name="duration_s" type="number" min="0" step="0.1" value="0"></label>
+    <label>Scale mode <select name="scale_mode"><option value="both">peak + range</option><option value="peak">peak</option><option value="range">range</option></select></label>
+    <label>Full-scale V <input name="full_scale_volts" type="number" step="0.1" value="10"></label>
+    <label class="inline-check"><input name="remove_dc" type="hidden" value="false"><input name="remove_dc" type="checkbox" value="true" checked> remove DC before WAV/analysis</label>
+    <label>Trim start s <input name="trim_start_s" type="number" min="0" step="0.01" value="0"></label>
+    <label>Trim end s <input name="trim_end_s" type="number" min="0" step="0.01" value="0"></label>
+    <label>Band low Hz <input name="analysis_band_low_hz" type="number" min="0" step="1" value="300"></label>
+    <label>Band high Hz <input name="analysis_band_high_hz" type="number" min="1" step="1" value="3400"></label>
+    <details class="wide">
+      <summary>Advanced upload metadata</summary>
+      <div class="form grid-form nested-form">
+        <label>DAQ range <input name="ai_range" value="BIP10VOLTS"></label>
+        <label>Input mode <input name="input_mode" value="SINGLE_ENDED"></label>
+        <label>Channel <input name="channel" type="number" min="0" value="0"></label>
+        <label>Room <input name="room" value="lab"></label>
+        <label>Distance cm <input name="distance_cm" type="number" min="0" step="0.1"></label>
+        <label>Angle deg <input name="angle_deg" type="number" step="0.1" value="0"></label>
+        <label>Safety operator <input name="safety_operator"></label>
+        <label>Safety max SPL dB <input name="safety_max_spl_db" type="number" min="0" step="0.1"></label>
+        <label class="wide">Safety notes <input name="safety_notes"></label>
+        <label>Mac Helper WAV file <input name="mac_helper_file" placeholder="jamming_25khz.wav"></label>
+        <label>Mac Helper device ID <input name="mac_helper_device_id" type="number" min="0"></label>
+        <label>Mac Helper sample rate <input name="mac_helper_sample_rate" type="number" min="1" placeholder="192000"></label>
+        <label>Mac Helper channels <input name="mac_helper_channels" type="number" min="1" value="1"></label>
+        <label>Mac Helper gain <input name="mac_helper_gain" type="number" min="0" max="1" step="0.01" value="1.0"></label>
+        <label>Mac Helper delay ms <input name="mac_helper_delay_ms" type="number" min="0" value="500"></label>
+      </div>
+    </details>
+    <label class="wide">Notes <input name="notes" value="uploaded raw bin"></label>
+    <button type="submit">Import + Finalize</button>
+  </form>
+</section>
+<nav class="actions">
+  <a href="/compare/{{ session_id }}">Compare Runs</a>
+  <a href="/sessions/{{ session_id }}/browser">Browse Files</a>
+  <a href="/exports/sessions/{{ session_id }}.zip">Download Session ZIP</a>
+</nav>
+<h2>Runs</h2>
+<form method="get" class="form grid-form">
+  <label>Date <input name="date" value="{{ filters.date }}" placeholder="2026-05-28"></label>
+  <label>Frequency kHz <input name="carrier_freq_khz" value="{{ filters.carrier_freq_khz }}" type="number" step="0.1"></label>
+  <label>UJ <select name="uj"><option value="">any</option><option value="uj0" {% if filters.uj == "uj0" %}selected{% endif %}>uj0</option><option value="uj1" {% if filters.uj == "uj1" %}selected{% endif %}>uj1</option></select></label>
+  <label>Sound <input name="sound_condition" value="{{ filters.sound_condition }}"></label>
+  <label>Mic <input name="mic_id" value="{{ filters.mic_id }}"></label>
+  <label>Room <input name="room" value="{{ filters.room }}"></label>
+  <label>Analysis <select name="analysis_status"><option value="">any</option><option value="pending" {% if filters.analysis_status == "pending" %}selected{% endif %}>pending</option><option value="finalized" {% if filters.analysis_status == "finalized" %}selected{% endif %}>finalized</option><option value="failed" {% if filters.analysis_status == "failed" %}selected{% endif %}>failed</option></select></label>
+  <button type="submit">Filter Runs</button>
+  <a href="/sessions/{{ session_id }}">Clear</a>
+</form>
+<table class="data-table">
+  <thead>
+    <tr>
+      <th>run_id</th>
+      <th>date</th>
+      <th>frequency</th>
+      <th>uj</th>
+      <th>sound</th>
+      <th>mic</th>
+      <th>room</th>
+      <th>analysis</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for run in runs %}
+    <tr>
+      <td><a href="/sessions/{{ session_id }}/runs/{{ run.run_id }}">{{ run.run_id }}</a></td>
+      <td>{{ run.created_at[:10] }}</td>
+      <td>{{ run.condition.carrier_freq_khz }}</td>
+      <td>{{ run.condition.uj }}</td>
+      <td>{{ run.condition.sound_condition }}</td>
+      <td>{{ run.condition.mic_id }}</td>
+      <td>{{ run.condition.room }}</td>
+      <td>{{ run.analysis.status }}</td>
+    </tr>
+  {% else %}
+    <tr><td colspan="8">No runs match the filters.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,26 @@
+# Linux Console requirements.txt template
+fastapi
+uvicorn[standard]
+jinja2
+python-multipart
+numpy
+scipy
+matplotlib
+soundfile
+pydantic
+pytest
+httpx
+
+# Optional real DAQ dependency; install only on the DAQ Linux machine if needed.
+# uldaq
+
+# macOS Helper requirements-mac-helper.txt template
+# fastapi
+# uvicorn[standard]
+# numpy
+# scipy
+# sounddevice
+# soundfile
+# pydantic
+# httpx
+# pytest

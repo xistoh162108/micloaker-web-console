@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Files: {{ session_id }}</h1>
+<nav class="actions">
+  <a href="/sessions/{{ session_id }}">Back to Session</a>
+  <a href="/exports/sessions/{{ session_id }}.zip">Download Session ZIP</a>
+</nav>
+<section>
+  <h2>Session Artifacts</h2>
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>path</th>
+        <th>type</th>
+        <th>role</th>
+        <th>size</th>
+        <th>preview</th>
+        <th>download</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for file in files %}
+    <tr>
+      <td><a href="/sessions/{{ session_id }}/files/{{ file.path }}">{{ file.path }}</a></td>
+      <td>{{ file.kind }}</td>
+      <td>{{ file.role }}</td>
+      <td>{{ file.size_bytes }} bytes</td>
+      <td>
+        {% if file.is_audio %}
+        <audio controls preload="none" src="/sessions/{{ session_id }}/files/{{ file.path }}"></audio>
+        {% else %}
+        -
+        {% endif %}
+      </td>
+      <td><a href="/sessions/{{ session_id }}/files/{{ file.path }}?download=1" download>download</a></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="6">No files yet.</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

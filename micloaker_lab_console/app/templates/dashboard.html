@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="band">
+  <h1>Experiment Console</h1>
+  <p class="muted">Local-only lab app. Default server bind is 127.0.0.1 for SSH tunneling.</p>
+  {% if not daq_status.available %}
+  <p class="warn">DAQ unavailable - mock mode and file upload are available.</p>
+  {% endif %}
+  {% if not mac_status.connected %}
+  <p class="warn">Mac Helper disconnected - Linux-only recording and analysis are available.</p>
+  {% endif %}
+</section>
+<section class="status-grid">
+  <div class="status-card">
+    <h2>Current Workspace</h2>
+    <p>{{ workspace }}</p>
+    <p class="muted">Persistent state is stored as JSON, JSONL, CSV, Markdown, and logs under this directory.</p>
+  </div>
+  <div class="status-card">
+    <h2>Active Session</h2>
+    {% if active_session %}
+    <p><a href="/sessions/{{ active_session.session_id }}">{{ active_session.session_id }}</a></p>
+    <p class="muted">{{ active_session.title }}</p>
+    {% else %}
+    <p>No session yet.</p>
+    {% endif %}
+  </div>
+  <div class="status-card">
+    <h2>DAQ Status</h2>
+    <p><span class="badge">{{ daq_status.mode }}</span></p>
+    <p class="muted">{{ daq_status.message or daq_status.backend }}</p>
+    <a href="/daq/health">DAQ health JSON</a>
+  </div>
+  <div class="status-card">
+    <h2>Mac Helper Status</h2>
+    <p><span class="badge">{{ "connected" if mac_status.connected else "disconnected" }}</span></p>
+    <p class="muted">{{ mac_status.message or mac_status.hostname or "Helper reachable" }}</p>
+    <a href="/mac-helper">Open Mac Helper</a>
+  </div>
+  <div class="status-card">
+    <h2>Recording State</h2>
+    <p><span class="badge">{{ "recording" if recording_status.active else "stopped" }}</span></p>
+    {% if recording_status.recording %}
+    <p class="muted">{{ recording_status.recording.run_id }}</p>
+    {% else %}
+    <p class="muted">One recording job is allowed at a time.</p>
+    {% endif %}
+    <a href="/recording/status">Recording status JSON</a>
+  </div>
+  <div class="status-card">
+    <h2>Last Run</h2>
+    {% if last_run %}
+    <p><a href="/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}">{{ last_run.run_id }}</a></p>
+    <p class="muted">{{ last_run.analysis.status }} / {{ last_run.condition.uj }}</p>
+    {% else %}
+    <p>No runs yet.</p>
+    {% endif %}
+  </div>
+  <div class="status-card">
+    <h2>Last Comparison</h2>
+    {% if last_comparison %}
+    <p>{{ "%.2f"|format(last_comparison.attenuation_db) }} dB</p>
+    <p class="muted">{{ last_comparison.uj0_run_id }} vs {{ last_comparison.uj1_run_id }}</p>
+    <a href="/sessions/{{ last_comparison.session_id }}/files/{{ last_comparison.json_file }}?download=1" download>Download JSON</a>
+    {% else %}
+    <p>No comparisons yet.</p>
+    {% endif %}
+  </div>
+  <div class="status-card">
+    <h2>Export Shortcuts</h2>
+    <p><a href="/sessions">Session and multi-session ZIPs</a></p>
+    {% if active_session %}
+    <p><a href="/exports/sessions/{{ active_session.session_id }}.zip">Export active session ZIP</a></p>
+    {% endif %}
+    <p><a href="/logs">Logs/Debug</a></p>
+  </div>
+</section>
+<section class="grid two">
+  <div>
+    <h2>Create Session</h2>
+    <form method="post" action="/sessions" class="form">
+      <label>Title <input name="title" required value="r25k_test"></label>
+      <label>Notes <textarea name="notes"></textarea></label>
+      <button type="submit">Create</button>
+    </form>
+  </div>
+  <div>
+    <h2>Recent Sessions</h2>
+    <ul class="list">
+      {% for session in sessions %}
+      <li><a href="/sessions/{{ session.session_id }}">{{ session.session_id }}</a><span>{{ session.created_at }}</span></li>
+      {% else %}
+      <li>No sessions yet.</li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Console Ops</h1>
+<section class="grid two">
+  <div>
+    <h2>Server</h2>
+    <table>
+      <tr><th>Bind</th><td>{{ host }}:{{ port }}</td></tr>
+      <tr><th>Workspace</th><td>{{ workspace }}</td></tr>
+      <tr><th>Web shutdown</th><td>{{ "enabled" if allow_web_shutdown else "disabled" }}</td></tr>
+      <tr><th>Recording</th><td>{{ "active" if recording_status.active else "stopped" }}</td></tr>
+    </table>
+  </div>
+  <div>
+    <h2>Safe Start/Stop</h2>
+    <p class="muted">Use the console control script for normal lab operation.</p>
+    <pre>python scripts/console_control.py start --tailscale --allow-web-shutdown
+python scripts/console_control.py status
+python scripts/console_control.py stop</pre>
+    {% if allow_web_shutdown %}
+      {% if recording_status.active %}
+      <p class="warn">Shutdown is locked while recording is active.</p>
+      {% else %}
+      <form method="post" action="/ops/shutdown">
+        <button type="submit">Stop Console</button>
+      </form>
+      {% endif %}
+    {% else %}
+    <p class="warn">Web shutdown is disabled. Start with <code>--allow-web-shutdown</code> only on a trusted Tailnet or localhost tunnel.</p>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

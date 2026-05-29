@@ -1,0 +1,429 @@
+#!/usr/bin/env python3
+"""Local acceptance audit for MiCloaker Lab Console non-negotiables."""
+
+from __future__ import annotations
+
+import os
+import sys
+import tempfile
+import wave
+import zipfile
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+
+REQUIRED_PATHS = [
+    "app/main.py",
+    "app/config.py",
+    "app/models.py",
+    "app/routes/dashboard.py",
+    "app/routes/sessions.py",
+    "app/routes/runs.py",
+    "app/routes/recording.py",
+    "app/routes/conversion.py",
+    "app/routes/analysis.py",
+    "app/routes/compare.py",
+    "app/routes/exports.py",
+    "app/routes/files.py",
+    "app/routes/live.py",
+    "app/routes/logs.py",
+    "app/routes/mac_helper.py",
+    "app/routes/ops.py",
+    "app/services/daq.py",
+    "app/services/mock_daq.py",
+    "app/services/recorder.py",
+    "app/services/converter.py",
+    "app/services/analyzer.py",
+    "app/services/plotting.py",
+    "app/services/metadata.py",
+    "app/services/text_store.py",
+    "app/services/export_zip.py",
+    "app/services/jobs.py",
+    "app/services/live_monitor.py",
+    "app/services/mac_helper_client.py",
+    "app/services/tailscale.py",
+    "app/templates/base.html",
+    "app/templates/dashboard.html",
+    "app/templates/sessions.html",
+    "app/templates/session_detail.html",
+    "app/templates/run_detail.html",
+    "app/templates/compare.html",
+    "app/templates/compare_index.html",
+    "app/templates/live.html",
+    "app/templates/logs.html",
+    "app/templates/mac_helper.html",
+    "app/templates/ops.html",
+    "app/templates/files.html",
+    "app/templates/new_run.html",
+    "app/static/css/app.css",
+    "app/static/js/app.js",
+    "app/static/js/live.js",
+    "app/static/js/mac_helper.js",
+    "scripts/console_control.py",
+    "scripts/install_linux_desktop_launcher.py",
+    "scripts/lab_readiness_check.py",
+    "mac_helper/helper.py",
+    "mac_helper/helper_control.py",
+    "mac_helper/Start MiCloaker Helper.command",
+    "mac_helper/Stop MiCloaker Helper.command",
+    "mac_helper/Status MiCloaker Helper.command",
+    "mac_helper/config.example.json",
+    "mac_helper/README.md",
+    "tests/test_core_workflow.py",
+    "tests/test_mac_helper.py",
+    "README.md",
+    "requirements.txt",
+    "requirements-mac-helper.txt",
+]
+
+DB_SUFFIXES = {".db", ".duckdb", ".sqlite", ".sqlite3"}
+DB_DEPENDENCIES = {
+    "asyncpg",
+    "databases",
+    "duckdb",
+    "psycopg",
+    "psycopg2",
+    "sqlalchemy",
+    "tinydb",
+}
+SKIP_DIRS = {
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".venv",
+    "__pycache__",
+}
+
+
+def iter_project_files() -> list[Path]:
+    files: list[Path] = []
+    for path in ROOT.rglob("*"):
+        if any(part in SKIP_DIRS for part in path.relative_to(ROOT).parts):
+            continue
+        if path.is_file():
+            files.append(path)
+    return files
+
+
+def requirement_names(path: Path) -> set[str]:
+    names: set[str] = set()
+    for raw_line in path.read_text(encoding="utf-8").splitlines():
+        line = raw_line.split("#", 1)[0].strip().lower()
+        if not line:
+            continue
+        for separator in ("==", ">=", "<=", "~=", "!=", ">", "<", "["):
+            line = line.split(separator, 1)[0]
+        names.add(line.strip())
+    return names
+
+
+def report(ok: bool, message: str) -> bool:
+    prefix = "PASS" if ok else "FAIL"
+    print(f"{prefix}: {message}")
+    return ok
+
+
+def audit_mock_workflow(workspace: Path) -> tuple[bool, list[str]]:
+    failures: list[str] = []
+    from fastapi.testclient import TestClient
+
+    from app.main import create_app
+    from app.services.export_zip import make_run_zip, make_session_zip
+    from app.services.metadata import create_run_metadata, create_session, load_runs, load_sessions
+    from app.services.recorder import record_mock_and_finalize
+    from app.services.text_store import read_json, read_jsonl, session_dir
+
+    session = create_session(workspace, "acceptance workflow", notes="temporary audit session")
+    run = create_run_metadata(
+        workspace,
+        session["session_id"],
+        carrier_freq_khz=25.0,
+        uj="uj0",
+        duration_s=0.1,
+        sample_rate_hz=8000,
+        analysis_band_low_hz=300.0,
+        analysis_band_high_hz=3400.0,
+    )
+    finalized = record_mock_and_finalize(workspace, run)
+    run1 = create_run_metadata(
+        workspace,
+        session["session_id"],
+        carrier_freq_khz=25.0,
+        uj="uj1",
+        duration_s=0.1,
+        sample_rate_hz=8000,
+        analysis_band_low_hz=300.0,
+        analysis_band_high_hz=3400.0,
+    )
+    finalized1 = record_mock_and_finalize(workspace, run1)
+    base = session_dir(workspace, session["session_id"])
+
+    expected_files = [
+        finalized["files"]["bin"],
+        finalized["files"]["wav_peak"],
+        finalized["files"]["wav_range"],
+        finalized["files"]["metrics_json"],
+        finalized["files"]["metrics_csv"],
+        finalized["files"]["waveform_png"],
+        finalized["files"]["waveform_svg"],
+        finalized["files"]["psd_png"],
+        finalized["files"]["psd_svg"],
+        finalized["files"]["spectrogram_png"],
+        finalized["files"]["spectrogram_svg"],
+        f"logs/{finalized['run_id']}.log",
+        "summary.csv",
+        "session_report.md",
+    ]
+    missing_files = [rel for rel in expected_files if not (base / rel).is_file()]
+    if missing_files:
+        failures.append(f"missing workflow artifacts: {', '.join(missing_files)}")
+
+    if not finalized["files"]["wav_peak"].endswith("__scale-peak.wav"):
+        failures.append("peak WAV name does not include __scale-peak.wav")
+    if not finalized["files"]["wav_range"].endswith("__scale-range-fs10V.wav"):
+        failures.append("range WAV name does not include __scale-range-fs10V.wav")
+
+    conversion = finalized.get("conversion", {}).get("outputs", {})
+    peak = conversion.get("wav_peak", {})
+    range_wav = conversion.get("wav_range", {})
+    if peak.get("purpose") != "listening_preview_only" or peak.get("quantitative_use") != "do_not_use_for_final_attenuation":
+        failures.append("peak WAV is not labeled listening-only")
+    if range_wav.get("purpose") != "cross_check_only" or range_wav.get("full_scale_volts") != 10.0:
+        failures.append("range WAV is not labeled as full-scale cross-check")
+
+    analysis = finalized.get("analysis", {})
+    if analysis.get("status") != "finalized" or analysis.get("result_grade") != "report-grade":
+        failures.append("finalized run is not marked report-grade")
+    if analysis.get("finalized_from_saved_bin") is not True:
+        failures.append("finalized run is not marked as recomputed from saved .bin")
+
+    metrics = read_json(base / finalized["files"]["metrics_json"])
+    for key in ["rms_v", "band_power_300_3400", "band_power_20_3900", "dominant_freq_hz", "psd_freq_hz"]:
+        if key not in metrics:
+            failures.append(f"metrics JSON missing {key}")
+    if metrics.get("source") != "bin":
+        failures.append("metrics source is not saved .bin")
+
+    client = TestClient(create_app())
+    compare_response = client.post(
+        f"/compare/{session['session_id']}",
+        data={
+            "uj0_run_id": finalized["run_id"],
+            "uj1_run_id": finalized1["run_id"],
+            "source": "bin",
+            "band_mode": "primary",
+        },
+        follow_redirects=False,
+    )
+    if compare_response.status_code != 303:
+        failures.append(f"compare route did not redirect after saving: HTTP {compare_response.status_code}")
+    comparison_files = sorted((base / "comparisons").glob("*.json"))
+    if len(comparison_files) != 1:
+        failures.append(f"expected one comparison JSON artifact, found {len(comparison_files)}")
+    else:
+        comparison = read_json(comparison_files[0])
+        required_compare_keys = [
+            "attenuation_db",
+            "remaining_fraction",
+            "reduction_percent",
+            "uj0_run_id",
+            "uj1_run_id",
+            "source",
+            "result_grade",
+            "plots",
+        ]
+        for key in required_compare_keys:
+            if key not in comparison:
+                failures.append(f"comparison JSON missing {key}")
+        if comparison.get("source") != "bin" or comparison.get("result_grade") != "report-grade":
+            failures.append("comparison is not marked report-grade from saved .bin")
+        if comparison.get("uj0_run_id") != finalized["run_id"] or comparison.get("uj1_run_id") != finalized1["run_id"]:
+            failures.append("comparison does not preserve selected uj0/uj1 run IDs")
+        for plot_key in ["attenuation_png", "attenuation_svg", "psd_overlay_png", "psd_overlay_svg"]:
+            rel = comparison.get("plots", {}).get(plot_key)
+            if not rel or not (base / rel).is_file():
+                failures.append(f"comparison plot artifact missing: {plot_key}")
+        if not comparison_files[0].with_suffix(".csv").is_file():
+            failures.append("comparison CSV artifact is missing")
+
+    for index_path in [workspace / ".micloaker" / "sessions.jsonl", base / "runs.jsonl", base / "events.jsonl"]:
+        index_path.write_text('{"event":"stale"}\n', encoding="utf-8")
+    create_app()
+    reloaded_sessions = load_sessions(workspace)
+    reloaded_runs = load_runs(workspace, session["session_id"])
+    rebuilt_events = read_jsonl(base / "events.jsonl")
+    if session["session_id"] not in {item.get("session_id") for item in reloaded_sessions}:
+        failures.append("startup rebuild did not reload session from session.json")
+    if {finalized["run_id"], finalized1["run_id"]} - {item.get("run_id") for item in reloaded_runs}:
+        failures.append("startup rebuild did not reload runs from metadata JSON")
+    if not any(row.get("event") == "comparison_indexed" for row in rebuilt_events):
+        failures.append("startup rebuild did not recover saved comparison event")
+    if any(row.get("event") == "stale" for row in rebuilt_events):
+        failures.append("startup rebuild left stale session event rows in place")
+    rebuilt_report = (base / "session_report.md").read_text(encoding="utf-8")
+    if "## Saved Comparisons" not in rebuilt_report or "report-grade" not in rebuilt_report:
+        failures.append("startup rebuild did not regenerate session report with saved comparison")
+    rebuilt_summary = (base / "summary.csv").read_text(encoding="utf-8")
+    if "band_power_300_3400" not in rebuilt_summary or finalized["run_id"] not in rebuilt_summary:
+        failures.append("startup rebuild did not regenerate summary.csv from saved run metrics")
+
+    run_zip = make_run_zip(workspace, session["session_id"], finalized["run_id"], workspace / "run_audit.zip")
+    session_zip = make_session_zip(workspace, session["session_id"], workspace / "session_audit.zip")
+    with zipfile.ZipFile(run_zip) as zf:
+        run_names = set(zf.namelist())
+        run_manifest_name = f"{finalized['run_id']}/export_manifest.json"
+        if run_manifest_name not in run_names:
+            failures.append("run ZIP missing export_manifest.json")
+        else:
+            import json
+
+            manifest = json.loads(zf.read(run_manifest_name))
+            if manifest.get("missing_files"):
+                failures.append(f"run ZIP manifest reports missing files: {manifest['missing_files']}")
+    with zipfile.ZipFile(session_zip) as zf:
+        session_names = set(zf.namelist())
+        if f"{session['session_id']}/export_manifest.json" not in session_names:
+            failures.append("session ZIP missing export_manifest.json")
+        if f"{session['session_id']}/runs/{finalized['run_id']}/bin/{finalized['run_id']}.bin" not in session_names:
+            failures.append("session ZIP missing run raw .bin")
+        if not any(name.startswith(f"{session['session_id']}/comparisons/") and name.endswith(".json") for name in session_names):
+            failures.append("session ZIP missing saved comparison JSON")
+
+    try:
+        record_mock_and_finalize(workspace, finalized)
+    except FileExistsError:
+        pass
+    else:
+        failures.append("raw .bin overwrite was not rejected")
+
+    return not failures, failures
+
+
+def audit_mac_helper_mock(wav_root: Path) -> tuple[bool, list[str]]:
+    failures: list[str] = []
+    import numpy as np
+    from fastapi.testclient import TestClient
+    from mac_helper.helper import create_app
+
+    wav_root.mkdir(parents=True, exist_ok=True)
+    with wave.open(str(wav_root / "tone.wav"), "wb") as wf:
+        wf.setnchannels(1)
+        wf.setsampwidth(2)
+        wf.setframerate(8000)
+        wf.writeframes(np.zeros(800, dtype="<i2").tobytes())
+
+    client = TestClient(create_app({"wav_root": str(wav_root), "mock_audio": True}))
+    health = client.get("/health").json()
+    if not health.get("ok") or health.get("wav_root_exists") is not True:
+        failures.append("Mac Helper health did not report usable wav_root")
+    files = client.get("/files").json()
+    paths = [row.get("path") for row in files.get("files", [])]
+    if paths != ["tone.wav"]:
+        failures.append(f"Mac Helper /files did not list relative wav_root files only: {paths}")
+    valid = client.post(
+        "/validate-playback",
+        json={"file": "tone.wav", "device_id": 1, "sample_rate": 8000, "channels": 2, "gain": 0.5},
+    ).json()
+    if not valid.get("ok") or valid.get("will_channel_map") is not True:
+        failures.append("Mac Helper did not validate mono-to-stereo channel mapping in mock mode")
+    traversal = client.post(
+        "/validate-playback",
+        json={"file": "../tone.wav", "device_id": 1, "sample_rate": 8000, "channels": 1, "gain": 0.5},
+    ).json()
+    if traversal.get("ok") is not False or traversal.get("error_code") != "PATH_TRAVERSAL_REJECTED":
+        failures.append("Mac Helper did not reject path traversal with structured error")
+    token_client = TestClient(create_app({"wav_root": str(wav_root), "mock_audio": True, "optional_token": "audit-token"}))
+    unauthorized = token_client.get("/health").json()
+    if unauthorized.get("ok") is not False or unauthorized.get("error_code") != "UNAUTHORIZED":
+        failures.append("Mac Helper optional_token did not reject unauthenticated requests")
+    authorized = token_client.get("/health", headers={"Authorization": "Bearer audit-token"}).json()
+    if authorized.get("ok") is not True:
+        failures.append("Mac Helper optional_token did not allow matching bearer token")
+    return not failures, failures
+
+
+def main() -> int:
+    checks: list[bool] = []
+
+    missing = [rel for rel in REQUIRED_PATHS if not (ROOT / rel).exists()]
+    checks.append(report(not missing, "required project layout is present"))
+    if missing:
+        for rel in missing:
+            print(f"  missing: {rel}")
+
+    db_files = [path.relative_to(ROOT) for path in iter_project_files() if path.suffix.lower() in DB_SUFFIXES]
+    checks.append(report(not db_files, "no database files are present in the project tree"))
+    if db_files:
+        for rel in db_files:
+            print(f"  database-like file: {rel}")
+
+    req_paths = [ROOT / "requirements.txt", ROOT / "requirements-mac-helper.txt"]
+    deps = set().union(*(requirement_names(path) for path in req_paths))
+    forbidden_deps = sorted(deps & DB_DEPENDENCIES)
+    checks.append(report(not forbidden_deps, "requirements do not include database dependencies"))
+    if forbidden_deps:
+        for name in forbidden_deps:
+            print(f"  forbidden dependency: {name}")
+
+    sys.path.insert(0, str(ROOT))
+    from app.config import DEFAULT_HOST
+
+    checks.append(report(DEFAULT_HOST == "127.0.0.1", "default host binds to 127.0.0.1"))
+
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    helper_readme = (ROOT / "mac_helper" / "README.md").read_text(encoding="utf-8")
+    checks.append(report("uvicorn app.main:app --host 127.0.0.1 --port 8000" in readme, "README documents localhost console run command"))
+    checks.append(report("Ctrl+C" in readme and "rebuilds session/run lists from workspace text files" in readme, "README documents temporary lifecycle and restart recovery"))
+    checks.append(report("Live Monitor" in readme and "Live preview is approximate" in readme and "saved `.bin`" in readme, "README documents live preview-only workflow"))
+    helper_doc_terms = [
+        "cp config.example.json config.json",
+        "python helper.py --config config.json",
+        "trusted Tailnet",
+        "optional_token",
+        "Authorization: Bearer",
+        "explicit `device_id`",
+        "does not change the macOS system default output device",
+        "`error_code`",
+    ]
+    missing_helper_terms = [term for term in helper_doc_terms if term not in helper_readme]
+    checks.append(report(not missing_helper_terms, "Mac Helper README documents run command and safety contract"))
+    if missing_helper_terms:
+        for term in missing_helper_terms:
+            print(f"  missing helper README term: {term}")
+
+    with tempfile.TemporaryDirectory(prefix="micloaker-audit-") as temp_dir:
+        previous_workspace = os.environ.get("MICLOAKER_WORKSPACE")
+        os.environ["MICLOAKER_WORKSPACE"] = temp_dir
+        sys.modules.pop("uldaq", None)
+        for name in list(sys.modules):
+            if name == "scipy" or name.startswith("scipy."):
+                sys.modules.pop(name, None)
+        try:
+            from app.main import create_app
+
+            create_app()
+            temp_root = Path(temp_dir)
+            checks.append(report((temp_root / ".micloaker" / "config.json").exists(), "startup creates plain-text workspace config"))
+            checks.append(report("uldaq" not in sys.modules, "app startup does not eagerly import uldaq"))
+            checks.append(report("scipy" not in sys.modules, "app startup does not eagerly import SciPy analysis dependency"))
+            ok, failures = audit_mock_workflow(temp_root)
+            checks.append(report(ok, "mock workflow records, finalizes, labels, plots, and exports"))
+            for failure in failures:
+                print(f"  workflow failure: {failure}")
+            helper_ok, helper_failures = audit_mac_helper_mock(temp_root / "helper_wavs")
+            checks.append(report(helper_ok, "Mac Helper mock mode validates wav_root playback safety"))
+            for failure in helper_failures:
+                print(f"  helper failure: {failure}")
+        finally:
+            if previous_workspace is None:
+                os.environ.pop("MICLOAKER_WORKSPACE", None)
+            else:
+                os.environ["MICLOAKER_WORKSPACE"] = previous_workspace
+
+    return 0 if all(checks) else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
