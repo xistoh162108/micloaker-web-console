@@ -17,6 +17,8 @@ Mac Helper manual:
 Requirements and design docs:
 
 - [Project docs](docs/)
+- [Experiment operator flow](docs/EXPERIMENT_OPERATOR_FLOW.md)
+- [Scientific console UI requirements](docs/SCIENTIFIC_CONSOLE_UI_REQUIREMENTS.md)
 - [Operator UI and deployment requirements](docs/OPERATOR_UI_DEPLOYMENT_REQUIREMENTS.md)
 - [Docs alignment report](micloaker_lab_console/docs_alignment_report.md)
 - [Completion audit](docs/COMPLETION_AUDIT.md)
@@ -50,6 +52,8 @@ The Linux Dashboard is the primary one-screen command center. Routine experiment
 
 The Dashboard layout is intentionally prioritized over decorative UI: the live monitor and capture controls stay in the main flow, controls wrap instead of overlapping, and detailed live/log pages remain secondary while the experiment is running.
 Live charts render through `requestAnimationFrame`, fixed-size canvas surfaces, and bounded preview payloads. Finalized plot images use lazy async decoding, and report SVGs are simplified/rasterized where appropriate so large recordings remain practical to inspect in the browser.
+
+Run metadata separates ultrasonic playback from ordinary room audio: `carrier_freq_khz = 0` means no jamming signal is emitted, and `sound_condition` means quiet baseline, meeting-room sound, speech, or WER material captured by the Linux microphone.
 
 ## Quick Linux Console Setup
 

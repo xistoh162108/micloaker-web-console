@@ -62,14 +62,16 @@ session_id | date | description | runs | analyzed | comparisons | export
 ### Simple section
 
 - session
-- frequency: 25, 32.8, custom
+- jamming carrier frequency: 0, 25, 32.8, custom
 - condition: `uj0` / `uj1`
-- sound condition: no sound, jamming, speech, custom
+- ordinary recorded sound condition: none / quiet baseline, ordinary sound present, speech / WER material, custom ordinary sound
 - duration
 - sample rate
 - scale mode: peak/range/both
 - notes
 - record button
+
+The frequency field must show that `0 kHz` means no jamming signal emitted. The sound field must never be labeled as jamming; it describes ordinary sound or WER material captured by the Linux microphone.
 
 ### Advanced section
 
@@ -188,6 +190,9 @@ Sections:
 - Validate first
 - Start Mac playback and Linux recording with configured delay
 - Store playback metadata
+- Target one-page flow: create one run, validate/select Mac sound file, start/stop Mac playback, start/stop Linux recording, watch playback/recording status visually, then require operator approval before final report-grade processing when approval-gated mode is enabled.
+- Separate controls must remain available for playback-only speaker checks and recording-only Linux microphone/DAQ checks.
+- The operator should be able to confirm ultrasonic speaker playback, Linux microphone detection, raw `.bin` creation, and WAV preview plausibility before approving downstream analysis/export work.
 
 Disconnected state:
 

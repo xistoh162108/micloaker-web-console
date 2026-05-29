@@ -11,7 +11,7 @@ MiCloaker macOS Audio Helper는 Mac에서 준비된 WAV를 특정 출력 장치�
 - Tailscale installed and connected to the same Tailnet as the Linux recording computer.
 - External DAC/audio interface that supports the required sample rate, commonly 48000, 96000, or 192000 Hz.
 - Speaker/transducer suitable for the experiment bandwidth.
-- Prepared WAV files stored under one configured `wav_root`.
+- Prepared WAV files stored under one configured `wav_root`, typically the `mac_helper/jamming_sound` folder.
 
 Important:
 
@@ -33,7 +33,7 @@ Edit `config.json`:
 
 ```json
 {
-  "wav_root": "/Users/user/MicloakerSounds",
+  "wav_root": "jamming_sound",
   "host": "0.0.0.0",
   "port": 5050,
   "default_sample_rate": 192000,
@@ -44,7 +44,7 @@ Edit `config.json`:
 }
 ```
 
-Set `wav_root` to the directory containing prepared WAV files.
+Set `wav_root` to the directory containing prepared WAV files. For the current MiCloaker setup, move the jamming WAV folder into `mac_helper/jamming_sound` with files such as `25khz_1hr.wav` and `32.8khz_1hr.wav`.
 
 ## Start, Status, Stop
 
@@ -80,7 +80,7 @@ http://100.x.y.z:5050
 ```
 
 6. Run Health, Devices, Files.
-7. Choose WAV file, device ID, sample rate, channels, gain, and delay.
+7. Choose WAV file, device ID, sample rate, channels, gain, and delay. The Linux console rejects a run-level playback request when the selected jamming WAV does not match the run metadata frequency.
 8. Run Validate Playback before Play or Play & Record.
 
 ## APIs

@@ -235,7 +235,7 @@ Edit `config.json`:
 
 ```json
 {
-  "wav_root": "/Users/user/MicloakerSounds",
+  "wav_root": "jamming_sound",
   "host": "0.0.0.0",
   "port": 5050,
   "default_sample_rate": 192000,
@@ -301,9 +301,9 @@ Typical full experiment:
 3. Open Dashboard and confirm DAQ, Helper, and recording status.
 4. Create a session.
 5. Create a run with metadata:
-   - carrier frequency
+   - jamming carrier frequency (`0 kHz` means no jamming signal emitted)
    - `uj0` or `uj1`
-   - sound condition
+   - ordinary sound condition for quiet baseline, room sound, speech, or WER material
    - mic, room, distance, angle
    - DAQ channel/range/sample rate/duration
    - scale mode and full-scale voltage

@@ -48,3 +48,37 @@ document.querySelectorAll('form[action="/ops/validation"]').forEach((form) => {
   gate.addEventListener("change", updateValidationHint);
   updateValidationHint();
 });
+
+const plotDialog = document.createElement("div");
+plotDialog.className = "plot-modal";
+plotDialog.hidden = true;
+plotDialog.innerHTML = `
+  <div class="plot-modal-bar">
+    <a class="btn btn-outline" href="#" target="_blank" rel="noopener">Open image</a>
+    <button type="button" class="btn btn-outline" data-plot-close>Close</button>
+  </div>
+  <div class="plot-modal-stage"><img alt="Expanded plot"></div>
+`;
+document.body.appendChild(plotDialog);
+const plotDialogImage = plotDialog.querySelector("img");
+const plotDialogLink = plotDialog.querySelector("a");
+const closePlotDialog = () => {
+  plotDialog.hidden = true;
+  plotDialogImage.removeAttribute("src");
+};
+document.querySelectorAll("[data-plot-zoom]").forEach((button) => {
+  button.addEventListener("click", () => {
+    const src = button.dataset.plotZoom;
+    if (!src) return;
+    plotDialogImage.src = src;
+    plotDialogLink.href = src;
+    plotDialog.hidden = false;
+  });
+});
+plotDialog.querySelector("[data-plot-close]")?.addEventListener("click", closePlotDialog);
+plotDialog.addEventListener("click", (event) => {
+  if (event.target === plotDialog) closePlotDialog();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !plotDialog.hidden) closePlotDialog();
+});

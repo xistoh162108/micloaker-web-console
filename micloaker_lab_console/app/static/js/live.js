@@ -46,21 +46,8 @@ async function refresh() {
   if (finalizationOutput) finalizationOutput.textContent = data.finalization_status || data.preview_label || "";
   renderFinalRun(data);
   if (clippingOutput) clippingOutput.textContent = data.clipping ? "CLIPPING POSSIBLE" : "no clipping";
-  if (logTailOutput) logTailOutput.textContent = (data.log_tail && data.log_tail.length) ? data.log_tail.join("\n") : "No log entries yet.";
-  if (levels) levels.textContent = JSON.stringify({
-    rms_v: data.rms_v,
-    peak_v: data.peak_v,
-    sample_rate_hz: data.sample_rate_hz,
-    preview_source: data.preview_source,
-    preview_saved: data.preview_saved,
-    final_metrics_source: data.final_metrics_source,
-    waveform_points: data.waveform_point_count,
-    psd_bins: data.psd_bin_count,
-    spectrogram_rows: data.spectrogram_row_count,
-    recommended_update_rates_hz: data.recommended_update_rates_hz,
-    payload_limits: data.payload_limits,
-    preview: data.preview_label,
-  }, null, 2);
+  if (logTailOutput) logTailOutput.textContent = compactLogTail(data.log_tail);
+  if (levels) levels.innerHTML = metricReadoutHtml(data);
   scheduleChartRender(data);
   updateRecordingGuard(data);
   scheduleRefresh(data);
@@ -127,29 +114,7 @@ function renderFinalRun(data) {
     return;
   }
   const failed = Boolean(data.failed_run_id);
-  const payload = failed ? {
-    session_id: sessionId,
-    run_id: runId,
-    status: "failed",
-    failed_at: data.failed_at,
-    error: data.finalization_error,
-    error_log: data.finalization_error_log,
-  } : {
-    session_id: sessionId,
-    run_id: runId,
-    status: "finalized",
-    finalized_at: data.finalized_at,
-    result_grade: data.final_result_grade,
-    finalized_from_saved_bin: data.finalized_from_saved_bin,
-    raw_bin_path: data.final_bin_path,
-    wav_peak_path: data.final_wav_peak_path,
-    wav_range_path: data.final_wav_range_path,
-    plot_paths: data.final_plot_paths,
-    raw_sample_count: data.final_raw_sample_count,
-    raw_size_bytes: data.final_raw_size_bytes,
-    raw_dtype: data.final_raw_dtype,
-  };
-  finalRunOutput.textContent = JSON.stringify(payload, null, 2);
+  finalRunOutput.innerHTML = failed ? failedRunSummaryHtml(data, sessionId, runId) : finalRunSummaryHtml(data, sessionId, runId);
   if (finalRunLink) {
     finalRunLink.href = `/sessions/${sessionId}/runs/${runId}`;
     finalRunLink.hidden = false;
@@ -167,6 +132,91 @@ function renderFinalRun(data) {
   } else if (finalLogLink) {
     finalLogLink.hidden = true;
   }
+}
+
+function metricReadoutHtml(data) {
+  const rms = formatMetric(data.rms_v, " V");
+  const peak = formatMetric(data.peak_v, " V");
+  const rate = Number.isFinite(Number(data.sample_rate_hz)) ? `${Number(data.sample_rate_hz).toLocaleString()} Hz` : "n/a";
+  return `
+    <div class="metric-readout-grid">
+      <div><span class="metric-label">RMS</span><strong>${rms}</strong></div>
+      <div><span class="metric-label">Peak</span><strong>${peak}</strong></div>
+      <div><span class="metric-label">Sample rate</span><strong>${rate}</strong></div>
+      <div><span class="metric-label">Preview</span><strong>${escapeHtml(data.preview_source || "mock")}</strong></div>
+    </div>
+    <p class="muted small-text">${escapeHtml(data.preview_label || "Preview only")}</p>
+    <details><summary>Preview payload</summary><pre class="scroll-pre">${escapeHtml(JSON.stringify({
+      final_metrics_source: data.final_metrics_source,
+      waveform_points: data.waveform_point_count,
+      psd_bins: data.psd_bin_count,
+      spectrogram_rows: data.spectrogram_row_count,
+      recommended_update_rates_hz: data.recommended_update_rates_hz,
+      payload_limits: data.payload_limits,
+      preview_saved: data.preview_saved,
+    }, null, 2))}</pre></details>
+  `;
+}
+
+function finalRunSummaryHtml(data, sessionId, runId) {
+  return `
+    <div class="summary-grid">
+      <div><span class="metric-label">Status</span><strong>finalized</strong></div>
+      <div><span class="metric-label">Run</span><strong>${escapeHtml(runId)}</strong></div>
+      <div><span class="metric-label">Grade</span><strong>${escapeHtml(data.final_result_grade || "report")}</strong></div>
+      <div><span class="metric-label">Source</span><strong>${data.finalized_from_saved_bin ? "saved .bin" : "unknown"}</strong></div>
+      <div><span class="metric-label">Samples</span><strong>${formatInteger(data.final_raw_sample_count)}</strong></div>
+      <div><span class="metric-label">Raw</span><strong>${escapeHtml(data.final_bin_path || "n/a")}</strong></div>
+    </div>
+    <details><summary>Raw finalization fields</summary><pre class="scroll-pre">${escapeHtml(JSON.stringify({
+      session_id: sessionId,
+      run_id: runId,
+      finalized_at: data.finalized_at,
+      raw_bin_path: data.final_bin_path,
+      wav_peak_path: data.final_wav_peak_path,
+      wav_range_path: data.final_wav_range_path,
+      plot_paths: data.final_plot_paths,
+      raw_size_bytes: data.final_raw_size_bytes,
+      raw_dtype: data.final_raw_dtype,
+    }, null, 2))}</pre></details>
+  `;
+}
+
+function failedRunSummaryHtml(data, _sessionId, runId) {
+  return `
+    <div class="summary-grid">
+      <div><span class="metric-label">Status</span><strong>failed</strong></div>
+      <div><span class="metric-label">Run</span><strong>${escapeHtml(runId)}</strong></div>
+      <div><span class="metric-label">Error</span><strong>${escapeHtml(data.finalization_error || "unknown")}</strong></div>
+      <div><span class="metric-label">Log</span><strong>${escapeHtml(data.finalization_error_log || "n/a")}</strong></div>
+    </div>
+  `;
+}
+
+function compactLogTail(lines) {
+  if (!lines || !lines.length) return "No log entries yet.";
+  return lines.slice(-8).join("\n");
+}
+
+function formatMetric(value, suffix = "") {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return "n/a";
+  return `${formatScientific(number, 5)}${suffix}`;
+}
+
+function formatInteger(value) {
+  const number = Number(value);
+  return Number.isFinite(number) ? number.toLocaleString() : "n/a";
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  })[char]);
 }
 
 function drawLine(ctx, canvas, points, color, mode) {

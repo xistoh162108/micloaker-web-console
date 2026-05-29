@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
@@ -106,7 +108,9 @@ def validate_run_playback(
 ):
     workspace = request.app.state.settings.workspace
     _require_run(workspace, session_id, run_id)
+    run = load_run(workspace, session_id, run_id)
     payload = {"file": file, "device_id": device_id, "sample_rate": sample_rate, "channels": channels, "gain": gain}
+    _reject_if_jamming_file_mismatches_run(workspace, session_id, run_id, run, payload, action="validate_playback")
     result = _client_from_config(workspace).validate_playback(payload)
     _store_helper_result(workspace, session_id, run_id, "validate_playback", payload, result)
     return result
@@ -126,7 +130,9 @@ def play_run_helper(
 ):
     workspace = request.app.state.settings.workspace
     _require_run(workspace, session_id, run_id)
+    run = load_run(workspace, session_id, run_id)
     payload = {"file": file, "device_id": device_id, "sample_rate": sample_rate, "channels": channels, "gain": gain, "delay_ms": delay_ms}
+    _reject_if_jamming_file_mismatches_run(workspace, session_id, run_id, run, payload, action="play")
     result = _client_from_config(workspace).play(payload)
     _store_helper_result(workspace, session_id, run_id, "play", payload, result)
     return result
@@ -215,6 +221,7 @@ def _play_and_record(
     helper = run.get("mac_helper", {})
     last_request = helper.get("last_request", {})
     requested = {"file": file, "device_id": device_id, "sample_rate": sample_rate, "channels": channels, "gain": gain}
+    _reject_if_jamming_file_mismatches_run(workspace, session_id, run_id, run, requested, action="play_and_record_rejected")
     validated = helper.get("validate_playback_ok") is True and all(last_request.get(k) == v for k, v in requested.items())
     if not validated:
         result = {
@@ -311,6 +318,51 @@ def _parse_int_field(name: str, value: str, *, minimum: int) -> int:
 
 def _helper_form_error(error_code: str, message: str, suggestion: str) -> dict[str, str | bool]:
     return {"ok": False, "error_code": error_code, "message": message, "suggestion": suggestion}
+
+
+def _reject_if_jamming_file_mismatches_run(workspace, session_id: str, run_id: str, run: dict, payload: dict, *, action: str) -> None:
+    result = _jamming_file_metadata_error(run, str(payload.get("file", "")))
+    if result is None:
+        return
+    _store_helper_result(workspace, session_id, run_id, action, payload, result)
+    raise HTTPException(status_code=400, detail=result)
+
+
+def _jamming_file_metadata_error(run: dict, file: str) -> dict[str, str | bool] | None:
+    """Validate that run jamming metadata matches the Mac Helper WAV selection."""
+    condition = run.get("condition", {})
+    try:
+        freq_khz = float(condition.get("carrier_freq_khz", 0.0) or 0.0)
+    except (TypeError, ValueError):
+        freq_khz = 0.0
+    normalized_file = _normalize_jamming_name(file)
+    if freq_khz == 0.0:
+        if "khz" in normalized_file or "jamming" in normalized_file:
+            return _helper_form_error(
+                "JAMMING_FILE_METADATA_MISMATCH",
+                "This run is marked 0 kHz, which means no jamming signal should be emitted.",
+                "Use a non-jamming playback file for this run, or set the run jamming carrier frequency to match the selected WAV.",
+            )
+        return None
+    expected = _frequency_file_token(freq_khz)
+    if expected not in normalized_file:
+        display_freq = f"{freq_khz:g} kHz"
+        return _helper_form_error(
+            "JAMMING_FILE_METADATA_MISMATCH",
+            f"Selected WAV file does not match this run's jamming carrier metadata ({display_freq}).",
+            f"Choose the matching jamming_sound/{expected}_1hr.wav file or create a new run with the correct carrier frequency.",
+        )
+    return None
+
+
+def _frequency_file_token(freq_khz: float) -> str:
+    raw = f"{freq_khz:g}".lower()
+    raw = re.sub(r"[^0-9.]+", "", raw)
+    return f"{raw}khz"
+
+
+def _normalize_jamming_name(file: str) -> str:
+    return re.sub(r"[^a-z0-9.]+", "", file.lower())
 
 
 def _read_helper_config(workspace) -> dict:

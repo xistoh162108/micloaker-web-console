@@ -97,23 +97,25 @@
         </div>
         {% if active_session %}
         <form method="post" action="/sessions/{{ active_session.session_id }}/runs" class="quick-capture-form" data-recording-guard>
-          <label>Freq kHz
+          <label>Jamming carrier kHz
             <input name="carrier_freq_khz" type="number" step="0.1" value="25" list="dashboard-carrier-frequency-presets">
             <datalist id="dashboard-carrier-frequency-presets">
+              <option value="0" label="0 kHz - no jamming playback"></option>
               <option value="25" label="25 kHz"></option>
               <option value="32.8" label="32.8 kHz"></option>
             </datalist>
           </label>
           <label>UJ <select name="uj"><option>uj0</option><option>uj1</option></select></label>
-          <label>Sound
+          <label>Ordinary recorded sound
             <select name="sound_condition">
-              <option value="sound0">no sound</option>
-              <option value="sound1">jamming</option>
-              <option value="speech">speech</option>
-              <option value="custom">custom</option>
+              <option value="sound0">none / quiet baseline</option>
+              <option value="sound1">ordinary sound present</option>
+              <option value="speech">speech / WER material</option>
+              <option value="custom">custom ordinary sound</option>
             </select>
           </label>
-          <label>Duration s <input name="duration_s" type="number" min="0.01" step="0.1" value="1.0"></label>
+          <p class="wide small-text">0 kHz = no jamming signal emitted. Sound describes ordinary recorded sound or WER material, not ultrasonic jamming playback.</p>
+          <label>Duration s <input name="duration_s" type="number" min="0.01" step="0.01" value="1.00" inputmode="decimal"></label>
           <label>Sample rate <input name="sample_rate_hz" type="number" min="1" value="8000"></label>
           <input name="scale_mode" type="hidden" value="both">
           <input name="remove_dc" type="hidden" value="true">
@@ -126,6 +128,32 @@
         {% else %}
         <p class="warn">Create a session before recording.</p>
         {% endif %}
+        {% if last_run %}
+        <div class="panel operator-panel run-playback-console">
+          <div class="card-title">
+            <h3>Mac Playback + Run Capture</h3>
+            <span class="badge {{ 'badge-success' if mac_status.connected else 'badge-warning' }}">{{ "helper connected" if mac_status.connected else "helper optional" }}</span>
+          </div>
+          <p class="small-text">Target run: <a href="/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}">{{ last_run.run_id }}</a>. Validate playback, test playback only, stop playback, or start synchronized Play & Record from this same console.</p>
+          <form method="post" action="/mac-helper/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}/validate-playback" class="form grid-form run-helper-form" data-run-helper-form>
+            <label>Mac WAV file <input name="file" value="{{ last_run.mac_helper.planned_file or last_run.mac_helper.file or '' }}" placeholder="jamming_sound/25khz_1hr.wav"></label>
+            <label>Device ID <input name="device_id" type="number" value="{{ last_run.mac_helper.planned_device_id if last_run.mac_helper.planned_device_id is not none else (last_run.mac_helper.device_id if last_run.mac_helper.device_id is not none else 0) }}"></label>
+            <label>Playback sample rate <input name="sample_rate" type="number" min="1" value="{{ last_run.mac_helper.planned_sample_rate if last_run.mac_helper.planned_sample_rate is not none else (last_run.mac_helper.requested_sample_rate if last_run.mac_helper.requested_sample_rate is not none else 192000) }}"></label>
+            <label>Channels <input name="channels" type="number" min="1" value="{{ last_run.mac_helper.planned_channels if last_run.mac_helper.planned_channels is not none else (last_run.mac_helper.channels if last_run.mac_helper.channels is not none else 1) }}"></label>
+            <label>Gain <input name="gain" type="number" min="0" max="1" step="0.01" value="{{ last_run.mac_helper.planned_gain if last_run.mac_helper.planned_gain is not none else (last_run.mac_helper.gain if last_run.mac_helper.gain is not none else 1.0) }}"></label>
+            <label>Delay ms <input name="delay_ms" type="number" min="0" value="{{ last_run.mac_helper.planned_delay_ms if last_run.mac_helper.planned_delay_ms is not none else (last_run.mac_helper.delay_ms if last_run.mac_helper.delay_ms is not none else 500) }}"></label>
+            <div class="form-actions wide">
+              <button type="submit" class="btn btn-outline" data-helper-action="Validate Playback" formaction="/mac-helper/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}/validate-playback">Validate Playback</button>
+              <button type="submit" class="btn btn-primary" data-helper-action="Play" formaction="/mac-helper/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}/play">Play Only</button>
+              <button type="submit" class="btn btn-outline" data-helper-action="Stop Playback" formaction="/mac-helper/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}/stop">Stop Playback</button>
+              <button type="submit" class="btn btn-primary" data-helper-action="Play & Record Mock" formaction="/mac-helper/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}/play-and-record-mock" data-recording-submit {% if recording_status.active %}disabled{% endif %}>Play & Record Mock</button>
+              <button type="submit" class="btn btn-primary" data-helper-action="Play & Record DAQ" formaction="/mac-helper/sessions/{{ last_run.session_id }}/runs/{{ last_run.run_id }}/play-and-record-daq" data-recording-submit {% if recording_status.active %}disabled{% endif %}>Play & Record DAQ</button>
+            </div>
+          </form>
+          <div class="metric-readout run-helper-status" data-run-helper-status>Playback controls are independent from Linux-only recording. Validate first before synchronized Play & Record.</div>
+          <p class="small-text">Approval gate target: after capture, listen to WAV preview and inspect live/final plots before report-grade processing or export.</p>
+        </div>
+        {% endif %}
         <div class="live-console-grid">
           <div class="panel live-plot-panel live-primary">
             <div class="card-title"><h3>Waveform</h3><span id="live-state" class="badge">Stopped</span></div>
@@ -134,7 +162,7 @@
           </div>
           <div class="panel live-meter-panel">
             <h3>RMS/Peak Meter</h3>
-            <pre id="live-levels" class="compact-pre">stopped</pre>
+            <div id="live-levels" class="metric-readout">stopped</div>
           </div>
           <div class="panel live-plot-panel">
             <div class="card-title"><h3>Live PSD</h3><span id="live-clipping" class="badge">unknown</span></div>
@@ -155,7 +183,7 @@
             <a id="live-final-metrics-link" class="btn btn-outline" href="#" hidden>Metrics JSON</a>
             <a id="live-final-log-link" class="btn btn-outline" href="#" hidden>Run log</a>
           </nav>
-          <pre id="live-final-run" class="compact-pre">none</pre>
+          <div id="live-final-run" class="final-run-summary">none</div>
         </div>
       </div>
     </div>
@@ -202,19 +230,19 @@
             {% if last_run_artifacts.waveform_png %}
             <figure>
               <img src="/sessions/{{ last_run.session_id }}/files/{{ last_run_artifacts.waveform_png }}" alt="Latest finalized waveform" loading="lazy" decoding="async">
-              <figcaption>Waveform</figcaption>
+              <figcaption>Waveform <button type="button" class="link-button" data-plot-zoom="/sessions/{{ last_run.session_id }}/files/{{ last_run_artifacts.waveform_png }}">large</button></figcaption>
             </figure>
             {% endif %}
             {% if last_run_artifacts.psd_png %}
             <figure>
               <img src="/sessions/{{ last_run.session_id }}/files/{{ last_run_artifacts.psd_png }}" alt="Latest finalized PSD" loading="lazy" decoding="async">
-              <figcaption>PSD</figcaption>
+              <figcaption>PSD <button type="button" class="link-button" data-plot-zoom="/sessions/{{ last_run.session_id }}/files/{{ last_run_artifacts.psd_png }}">large</button></figcaption>
             </figure>
             {% endif %}
             {% if last_run_artifacts.spectrogram_png %}
             <figure>
               <img src="/sessions/{{ last_run.session_id }}/files/{{ last_run_artifacts.spectrogram_png }}" alt="Latest finalized spectrogram" loading="lazy" decoding="async">
-              <figcaption>Spectrogram</figcaption>
+              <figcaption>Spectrogram <button type="button" class="link-button" data-plot-zoom="/sessions/{{ last_run.session_id }}/files/{{ last_run_artifacts.spectrogram_png }}">large</button></figcaption>
             </figure>
             {% endif %}
           </div>
@@ -224,7 +252,7 @@
             {% if last_run_artifacts.wav_range %}<a class="btn btn-outline" href="/sessions/{{ last_run.session_id }}/files/{{ last_run_artifacts.wav_range }}?download=1" download>Range WAV Cross-check</a>{% endif %}
           </div>
           {% if last_run_artifacts.wav_peak %}
-          <audio controls preload="none" src="/sessions/{{ last_run.session_id }}/files/{{ last_run_artifacts.wav_peak }}"></audio>
+          <audio class="audio-preview" controls preload="none" src="/sessions/{{ last_run.session_id }}/files/{{ last_run_artifacts.wav_peak }}"></audio>
           <p class="muted">Peak WAV is listening preview only. Report-grade values come from saved raw .bin.</p>
           {% endif %}
         </div>

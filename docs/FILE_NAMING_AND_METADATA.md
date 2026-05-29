@@ -38,6 +38,8 @@ Examples:
 0      -> r0
 ```
 
+`0` kHz means no ultrasonic jamming carrier is emitted. It is a baseline/no-jamming playback condition, not an invalid frequency.
+
 ## 4. File names
 
 ```text
@@ -49,6 +51,8 @@ plots/<run_id>_psd.png
 plots/<run_id>_spectrogram.png
 results/<run_id>_metrics.json
 ```
+
+`sound_condition` describes ordinary recorded sound in the room, such as quiet baseline, meeting-room sound, speech, or WER material. It does not describe the ultrasonic jamming playback. The jamming playback condition is represented by `carrier_freq_khz` and `uj`.
 
 ## 5. Metadata schema
 

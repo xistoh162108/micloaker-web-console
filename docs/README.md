@@ -36,6 +36,8 @@ Stability first. Keep the Linux recording/analysis workflow simple and reliable.
 - `ARCHITECTURE.md`: stable project architecture.
 - `MAC_AUDIO_HELPER_SPEC.md`: optional macOS playback helper specification.
 - `UI_UX_SPEC.md`: intuitive but flexible web UI design.
+- `EXPERIMENT_OPERATOR_FLOW.md`: physical Mac playback plus Linux microphone/DAQ run workflow and metadata semantics.
+- `SCIENTIFIC_CONSOLE_UI_REQUIREMENTS.md`: scientific graphing/instrument-console UI direction inspired by OriginPro, MATLAB, PASCO Capstone, and GeoGebra.
 - `OPERATOR_UI_DEPLOYMENT_REQUIREMENTS.md`: additional DaisyUI, command-center UI, safe start/stop, Tailscale, launcher, and GitHub delivery requirements.
 - `HARDWARE_VALIDATION_PROTOCOL.md`: lab-side DAQ, Mac Helper, play-and-record, and attenuation validation protocol before report-grade experiments.
 - `LEGACY_NOTEBOOK_ALIGNMENT.md`: mapping from historical notebooks in `legacy/` to current tested services and remaining lab validation items.

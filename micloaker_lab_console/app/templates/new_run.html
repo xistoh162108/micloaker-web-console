@@ -45,23 +45,25 @@
     <summary>Simple</summary>
     <form method="post" action="/sessions/{{ selected_session_id }}/runs" class="form grid-form">
       <label>Session <input value="{{ selected_session_id }}" readonly></label>
-      <label>Frequency kHz
+      <label>Jamming carrier kHz
         <input name="carrier_freq_khz" type="number" step="0.1" value="25" list="new-run-carrier-frequency-presets">
         <datalist id="new-run-carrier-frequency-presets">
+          <option value="0" label="0 kHz - no jamming playback"></option>
           <option value="25" label="25 kHz"></option>
           <option value="32.8" label="32.8 kHz"></option>
         </datalist>
       </label>
       <label>UJ <select name="uj"><option>uj0</option><option>uj1</option></select></label>
-      <label>Sound
+      <label>Ordinary recorded sound
         <select name="sound_condition">
-          <option value="sound0">no sound</option>
-          <option value="sound1">jamming</option>
-          <option value="speech">speech</option>
-          <option value="custom">custom</option>
+          <option value="sound0">none / quiet baseline</option>
+          <option value="sound1">ordinary sound present</option>
+          <option value="speech">speech / WER material</option>
+          <option value="custom">custom ordinary sound</option>
         </select>
       </label>
-      <label>Duration <input name="duration_s" type="number" min="0.01" step="0.1" value="1.0"></label>
+      <p class="wide small-text">0 kHz = no jamming signal emitted. Sound describes ordinary recorded sound or WER material, not ultrasonic jamming playback.</p>
+      <label>Duration <input name="duration_s" type="number" min="0.01" step="0.01" value="1.00" inputmode="decimal"></label>
       <label>Sample rate <input name="sample_rate_hz" type="number" min="1" value="8000"></label>
       <label>Scale mode <select name="scale_mode"><option value="both">peak + range</option><option value="peak">peak</option><option value="range">range</option></select></label>
       <label class="wide">Notes <input name="notes"></label>
@@ -76,7 +78,7 @@
           <label>Distance cm <input name="distance_cm" type="number" min="0" step="0.1"></label>
           <label>Angle deg <input name="angle_deg" type="number" step="0.1" value="0"></label>
           <label>Full-scale V <input name="full_scale_volts" type="number" min="0.1" step="0.1" value="10"></label>
-          <label class="inline-check"><input name="remove_dc" type="hidden" value="false"><input name="remove_dc" type="checkbox" value="true" checked> remove DC before WAV/analysis</label>
+          <label class="inline-check"><input name="remove_dc" type="hidden" value="false"><input name="remove_dc" type="checkbox" value="true" checked> <span>remove DC before WAV/analysis</span></label>
           <label>Trim start s <input name="trim_start_s" type="number" min="0" step="0.01" value="0"></label>
           <label>Trim end s <input name="trim_end_s" type="number" min="0" step="0.01" value="0"></label>
           <label>Band low Hz <input name="analysis_band_low_hz" type="number" min="0" step="1" value="300"></label>
@@ -84,7 +86,7 @@
           <label>Safety operator <input name="safety_operator"></label>
           <label>Safety max SPL dB <input name="safety_max_spl_db" type="number" min="0" step="0.1"></label>
           <label class="wide">Safety notes <input name="safety_notes"></label>
-          <label>Mac Helper WAV file <input name="mac_helper_file" placeholder="jamming_25khz.wav"></label>
+          <label>Mac Helper WAV file <input name="mac_helper_file" placeholder="jamming_sound/25khz_1hr.wav"></label>
           <label>Mac Helper device ID <input name="mac_helper_device_id" type="number" min="0"></label>
           <label>Mac Helper sample rate <input name="mac_helper_sample_rate" type="number" min="1" placeholder="192000"></label>
           <label>Mac Helper channels <input name="mac_helper_channels" type="number" min="1" value="1"></label>

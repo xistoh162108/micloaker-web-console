@@ -1037,7 +1037,7 @@ def test_mac_helper_client_preserves_structured_helper_errors(monkeypatch: pytes
         )
 
     monkeypatch.setattr("app.services.mac_helper_client.httpx.post", fake_post)
-    result = MacHelperClient("http://helper.local").validate_playback({"file": "tone.wav"})
+    result = MacHelperClient("http://helper.local").validate_playback({"file": "jamming_sound/25khz_1hr.wav"})
     assert result["ok"] is False
     assert result["error_code"] == "INVALID_REQUEST"
     assert "device_id" in result["message"]
@@ -1187,7 +1187,11 @@ def test_uldaq_is_lazy_and_app_routes_smoke(tmp_path: Path, monkeypatch: pytest.
     shutdown = client.post("/ops/shutdown")
     assert shutdown.status_code == 403
     assert shutdown.json()["detail"]["error_code"] == "WEB_SHUTDOWN_DISABLED"
-    assert "Multi-Session Export" in client.get("/sessions").text
+    sessions_page = client.get("/sessions").text
+    assert "Multi-Session Export" in sessions_page
+    assert "session-control-grid" in sessions_page
+    assert "checkbox-grid" in sessions_page
+    assert ".check-row" in client.get("/static/css/app.css").text
     daq = client.get("/daq/health").json()
     assert daq["ok"] is True
     assert "uldaq" not in sys.modules
@@ -1991,6 +1995,8 @@ def test_global_files_page_lists_session_artifacts(tmp_path: Path, monkeypatch: 
     assert "Listening preview only" in page.text
     assert "Range WAV" in page.text
     assert "Scale-valid cross-check if full-scale voltage is correct" in page.text
+    assert "file-table" in page.text
+    assert "audio-preview" in page.text
     assert f'src="/sessions/{session["session_id"]}/files/{final["files"]["wav_peak"]}"' in page.text
     assert f'src="/sessions/{session["session_id"]}/files/{final["files"]["wav_range"]}"' in page.text
     assert f"/sessions/{session['session_id']}/files/{final['files']['metrics_json']}" in page.text
@@ -2808,12 +2814,12 @@ def test_mac_helper_passthrough_endpoints_fail_softly(tmp_path: Path, monkeypatc
         assert result["error_code"] == "HELPER_DISCONNECTED"
     validate = client.post(
         "/mac-helper/validate-playback",
-        data={"file": "tone.wav", "device_id": 1, "sample_rate": 192000, "channels": 1, "gain": 0.8},
+        data={"file": "jamming_sound/25khz_1hr.wav", "device_id": 1, "sample_rate": 192000, "channels": 1, "gain": 0.8},
     ).json()
     assert validate["connected"] is False
     play = client.post(
         "/mac-helper/play",
-        data={"file": "tone.wav", "device_id": 1, "sample_rate": 192000, "channels": 1, "gain": 0.8, "delay_ms": 0},
+        data={"file": "jamming_sound/25khz_1hr.wav", "device_id": 1, "sample_rate": 192000, "channels": 1, "gain": 0.8, "delay_ms": 0},
     ).json()
     assert play["connected"] is False
     missing_file = client.post(
@@ -2824,7 +2830,7 @@ def test_mac_helper_passthrough_endpoints_fail_softly(tmp_path: Path, monkeypatc
     assert missing_file.json()["detail"]["error_code"] == "MISSING_PLAYBACK_FILE"
     bad_device = client.post(
         "/mac-helper/play",
-        data={"file": "tone.wav", "device_id": "", "sample_rate": "192000", "channels": "1", "gain": 0.8, "delay_ms": "0"},
+        data={"file": "jamming_sound/25khz_1hr.wav", "device_id": "", "sample_rate": "192000", "channels": "1", "gain": 0.8, "delay_ms": "0"},
     )
     assert bad_device.status_code == 400
     assert bad_device.json()["detail"]["ok"] is False
@@ -2864,7 +2870,7 @@ def test_mac_helper_run_actions_validate_session_and_run_targets(tmp_path: Path,
     ensure_workspace(tmp_path)
     session = create_session(tmp_path, "helper missing targets")
     client = TestClient(create_app())
-    payload = {"file": "tone.wav", "device_id": "1", "sample_rate": "192000", "channels": "1", "gain": "0.8"}
+    payload = {"file": "jamming_sound/25khz_1hr.wav", "device_id": "1", "sample_rate": "192000", "channels": "1", "gain": "0.8"}
 
     missing_session = client.post("/mac-helper/sessions/missing_session/runs/missing_run/validate-playback", data=payload)
     assert missing_session.status_code == 404
@@ -3218,7 +3224,7 @@ def test_play_and_record_requires_prior_validation(tmp_path: Path, monkeypatch: 
     client = TestClient(create_app())
     response = client.post(
         f"/mac-helper/sessions/{session['session_id']}/runs/{run['run_id']}/play-and-record-mock",
-        data={"file": "tone.wav", "device_id": 1, "sample_rate": 8000, "channels": 1, "gain": 0.5, "delay_ms": 0},
+        data={"file": "jamming_sound/25khz_1hr.wav", "device_id": 1, "sample_rate": 8000, "channels": 1, "gain": 0.5, "delay_ms": 0},
     )
     assert response.status_code == 400
     detail = response.json()["detail"]
@@ -3228,6 +3234,38 @@ def test_play_and_record_requires_prior_validation(tmp_path: Path, monkeypatch: 
     assert saved["mac_helper"]["connected"] is False
     assert saved["mac_helper"]["enabled"] is False
     assert saved["mac_helper"]["health_ok"] is False
+
+
+def test_run_mac_helper_rejects_jamming_file_metadata_mismatch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("MICLOAKER_WORKSPACE", str(tmp_path))
+    ensure_workspace(tmp_path)
+    session = create_session(tmp_path, "helper frequency gate")
+    run = create_run_metadata(tmp_path, session["session_id"], carrier_freq_khz=32.8, uj="uj1")
+
+    class FakeHelper:
+        def validate_playback(self, payload):
+            return {"ok": True, **payload}
+
+    monkeypatch.setattr(mac_helper_routes, "_client_from_config", lambda workspace: FakeHelper())
+    client = TestClient(create_app())
+    mismatch = client.post(
+        f"/mac-helper/sessions/{session['session_id']}/runs/{run['run_id']}/validate-playback",
+        data={"file": "jamming_sound/25khz_1hr.wav", "device_id": 1, "sample_rate": 192000, "channels": 1, "gain": 0.5},
+    )
+    assert mismatch.status_code == 400
+    detail = mismatch.json()["detail"]
+    assert detail["error_code"] == "JAMMING_FILE_METADATA_MISMATCH"
+    assert "32.8 kHz" in detail["message"]
+    saved = load_run(tmp_path, session["session_id"], run["run_id"])
+    assert saved["mac_helper"]["last_action"] == "validate_playback"
+    assert saved["mac_helper"]["last_error_code"] == "JAMMING_FILE_METADATA_MISMATCH"
+
+    ok = client.post(
+        f"/mac-helper/sessions/{session['session_id']}/runs/{run['run_id']}/validate-playback",
+        data={"file": "jamming_sound/32.8khz_1hr.wav", "device_id": 1, "sample_rate": 192000, "channels": 1, "gain": 0.5},
+    )
+    assert ok.status_code == 200
+    assert ok.json()["ok"] is True
 
 
 def test_play_and_record_rejection_preserves_existing_helper_connection_state(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
@@ -3244,12 +3282,12 @@ def test_play_and_record_rejection_preserves_existing_helper_connection_state(tm
     client = TestClient(create_app())
     validated = client.post(
         f"/mac-helper/sessions/{session['session_id']}/runs/{run['run_id']}/validate-playback",
-        data={"file": "tone.wav", "device_id": 1, "sample_rate": 8000, "channels": 1, "gain": 0.5},
+        data={"file": "jamming_sound/25khz_1hr.wav", "device_id": 1, "sample_rate": 8000, "channels": 1, "gain": 0.5},
     )
     assert validated.status_code == 200
     response = client.post(
         f"/mac-helper/sessions/{session['session_id']}/runs/{run['run_id']}/play-and-record-mock",
-        data={"file": "tone.wav", "device_id": 1, "sample_rate": 8000, "channels": 1, "gain": 0.7, "delay_ms": 0},
+        data={"file": "jamming_sound/25khz_1hr.wav", "device_id": 1, "sample_rate": 8000, "channels": 1, "gain": 0.7, "delay_ms": 0},
     )
     assert response.status_code == 400
     saved = load_run(tmp_path, session["session_id"], run["run_id"])
@@ -3280,7 +3318,7 @@ def test_play_and_record_returns_structured_busy_conflict(tmp_path: Path, monkey
 
     monkeypatch.setattr(mac_helper_routes, "_client_from_config", lambda workspace: FakeHelper())
     client = TestClient(create_app())
-    payload = {"file": "tone.wav", "device_id": 1, "sample_rate": 8000, "channels": 1, "gain": 0.5}
+    payload = {"file": "jamming_sound/25khz_1hr.wav", "device_id": 1, "sample_rate": 8000, "channels": 1, "gain": 0.5}
     assert client.post(f"/mac-helper/sessions/{session['session_id']}/runs/{run['run_id']}/validate-playback", data=payload).json()["ok"] is True
 
     assert _recording_lock.acquire(blocking=False) is True
@@ -3354,19 +3392,19 @@ def test_mac_helper_success_persists_run_metadata_and_log(tmp_path: Path, monkey
     client = TestClient(create_app())
     validate = client.post(
         f"/mac-helper/sessions/{session['session_id']}/runs/{run['run_id']}/validate-playback",
-        data={"file": "tone.wav", "device_id": 3, "sample_rate": 8000, "channels": 1, "gain": 0.5},
+        data={"file": "jamming_sound/25khz_1hr.wav", "device_id": 3, "sample_rate": 8000, "channels": 1, "gain": 0.5},
     )
     assert validate.status_code == 200
     play = client.post(
         f"/mac-helper/sessions/{session['session_id']}/runs/{run['run_id']}/play",
-        data={"file": "tone.wav", "device_id": 3, "sample_rate": 8000, "channels": 1, "gain": 0.5, "delay_ms": 10},
+        data={"file": "jamming_sound/25khz_1hr.wav", "device_id": 3, "sample_rate": 8000, "channels": 1, "gain": 0.5, "delay_ms": 10},
     )
     assert play.status_code == 200
     saved = load_run(tmp_path, session["session_id"], run["run_id"])
     helper = saved["mac_helper"]
     assert helper["connected"] is True
     assert helper["helper_url"] == ""
-    assert helper["file"] == "tone.wav"
+    assert helper["file"] == "jamming_sound/25khz_1hr.wav"
     assert helper["device_id"] == 3
     assert helper["device_name"] == "USB Audio Device"
     assert helper["device_max_output_channels"] == 2
@@ -3424,7 +3462,7 @@ def test_mac_helper_run_stop_persists_without_erasing_last_playback(tmp_path: Pa
     client = TestClient(create_app())
     play = client.post(
         f"/mac-helper/sessions/{session['session_id']}/runs/{run['run_id']}/play",
-        data={"file": "tone.wav", "device_id": 3, "sample_rate": 8000, "channels": 1, "gain": 0.5, "delay_ms": 10},
+        data={"file": "jamming_sound/25khz_1hr.wav", "device_id": 3, "sample_rate": 8000, "channels": 1, "gain": 0.5, "delay_ms": 10},
     )
     assert play.status_code == 200
     stop = client.post(f"/mac-helper/sessions/{session['session_id']}/runs/{run['run_id']}/stop")
@@ -3433,7 +3471,7 @@ def test_mac_helper_run_stop_persists_without_erasing_last_playback(tmp_path: Pa
     helper = saved["mac_helper"]
     assert helper["last_action"] == "stop"
     assert helper["stop_request_ok"] is True
-    assert helper["file"] == "tone.wav"
+    assert helper["file"] == "jamming_sound/25khz_1hr.wav"
     assert helper["device_id"] == 3
     assert helper["requested_sample_rate"] == 8000
     assert helper["channels"] == 1
@@ -3464,7 +3502,7 @@ def test_connected_mac_helper_validation_failure_preserves_connection_metadata(t
     client = TestClient(create_app())
     response = client.post(
         f"/mac-helper/sessions/{session['session_id']}/runs/{run['run_id']}/validate-playback",
-        data={"file": "tone.wav", "device_id": 3, "sample_rate": 192000, "channels": 1, "gain": 0.5},
+        data={"file": "jamming_sound/25khz_1hr.wav", "device_id": 3, "sample_rate": 192000, "channels": 1, "gain": 0.5},
     )
     assert response.status_code == 200
     assert response.json()["error_code"] == "UNSUPPORTED_SAMPLE_RATE"
@@ -3499,12 +3537,12 @@ def test_play_and_record_success_finalizes_and_preserves_helper_metadata(tmp_pat
     client = TestClient(create_app())
     validate = client.post(
         f"/mac-helper/sessions/{session['session_id']}/runs/{run['run_id']}/validate-playback",
-        data={"file": "tone.wav", "device_id": 4, "sample_rate": 8000, "channels": 1, "gain": 0.4},
+        data={"file": "jamming_sound/25khz_1hr.wav", "device_id": 4, "sample_rate": 8000, "channels": 1, "gain": 0.4},
     )
     assert validate.status_code == 200
     response = client.post(
         f"/mac-helper/sessions/{session['session_id']}/runs/{run['run_id']}/play-and-record-mock",
-        data={"file": "tone.wav", "device_id": 4, "sample_rate": 8000, "channels": 1, "gain": 0.4, "delay_ms": 25},
+        data={"file": "jamming_sound/25khz_1hr.wav", "device_id": 4, "sample_rate": 8000, "channels": 1, "gain": 0.4, "delay_ms": 25},
     )
     assert response.status_code == 200
     body = response.json()
@@ -3551,7 +3589,7 @@ def test_daq_play_and_record_uses_validated_helper_settings_and_daq_recorder(tmp
     monkeypatch.setattr(mac_helper_routes, "_client_from_config", lambda workspace: FakeHelper())
     monkeypatch.setattr(mac_helper_routes, "record_daq_and_finalize", fake_record_daq_and_finalize)
     client = TestClient(create_app())
-    payload = {"file": "tone.wav", "device_id": 4, "sample_rate": 8000, "channels": 1, "gain": 0.4}
+    payload = {"file": "jamming_sound/25khz_1hr.wav", "device_id": 4, "sample_rate": 8000, "channels": 1, "gain": 0.4}
     validate = client.post(f"/mac-helper/sessions/{session['session_id']}/runs/{run['run_id']}/validate-playback", data=payload)
     assert validate.status_code == 200
 
@@ -3833,7 +3871,7 @@ def test_new_run_form_exposes_analysis_and_safety_fields(tmp_path: Path, monkeyp
             "safety_operator": "operator-a",
             "safety_max_spl_db": "82",
             "safety_notes": "checked",
-            "mac_helper_file": "jamming_25khz.wav",
+            "mac_helper_file": "jamming_sound/25khz_1hr.wav",
             "mac_helper_device_id": "3",
             "mac_helper_sample_rate": "192000",
             "mac_helper_channels": "1",
@@ -3847,13 +3885,13 @@ def test_new_run_form_exposes_analysis_and_safety_fields(tmp_path: Path, monkeyp
     assert saved["conversion"]["remove_dc"] is False
     assert saved["analysis"]["primary_band_hz"] == [700.0, 1300.0]
     assert saved["safety"]["operator"] == "operator-a"
-    assert saved["mac_helper"]["planned_file"] == "jamming_25khz.wav"
+    assert saved["mac_helper"]["planned_file"] == "jamming_sound/25khz_1hr.wav"
     assert saved["mac_helper"]["planned_device_id"] == 3
     assert saved["mac_helper"]["planned_sample_rate"] == 192000
     assert saved["mac_helper"]["planned_gain"] == 0.75
     detail = client.get(f"/sessions/{session['session_id']}/runs/{saved['run_id']}")
     assert "<th>Remove DC</th><td>False</td>" in detail.text
-    assert "jamming_25khz.wav" in detail.text
+    assert "jamming_sound/25khz_1hr.wav" in detail.text
     assert 'value="250"' in detail.text
 
 
@@ -4434,6 +4472,7 @@ def test_new_run_page_selects_session_and_nav_points_there(tmp_path: Path, monke
     assert "Choose a Session" in page.text
     assert "Run Metadata" in page.text
     assert f'action="/sessions/{session["session_id"]}/runs"' in page.text
+    assert 'name="duration_s" type="number" min="0.01" step="0.01" value="1.00"' in page.text
     for field in [
         "carrier_freq_khz",
         "uj",
@@ -4525,14 +4564,23 @@ def test_dashboard_shows_lab_status_cards_and_shortcuts(tmp_path: Path, monkeypa
     assert 'decoding="async"' in page.text
     assert ".quick-capture-form" in css
     assert ".chart-readout" in css
+    assert ".audio-preview" in css
+    assert ".plot-modal" in css
+    assert ".checkbox-grid" in css
+    assert ".metric-readout-grid" in css
+    assert ".scroll-pre" in css
     assert "data-recording-submit" in page.text
     js = client.get("/static/js/live.js").text
     assert "updateRecordingGuard" in js
     assert "active_recording" in js
     assert "bindChartReadout" in js
     assert "drawCrosshair" in js
+    assert "metricReadoutHtml" in js
+    assert "finalRunSummaryHtml" in js
     assert session["session_id"] in page.text
     assert final1["run_id"] in page.text
     assert f'src="/sessions/{session["session_id"]}/files/{final1["files"]["waveform_png"]}"' in page.text
+    assert "data-plot-zoom" in page.text
+    assert "link-button" in page.text
     assert f'src="/sessions/{session["session_id"]}/files/{final1["files"]["wav_peak"]}"' in page.text
     assert "dB" in page.text

@@ -2,7 +2,7 @@
 {% block content %}
 <h1>Files</h1>
 <p class="muted">Workspace file browser. Downloads use session-scoped safe file routes.</p>
-<table class="data-table">
+<div class="table-scroll"><table class="data-table file-table">
   <thead>
     <tr>
       <th>session</th>
@@ -25,7 +25,7 @@
       <td>{{ file.size_bytes }}</td>
       <td>
         {% if file.is_audio %}
-        <audio controls preload="none" src="{{ file.download_url }}"></audio>
+        <audio class="audio-preview" controls preload="none" src="{{ file.download_url }}"></audio>
         {% else %}
         -
         {% endif %}
@@ -37,5 +37,5 @@
     <tr><td colspan="8">No session files yet.</td></tr>
     {% endfor %}
   </tbody>
-</table>
+</table></div>
 {% endblock %}

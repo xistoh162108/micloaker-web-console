@@ -29,24 +29,26 @@
   <details open>
     <summary>Simple</summary>
   <form method="post" action="/sessions/{{ session_id }}/runs" class="form grid-form">
-    <label>Frequency kHz
+    <label>Jamming carrier kHz
       <input name="carrier_freq_khz" type="number" step="0.1" value="25" list="carrier-frequency-presets">
       <datalist id="carrier-frequency-presets">
+        <option value="0" label="0 kHz - no jamming playback"></option>
         <option value="25" label="25 kHz"></option>
         <option value="32.8" label="32.8 kHz"></option>
       </datalist>
     </label>
     <label>UJ <select name="uj"><option>uj0</option><option>uj1</option></select></label>
-    <label>Sound
+    <label>Ordinary recorded sound
       <select name="sound_condition">
-        <option value="sound0">no sound</option>
-        <option value="sound1">jamming</option>
-        <option value="speech">speech</option>
-        <option value="custom">custom</option>
+        <option value="sound0">none / quiet baseline</option>
+        <option value="sound1">ordinary sound present</option>
+        <option value="speech">speech / WER material</option>
+        <option value="custom">custom ordinary sound</option>
       </select>
     </label>
+    <p class="wide small-text">0 kHz = no jamming signal emitted. Sound describes ordinary recorded sound or WER material, not ultrasonic jamming playback.</p>
     <label>Sample rate <input name="sample_rate_hz" type="number" value="8000"></label>
-    <label>Duration <input name="duration_s" type="number" step="0.1" value="1.0"></label>
+    <label>Duration <input name="duration_s" type="number" min="0.01" step="0.01" value="1.00" inputmode="decimal"></label>
     <label>Scale mode <select name="scale_mode"><option value="both">peak + range</option><option value="peak">peak</option><option value="range">range</option></select></label>
     <label class="wide">Notes <input name="notes"></label>
     <details class="wide">
@@ -60,7 +62,7 @@
         <label>Distance cm <input name="distance_cm" type="number" step="0.1"></label>
         <label>Angle deg <input name="angle_deg" type="number" step="0.1" value="0"></label>
         <label>Full-scale V <input name="full_scale_volts" type="number" step="0.1" value="10"></label>
-        <label class="inline-check"><input name="remove_dc" type="hidden" value="false"><input name="remove_dc" type="checkbox" value="true" checked> remove DC before WAV/analysis</label>
+        <label class="inline-check"><input name="remove_dc" type="hidden" value="false"><input name="remove_dc" type="checkbox" value="true" checked> <span>remove DC before WAV/analysis</span></label>
         <label>Trim start s <input name="trim_start_s" type="number" min="0" step="0.01" value="0"></label>
         <label>Trim end s <input name="trim_end_s" type="number" min="0" step="0.01" value="0"></label>
         <label>Band low Hz <input name="analysis_band_low_hz" type="number" min="0" step="1" value="300"></label>
@@ -68,7 +70,7 @@
         <label>Safety operator <input name="safety_operator"></label>
         <label>Safety max SPL dB <input name="safety_max_spl_db" type="number" min="0" step="0.1"></label>
         <label class="wide">Safety notes <input name="safety_notes"></label>
-        <label>Mac Helper WAV file <input name="mac_helper_file" placeholder="jamming_25khz.wav"></label>
+        <label>Mac Helper WAV file <input name="mac_helper_file" placeholder="jamming_sound/25khz_1hr.wav"></label>
         <label>Mac Helper device ID <input name="mac_helper_device_id" type="number" min="0"></label>
         <label>Mac Helper sample rate <input name="mac_helper_sample_rate" type="number" min="1" placeholder="192000"></label>
         <label>Mac Helper channels <input name="mac_helper_channels" type="number" min="1" value="1"></label>
@@ -89,15 +91,16 @@
   <h2 class="card-title">Upload Raw .bin</h2>
   <form method="post" action="/sessions/{{ session_id }}/runs/upload-bin" enctype="multipart/form-data" class="form grid-form">
     <label class="wide">Raw float64 .bin <input name="file" type="file" accept=".bin" required></label>
-    <label>Frequency kHz <input name="carrier_freq_khz" type="number" step="0.1" value="25" list="carrier-frequency-presets"></label>
+    <label>Jamming carrier kHz <input name="carrier_freq_khz" type="number" step="0.1" value="25" list="carrier-frequency-presets"></label>
     <label>UJ <select name="uj"><option>uj0</option><option>uj1</option></select></label>
-    <label>Sound <input name="sound_condition" value="sound0"></label>
+    <label>Ordinary recorded sound <input name="sound_condition" value="sound0"></label>
+    <p class="wide small-text">0 kHz = no jamming signal emitted. Sound describes ordinary recorded sound or WER material, not ultrasonic jamming playback.</p>
     <label>Mic <input name="mic_id" value="upload_ch0"></label>
     <label>Sample rate <input name="sample_rate_hz" type="number" value="8000"></label>
-    <label>Expected duration s <input name="duration_s" type="number" min="0" step="0.1" value="0"></label>
+    <label>Expected duration s <input name="duration_s" type="number" min="0" step="0.01" value="0" inputmode="decimal"></label>
     <label>Scale mode <select name="scale_mode"><option value="both">peak + range</option><option value="peak">peak</option><option value="range">range</option></select></label>
     <label>Full-scale V <input name="full_scale_volts" type="number" step="0.1" value="10"></label>
-    <label class="inline-check"><input name="remove_dc" type="hidden" value="false"><input name="remove_dc" type="checkbox" value="true" checked> remove DC before WAV/analysis</label>
+    <label class="inline-check"><input name="remove_dc" type="hidden" value="false"><input name="remove_dc" type="checkbox" value="true" checked> <span>remove DC before WAV/analysis</span></label>
     <label>Trim start s <input name="trim_start_s" type="number" min="0" step="0.01" value="0"></label>
     <label>Trim end s <input name="trim_end_s" type="number" min="0" step="0.01" value="0"></label>
     <label>Band low Hz <input name="analysis_band_low_hz" type="number" min="0" step="1" value="300"></label>
@@ -114,7 +117,7 @@
         <label>Safety operator <input name="safety_operator"></label>
         <label>Safety max SPL dB <input name="safety_max_spl_db" type="number" min="0" step="0.1"></label>
         <label class="wide">Safety notes <input name="safety_notes"></label>
-        <label>Mac Helper WAV file <input name="mac_helper_file" placeholder="jamming_25khz.wav"></label>
+        <label>Mac Helper WAV file <input name="mac_helper_file" placeholder="jamming_sound/25khz_1hr.wav"></label>
         <label>Mac Helper device ID <input name="mac_helper_device_id" type="number" min="0"></label>
         <label>Mac Helper sample rate <input name="mac_helper_sample_rate" type="number" min="1" placeholder="192000"></label>
         <label>Mac Helper channels <input name="mac_helper_channels" type="number" min="1" value="1"></label>
@@ -135,9 +138,9 @@
 <h2>Runs</h2>
 <form method="get" class="form grid-form">
   <label>Date <input name="date" value="{{ filters.date }}" placeholder="2026-05-28"></label>
-  <label>Frequency kHz <input name="carrier_freq_khz" value="{{ filters.carrier_freq_khz }}" type="number" step="0.1"></label>
+  <label>Jamming carrier kHz <input name="carrier_freq_khz" value="{{ filters.carrier_freq_khz }}" type="number" step="0.1"></label>
   <label>UJ <select name="uj"><option value="">any</option><option value="uj0" {% if filters.uj == "uj0" %}selected{% endif %}>uj0</option><option value="uj1" {% if filters.uj == "uj1" %}selected{% endif %}>uj1</option></select></label>
-  <label>Sound <input name="sound_condition" value="{{ filters.sound_condition }}"></label>
+  <label>Ordinary sound <input name="sound_condition" value="{{ filters.sound_condition }}"></label>
   <label>Mic <input name="mic_id" value="{{ filters.mic_id }}"></label>
   <label>Room <input name="room" value="{{ filters.room }}"></label>
   <label>Analysis <select name="analysis_status"><option value="">any</option><option value="pending" {% if filters.analysis_status == "pending" %}selected{% endif %}>pending</option><option value="finalized" {% if filters.analysis_status == "finalized" %}selected{% endif %}>finalized</option><option value="failed" {% if filters.analysis_status == "failed" %}selected{% endif %}>failed</option></select></label>
@@ -151,9 +154,9 @@
     <tr>
       <th>run_id</th>
       <th>date</th>
-      <th>frequency</th>
+      <th>jamming carrier</th>
       <th>uj</th>
-      <th>sound</th>
+      <th>ordinary sound</th>
       <th>mic</th>
       <th>room</th>
       <th>analysis</th>

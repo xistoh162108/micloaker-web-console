@@ -410,6 +410,10 @@ def main() -> int:
     ui_ux_doc = ui_ux_path.read_text(encoding="utf-8") if ui_ux_path.exists() else ""
     legacy_alignment_path = ROOT.parent / "docs" / "LEGACY_NOTEBOOK_ALIGNMENT.md"
     legacy_alignment_doc = legacy_alignment_path.read_text(encoding="utf-8") if legacy_alignment_path.exists() else ""
+    experiment_flow_path = ROOT.parent / "docs" / "EXPERIMENT_OPERATOR_FLOW.md"
+    experiment_flow_doc = experiment_flow_path.read_text(encoding="utf-8") if experiment_flow_path.exists() else ""
+    scientific_ui_path = ROOT.parent / "docs" / "SCIENTIFIC_CONSOLE_UI_REQUIREMENTS.md"
+    scientific_ui_doc = scientific_ui_path.read_text(encoding="utf-8") if scientific_ui_path.exists() else ""
     checklist_path = ROOT.parent / "docs" / "CODEX_TASK_CHECKLIST.md"
     checklist_doc = checklist_path.read_text(encoding="utf-8") if checklist_path.exists() else ""
     completion_audit_path = ROOT.parent / "docs" / "COMPLETION_AUDIT.md"
@@ -418,6 +422,7 @@ def main() -> int:
     checks.append(report("Ctrl+C" in readme and "scripts/console_control.py restart" in readme and "rebuilds session/run lists from workspace text files" in readme and "refuses `stop` or `restart` while `/recording/status` reports active recording/finalization" in readme and "--force" in readme, "README documents temporary lifecycle and restart recovery"))
     checks.append(report("Live Monitor" in readme and "Live preview is approximate" in readme and "saved `.bin`" in readme, "README documents live preview-only workflow"))
     checks.append(report("docs/COMPLETION_AUDIT.md" in repo_readme and "COMPLETION_AUDIT.md" in docs_readme and "../docs/COMPLETION_AUDIT.md" in readme, "README indexes link to the completion audit"))
+    checks.append(report("EXPERIMENT_OPERATOR_FLOW.md" in docs_readme and "SCIENTIFIC_CONSOLE_UI_REQUIREMENTS.md" in docs_readme and "Experiment operator flow" in repo_readme and "Scientific console UI requirements" in repo_readme, "README indexes experiment flow and scientific UI requirements"))
     operator_terms = [
         "The UI standard is **DaisyUI**",
         "Experiment Command Center",
@@ -451,15 +456,16 @@ def main() -> int:
     daisy_terms = ["btn btn-primary", "btn btn-outline", "btn btn-error", "card", "card-body", "stats", "stat-value", "badge-success", "badge-warning", "Capture And Live Preview", "live-waveform", "live-psd", "live-spectrogram", "live-waveform-readout", "live-psd-readout", "live-spectrogram-readout"]
     missing_daisy_terms = [term for term in daisy_terms if term not in dashboard_template]
     hidden_tab_dashboard = "tab-panel" in dashboard_template or "data-tabs" in dashboard_template
-    wrapping_layout_terms = ["repeat(auto-fit, minmax(min(100%, 170px), 1fr))", "operator-action-bar", "live-primary", "dashboard-artifacts", "overflow-wrap: anywhere"]
-    chart_perf_terms = ["content-visibility: auto", "aspect-ratio: 16 / 9"]
+    wrapping_layout_terms = ["repeat(auto-fit, minmax(min(100%, 170px), 1fr))", "operator-action-bar", "live-primary", "dashboard-artifacts", "overflow-wrap: anywhere", ".checkbox-grid", ".audio-preview", ".session-control-grid"]
+    chart_perf_terms = ["content-visibility: auto", "aspect-ratio: 16 / 9", ".plot-modal", "data-plot-zoom"]
     scientific_ui_terms = ["Scientific instrument visual vocabulary", "--data-cyan", "--grid-line", "neutral lab surfaces"]
     missing_wrapping_terms = [term for term in wrapping_layout_terms if term not in app_css]
-    missing_chart_perf_terms = [term for term in chart_perf_terms if term not in app_css]
+    chart_sources = app_css + dashboard_template
+    missing_chart_perf_terms = [term for term in chart_perf_terms if term not in chart_sources]
     live_js = (ROOT / "app" / "static" / "js" / "live.js").read_text(encoding="utf-8")
     plotting_py = (ROOT / "app" / "services" / "plotting.py").read_text(encoding="utf-8")
     missing_scientific_ui_terms = [term for term in scientific_ui_terms if term not in app_css]
-    checks.append(report(not missing_daisy_terms and not hidden_tab_dashboard and not missing_wrapping_terms and not missing_chart_perf_terms and not missing_scientific_ui_terms and "requestAnimationFrame(renderCharts)" in live_js and "createImageData" in live_js and "cachedSpectrogramImage" in live_js and "spectrogramImage(cols, bins)" in live_js and "drawImage(spectrogramBufferCanvas" in live_js and "resizeCanvasForDisplay" in live_js and "bindChartReadout" in live_js and "drawCrosshair" in live_js and "formatScientific" in live_js and ".chart-readout" in app_css and "rows.flat()" not in live_js and "MAX_WAVEFORM_PLOT_POINTS" in plotting_py and "set_rasterized(True)" in plotting_py and 'decoding="async"' in dashboard_template and "DaisyUI component vocabulary" in app_css and "shadcn" not in app_css.lower(), "dashboard uses local DaisyUI command console vocabulary without hidden workflow tabs"))
+    checks.append(report(not missing_daisy_terms and not hidden_tab_dashboard and not missing_wrapping_terms and not missing_chart_perf_terms and not missing_scientific_ui_terms and "requestAnimationFrame(renderCharts)" in live_js and "createImageData" in live_js and "cachedSpectrogramImage" in live_js and "spectrogramImage(cols, bins)" in live_js and "drawImage(spectrogramBufferCanvas" in live_js and "resizeCanvasForDisplay" in live_js and "bindChartReadout" in live_js and "drawCrosshair" in live_js and "formatScientific" in live_js and "metricReadoutHtml" in live_js and "finalRunSummaryHtml" in live_js and ".chart-readout" in app_css and "rows.flat()" not in live_js and "MAX_WAVEFORM_PLOT_POINTS" in plotting_py and "set_rasterized(True)" in plotting_py and 'decoding="async"' in dashboard_template and "DaisyUI component vocabulary" in app_css and "shadcn" not in app_css.lower(), "dashboard uses local DaisyUI command console vocabulary without hidden workflow tabs"))
     if missing_daisy_terms:
         for term in missing_daisy_terms:
             print(f"  missing DaisyUI dashboard term: {term}")
@@ -538,6 +544,40 @@ def main() -> int:
     if missing_command_center_terms:
         for term in missing_command_center_terms:
             print(f"  missing UI/UX term: {term}")
+    experiment_flow_terms = [
+        "Ultrasonic speaker playback is controlled from the Mac",
+        "measurement microphone is connected to the Linux machine",
+        "carrier_freq_khz = 0",
+        "sound_condition describes ordinary sound",
+        "jamming_sound/25khz_1hr.wav",
+        "jamming_sound/32.8khz_1hr.wav",
+        "Validate that the selected jamming WAV file matches the run metadata frequency",
+        "playback only",
+        "recording only",
+        "play and record",
+        "Require explicit operator approval",
+    ]
+    missing_experiment_flow_terms = [term for term in experiment_flow_terms if term not in experiment_flow_doc]
+    checks.append(report(not missing_experiment_flow_terms, "experiment operator flow documents Mac playback, Linux DAQ, metadata, jamming WAV matching, and approval gate"))
+    if missing_experiment_flow_terms:
+        for term in missing_experiment_flow_terms:
+            print(f"  missing experiment flow term: {term}")
+    scientific_requirement_terms = [
+        "OriginPro",
+        "MATLAB",
+        "PASCO Capstone",
+        "GeoGebra",
+        "scientific instrument",
+        "Matplotlib/MATLAB/Origin figures",
+        "Core experiment controls must not be hidden",
+        "data cursors",
+        "Run-level Mac Helper validation/play/play-and-record must reject mismatched jamming files",
+    ]
+    missing_scientific_requirement_terms = [term for term in scientific_requirement_terms if term not in scientific_ui_doc]
+    checks.append(report(not missing_scientific_requirement_terms, "scientific console UI requirements document reference tools and graph interactions"))
+    if missing_scientific_requirement_terms:
+        for term in missing_scientific_requirement_terms:
+            print(f"  missing scientific UI requirement term: {term}")
     legacy_terms = [
         "Legacy Notebook Alignment",
         "bin_to_wav.ipynb",

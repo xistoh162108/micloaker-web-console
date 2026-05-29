@@ -1,5 +1,5 @@
 {
-  "wav_root": "/Users/user/MicloakerSounds",
+  "wav_root": "jamming_sound",
   "host": "0.0.0.0",
   "port": 5050,
   "default_sample_rate": 192000,

@@ -16,11 +16,11 @@
   <form method="post" action="/sessions/{{ session_id }}/runs/{{ run.run_id }}/record-mock"><button type="submit" class="btn btn-primary">Record Mock + Finalize</button></form>
   <form method="post" action="/sessions/{{ session_id }}/runs/{{ run.run_id }}/record-daq"><button type="submit" class="btn btn-primary">Record DAQ + Finalize</button></form>
   <form method="post" action="/sessions/{{ session_id }}/runs/{{ run.run_id }}/finalize">
-    <label class="inline-check"><input name="overwrite_existing" type="checkbox" value="true"> overwrite derived outputs</label>
+    <label class="inline-check"><input name="overwrite_existing" type="checkbox" value="true"> <span>overwrite derived outputs</span></label>
     <button type="submit" class="btn btn-outline">Finalize From .bin</button>
   </form>
   <form method="post" action="/sessions/{{ session_id }}/runs/{{ run.run_id }}/convert">
-    <label class="inline-check"><input name="overwrite_existing" type="checkbox" value="true"> overwrite WAVs</label>
+    <label class="inline-check"><input name="overwrite_existing" type="checkbox" value="true"> <span>overwrite WAVs</span></label>
     <button type="submit" class="btn btn-outline">Convert WAVs</button>
   </form>
 </nav>
@@ -40,9 +40,9 @@
       <tbody>
         <tr><th>Session</th><td>{{ run.session_id }}</td></tr>
         <tr><th>Created</th><td>{{ run.created_at }}</td></tr>
-        <tr><th>Carrier</th><td>{{ run.condition.carrier_freq_khz }} kHz</td></tr>
+        <tr><th>Jamming carrier</th><td>{{ run.condition.carrier_freq_khz }} kHz{% if run.condition.carrier_freq_khz == 0 %} (no jamming signal emitted){% endif %}</td></tr>
         <tr><th>UJ</th><td>{{ run.condition.uj }}</td></tr>
-        <tr><th>Sound</th><td>{{ run.condition.sound_condition }}</td></tr>
+        <tr><th>Ordinary recorded sound</th><td>{{ run.condition.sound_condition }}</td></tr>
         <tr><th>Mic</th><td>{{ run.condition.mic_id }}</td></tr>
         <tr><th>Room</th><td>{{ run.condition.room }}</td></tr>
         <tr><th>Distance / angle</th><td>{{ run.condition.distance_cm }} cm / {{ run.condition.angle_deg }} deg</td></tr>
@@ -133,11 +133,11 @@
   {% endif %}
   {% if run.files.wav_peak in file_set %}
   <p>Peak WAV: listening preview only.</p>
-  <audio controls src="/sessions/{{ session_id }}/files/{{ run.files.wav_peak }}"></audio>
+  <audio class="audio-preview" controls src="/sessions/{{ session_id }}/files/{{ run.files.wav_peak }}"></audio>
   {% endif %}
   {% if run.files.wav_range in file_set %}
   <p>Range WAV: scale-valid cross-check if full-scale voltage is correct.</p>
-  <audio controls src="/sessions/{{ session_id }}/files/{{ run.files.wav_range }}"></audio>
+  <audio class="audio-preview" controls src="/sessions/{{ session_id }}/files/{{ run.files.wav_range }}"></audio>
   {% endif %}
   </div>
 </section>
@@ -173,7 +173,7 @@
     </tbody>
   </table>
   <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/validate-playback" class="form grid-form">
-    <label>WAV file on Mac <input name="file" value="{{ run.mac_helper.planned_file or '' }}" placeholder="jamming_25khz.wav"></label>
+    <label>WAV file on Mac <input name="file" value="{{ run.mac_helper.planned_file or '' }}" placeholder="jamming_sound/25khz_1hr.wav"></label>
     <label>Device ID <input name="device_id" type="number" value="{{ run.mac_helper.planned_device_id if run.mac_helper.planned_device_id is not none else 0 }}"></label>
     <label>Sample rate <input name="sample_rate" type="number" value="{{ run.mac_helper.planned_sample_rate if run.mac_helper.planned_sample_rate is not none else 192000 }}"></label>
     <label>Channels <input name="channels" type="number" value="{{ run.mac_helper.planned_channels if run.mac_helper.planned_channels is not none else 1 }}"></label>
@@ -181,7 +181,7 @@
     <div class="form-actions"><button type="submit" class="btn btn-outline">Validate Playback</button></div>
   </form>
   <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/play" class="form grid-form">
-    <label>WAV file on Mac <input name="file" value="{{ run.mac_helper.planned_file or run.mac_helper.file or '' }}" placeholder="jamming_25khz.wav"></label>
+    <label>WAV file on Mac <input name="file" value="{{ run.mac_helper.planned_file or run.mac_helper.file or '' }}" placeholder="jamming_sound/25khz_1hr.wav"></label>
     <label>Device ID <input name="device_id" type="number" value="{{ run.mac_helper.planned_device_id if run.mac_helper.planned_device_id is not none else (run.mac_helper.device_id if run.mac_helper.device_id is not none else 0) }}"></label>
     <label>Sample rate <input name="sample_rate" type="number" value="{{ run.mac_helper.planned_sample_rate if run.mac_helper.planned_sample_rate is not none else (run.mac_helper.requested_sample_rate if run.mac_helper.requested_sample_rate is not none else 192000) }}"></label>
     <label>Channels <input name="channels" type="number" value="{{ run.mac_helper.planned_channels if run.mac_helper.planned_channels is not none else (run.mac_helper.channels if run.mac_helper.channels is not none else 1) }}"></label>
@@ -193,7 +193,7 @@
     <div class="form-actions"><button type="submit" class="btn btn-outline">Stop Playback</button></div>
   </form>
   <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/play-and-record-mock" class="form grid-form">
-    <label>WAV file on Mac <input name="file" value="{{ run.mac_helper.planned_file or '' }}" placeholder="jamming_25khz.wav"></label>
+    <label>WAV file on Mac <input name="file" value="{{ run.mac_helper.planned_file or '' }}" placeholder="jamming_sound/25khz_1hr.wav"></label>
     <label>Device ID <input name="device_id" type="number" value="{{ run.mac_helper.planned_device_id if run.mac_helper.planned_device_id is not none else 0 }}"></label>
     <label>Sample rate <input name="sample_rate" type="number" value="{{ run.mac_helper.planned_sample_rate if run.mac_helper.planned_sample_rate is not none else 192000 }}"></label>
     <label>Channels <input name="channels" type="number" value="{{ run.mac_helper.planned_channels if run.mac_helper.planned_channels is not none else 1 }}"></label>
@@ -202,7 +202,7 @@
     <div class="form-actions"><button type="submit" class="btn btn-primary">Play & Record Mock</button></div>
   </form>
   <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/play-and-record-daq" class="form grid-form">
-    <label>WAV file on Mac <input name="file" value="{{ run.mac_helper.planned_file or '' }}" placeholder="jamming_25khz.wav"></label>
+    <label>WAV file on Mac <input name="file" value="{{ run.mac_helper.planned_file or '' }}" placeholder="jamming_sound/25khz_1hr.wav"></label>
     <label>Device ID <input name="device_id" type="number" value="{{ run.mac_helper.planned_device_id if run.mac_helper.planned_device_id is not none else 0 }}"></label>
     <label>Sample rate <input name="sample_rate" type="number" value="{{ run.mac_helper.planned_sample_rate if run.mac_helper.planned_sample_rate is not none else 192000 }}"></label>
     <label>Channels <input name="channels" type="number" value="{{ run.mac_helper.planned_channels if run.mac_helper.planned_channels is not none else 1 }}"></label>
@@ -221,6 +221,7 @@
       <img src="/sessions/{{ session_id }}/files/{{ run.files.waveform_png }}" alt="Final waveform plot" loading="lazy" decoding="async">
       <figcaption>
         Final waveform
+        <button type="button" class="link-button" data-plot-zoom="/sessions/{{ session_id }}/files/{{ run.files.waveform_png }}">large</button>
         <a href="/sessions/{{ session_id }}/files/{{ run.files.waveform_png }}">PNG</a>
         {% if run.files.get("waveform_svg") in file_set %}<a href="/sessions/{{ session_id }}/files/{{ run.files.waveform_svg }}">SVG</a>{% endif %}
       </figcaption>
@@ -231,6 +232,7 @@
       <img src="/sessions/{{ session_id }}/files/{{ run.files.psd_png }}" alt="Final PSD plot" loading="lazy" decoding="async">
       <figcaption>
         Final PSD
+        <button type="button" class="link-button" data-plot-zoom="/sessions/{{ session_id }}/files/{{ run.files.psd_png }}">large</button>
         <a href="/sessions/{{ session_id }}/files/{{ run.files.psd_png }}">PNG</a>
         {% if run.files.get("psd_svg") in file_set %}<a href="/sessions/{{ session_id }}/files/{{ run.files.psd_svg }}">SVG</a>{% endif %}
       </figcaption>
@@ -241,6 +243,7 @@
       <img src="/sessions/{{ session_id }}/files/{{ run.files.spectrogram_png }}" alt="Final spectrogram plot" loading="lazy" decoding="async">
       <figcaption>
         Final spectrogram
+        <button type="button" class="link-button" data-plot-zoom="/sessions/{{ session_id }}/files/{{ run.files.spectrogram_png }}">large</button>
         <a href="/sessions/{{ session_id }}/files/{{ run.files.spectrogram_png }}">PNG</a>
         {% if run.files.get("spectrogram_svg") in file_set %}<a href="/sessions/{{ session_id }}/files/{{ run.files.spectrogram_svg }}">SVG</a>{% endif %}
       </figcaption>
@@ -281,7 +284,7 @@
 <section class="card">
   <div class="card-body">
   <h2 class="card-title">Log</h2>
-  <pre>{{ log_text }}</pre>
+  <pre class="scroll-pre">{{ log_text }}</pre>
   </div>
 </section>
 {% endblock %}

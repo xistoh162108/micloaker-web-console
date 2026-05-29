@@ -7,7 +7,7 @@
 </nav>
 <section>
   <h2>Session Artifacts</h2>
-  <table class="data-table">
+  <div class="table-scroll"><table class="data-table file-table">
     <thead>
       <tr>
         <th>path</th>
@@ -27,7 +27,7 @@
       <td>{{ file.size_bytes }} bytes</td>
       <td>
         {% if file.is_audio %}
-        <audio controls preload="none" src="/sessions/{{ session_id }}/files/{{ file.path }}"></audio>
+        <audio class="audio-preview" controls preload="none" src="/sessions/{{ session_id }}/files/{{ file.path }}"></audio>
         {% else %}
         -
         {% endif %}
@@ -38,6 +38,6 @@
     <tr><td colspan="6">No files yet.</td></tr>
     {% endfor %}
     </tbody>
-  </table>
+  </table></div>
 </section>
 {% endblock %}

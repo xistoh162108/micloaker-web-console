@@ -44,7 +44,7 @@ Example `config.json`:
 
 ```json
 {
-  "wav_root": "/Users/user/MicloakerSounds",
+  "wav_root": "jamming_sound",
   "host": "0.0.0.0",
   "port": 5050,
   "default_sample_rate": 192000,
@@ -68,7 +68,7 @@ Returns service status.
   "hostname": "MacBook-Pro",
   "os": "macOS",
   "uptime_s": 123.4,
-  "wav_root": "/Users/user/MicloakerSounds",
+  "wav_root": "jamming_sound",
   "wav_root_exists": true,
   "audio_backend": "sounddevice",
   "server_time": "2026-05-28T21:15:00+09:00"
@@ -102,7 +102,7 @@ Lists `.wav` files under `wav_root`, using relative paths only.
 {
   "ok": true,
   "files": [
-    {"path": "jamming_25khz.wav", "size_bytes": 12345, "duration_s": 10.0, "sample_rate": 192000}
+    {"path": "jamming_sound/25khz_1hr.wav", "size_bytes": 12345, "duration_s": 3600.0, "sample_rate": 192000}
   ]
 }
 ```
@@ -113,7 +113,7 @@ Request:
 
 ```json
 {
-  "file": "jamming_25khz.wav",
+  "file": "jamming_sound/25khz_1hr.wav",
   "device_id": 3,
   "sample_rate": 192000,
   "channels": 1,
@@ -154,7 +154,7 @@ Request:
 
 ```json
 {
-  "file": "jamming_25khz.wav",
+  "file": "jamming_sound/25khz_1hr.wav",
   "device_id": 3,
   "sample_rate": 192000,
   "channels": 1,
@@ -170,7 +170,7 @@ Response:
   "ok": true,
   "play_id": "play_20260528_211512_001",
   "message": "Playback scheduled",
-  "file": "jamming_25khz.wav",
+  "file": "jamming_sound/25khz_1hr.wav",
   "device_id": 3,
   "sample_rate": 192000,
   "channels": 1,
@@ -192,7 +192,7 @@ Returns current playback state.
   "ok": true,
   "playing": true,
   "current_play_id": "play_20260528_211512_001",
-  "file": "jamming_25khz.wav",
+  "file": "jamming_sound/25khz_1hr.wav",
   "device_id": 3,
   "sample_rate": 192000,
   "elapsed_s": 2.31,
@@ -263,7 +263,7 @@ When used, store:
     "helper_url": "http://100.x.y.z:5050",
     "hostname": "MacBook-Pro",
     "health_ok": true,
-    "file": "jamming_25khz.wav",
+    "file": "jamming_sound/25khz_1hr.wav",
     "device_id": 3,
     "device_name": "USB Audio Device",
     "requested_sample_rate": 192000,

@@ -6,13 +6,15 @@ The analysis target is not the ultrasonic carrier itself. It is the low-frequenc
 
 ## 2. Primary metric
 
-For jamming-only recordings, compare `uj0` and `uj1` band power:
+For baseline or ultrasonic-jamming recordings, compare `uj0` and `uj1` band power:
 
 ```text
 A_dB = 10 log10(P_uj0 / P_uj1)
 ```
 
 where `P` is the integrated Welch PSD power over the selected audible band.
+
+Ordinary sound metadata is independent from the jamming carrier. `sound_condition` can represent quiet baseline, meeting-room sound, speech, or WER material. `carrier_freq_khz = 0` means no ultrasonic jamming signal was emitted.
 
 Default primary band:
 
