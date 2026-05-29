@@ -374,9 +374,33 @@ def main() -> int:
 
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     helper_readme = (ROOT / "mac_helper" / "README.md").read_text(encoding="utf-8")
+    dashboard_template = (ROOT / "app" / "templates" / "dashboard.html").read_text(encoding="utf-8")
+    app_css = (ROOT / "app" / "static" / "css" / "app.css").read_text(encoding="utf-8")
+    operator_ui_doc_path = ROOT.parent / "docs" / "OPERATOR_UI_DEPLOYMENT_REQUIREMENTS.md"
+    operator_ui_doc = operator_ui_doc_path.read_text(encoding="utf-8") if operator_ui_doc_path.exists() else ""
     checks.append(report("uvicorn app.main:app --host 127.0.0.1 --port 8000" in readme, "README documents localhost console run command"))
     checks.append(report("Ctrl+C" in readme and "rebuilds session/run lists from workspace text files" in readme, "README documents temporary lifecycle and restart recovery"))
     checks.append(report("Live Monitor" in readme and "Live preview is approximate" in readme and "saved `.bin`" in readme, "README documents live preview-only workflow"))
+    operator_terms = [
+        "The UI standard is **DaisyUI**",
+        "Experiment Command Center",
+        "Command-line start/status/stop script",
+        "Explicit Tailscale mode",
+        "Linux desktop launcher",
+        "Finder double-click launchers",
+        "GitHub Delivery",
+    ]
+    missing_operator_terms = [term for term in operator_terms if term not in operator_ui_doc]
+    checks.append(report(not missing_operator_terms, "operator UI/deployment requirements are documented"))
+    if missing_operator_terms:
+        for term in missing_operator_terms:
+            print(f"  missing operator UI term: {term}")
+    daisy_terms = ["btn btn-primary", "btn btn-outline", "btn btn-error", "card", "card-body", "tabs", "tab-active", "stats", "stat-value", "badge-success", "badge-warning"]
+    missing_daisy_terms = [term for term in daisy_terms if term not in dashboard_template]
+    checks.append(report(not missing_daisy_terms and "DaisyUI component vocabulary" in app_css and "shadcn" not in app_css.lower(), "dashboard uses local DaisyUI component vocabulary"))
+    if missing_daisy_terms:
+        for term in missing_daisy_terms:
+            print(f"  missing DaisyUI dashboard term: {term}")
     helper_doc_terms = [
         "cp config.example.json config.json",
         "python helper.py --config config.json",
