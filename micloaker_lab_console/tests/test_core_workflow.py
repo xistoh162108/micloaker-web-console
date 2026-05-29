@@ -43,6 +43,7 @@ import app.services.live_monitor as live_monitor_module
 import app.routes.compare as compare_routes
 import app.routes.live as live_routes
 import app.routes.mac_helper as mac_helper_routes
+import app.routes.runs as runs_routes
 import app.services.tailscale as tailscale_module
 import app.services.daq as daq_module
 
@@ -2161,6 +2162,10 @@ def test_run_detail_renders_metrics_table_and_quality_flags(tmp_path: Path, monk
         "Scale modes",
         "Primary band",
         "Final Metrics",
+        "DAQ Live Preview",
+        "Start DAQ Live Preview",
+        "Mac Playback",
+        "Mac Helper is disconnected. DAQ-only live preview and Linux recording remain available.",
         "Effective primary band",
         "Primary band power",
         "Primary band RMS",
@@ -2197,6 +2202,60 @@ def test_run_detail_renders_metrics_table_and_quality_flags(tmp_path: Path, monk
     ]:
         assert text in page.text
     assert "uldaq" not in sys.modules
+
+
+def test_run_detail_integrates_connected_mac_playback_into_live_preview(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setenv("MICLOAKER_WORKSPACE", str(tmp_path))
+    ensure_workspace(tmp_path)
+    session = create_session(tmp_path, "run live mac playback")
+    run = create_run_metadata(
+        tmp_path,
+        session["session_id"],
+        carrier_freq_khz=25,
+        uj="uj0",
+        duration_s=0.1,
+        mac_helper_file="jamming_sound/25khz_1hr.wav",
+        mac_helper_device_id=2,
+        mac_helper_sample_rate=96000,
+    )
+
+    class FakeMacHelperClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def health(self):
+            return {"ok": True, "connected": True, "hostname": "mac-lab"}
+
+        def files(self):
+            return {"ok": True, "files": [{"path": "jamming_sound/25khz_1hr.wav", "sample_rate": 96000, "duration_s": 3600.0}]}
+
+        def devices(self):
+            return {
+                "ok": True,
+                "output_devices": [{"id": 2, "name": "Ultrasound DAC", "default_samplerate": 96000, "max_output_channels": 2}],
+            }
+
+    monkeypatch.setattr(runs_routes, "MacHelperClient", FakeMacHelperClient)
+    client = TestClient(create_app())
+    page = client.get(f"/sessions/{session['session_id']}/runs/{run['run_id']}")
+    assert page.status_code == 200
+    for text in [
+        "DAQ Live Preview",
+        "Mac Playback",
+        "helper connected",
+        "jamming_sound/25khz_1hr.wav / 96000 Hz",
+        "2 / Ultrasound DAC / 96000 Hz",
+        '<option value="96000" selected>96000 Hz</option>',
+        "Validate Playback",
+        "Play",
+        "Play & Capture DAQ",
+        "Play & Record DAQ",
+        "Stop Playback",
+    ]:
+        assert text in page.text
+    assert page.text.count("WAV file on Mac") == 1
+    assert page.text.count("Device ID") == 2
+    assert "Play & Record DAQ</button></div>\n  </form>" not in page.text
 
 
 def test_pending_run_detail_does_not_link_missing_plot_previews(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

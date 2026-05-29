@@ -43,6 +43,66 @@
       <h2>DAQ Live Preview</h2>
       <span id="live-state" class="badge">Stopped</span>
     </div>
+    <div class="panel live-playback-panel">
+      <div class="card-title">
+        <h3>Mac Playback</h3>
+        <span class="badge {{ 'badge-success' if mac_status.connected else 'badge-warning' }}">{{ "helper connected" if mac_status.connected else "helper optional" }}</span>
+      </div>
+      {% if not mac_status.connected %}
+      <p class="muted">Mac Helper is disconnected. DAQ-only live preview and Linux recording remain available.</p>
+      <div class="form-actions"><a class="btn btn-outline" href="/mac-helper">Connect Mac Helper</a></div>
+      {% endif %}
+      {% set selected_file = run.mac_helper.planned_file or run.mac_helper.file or "" %}
+      {% set selected_device = run.mac_helper.planned_device_id if run.mac_helper.planned_device_id is not none else (run.mac_helper.device_id if run.mac_helper.device_id is not none else 0) %}
+      {% set selected_sample_rate = run.mac_helper.planned_sample_rate if run.mac_helper.planned_sample_rate is not none else (run.mac_helper.requested_sample_rate if run.mac_helper.requested_sample_rate is not none else 96000) %}
+      <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/validate-playback" class="form grid-form live-playback-form">
+        <label>WAV file on Mac
+          <select name="file" required>
+            {% if helper_files %}
+              {% for file in helper_files %}
+              <option value="{{ file.path }}" {% if file.path == selected_file %}selected{% endif %}>{{ file.path }}{% if file.sample_rate %} / {{ file.sample_rate }} Hz{% endif %}</option>
+              {% endfor %}
+            {% else %}
+              <option value="{{ selected_file }}">{{ selected_file or "No Helper WAV files found" }}</option>
+            {% endif %}
+          </select>
+        </label>
+        <label>Device ID
+          <select name="device_id" required>
+            {% if helper_devices %}
+              {% for device in helper_devices %}
+              <option value="{{ device.id }}" {% if device.id == selected_device %}selected{% endif %}>{{ device.id }} / {{ device.name }}{% if device.default_samplerate %} / {{ device.default_samplerate|int }} Hz{% endif %}</option>
+              {% endfor %}
+            {% else %}
+              <option value="{{ selected_device }}">{{ selected_device }}</option>
+            {% endif %}
+          </select>
+        </label>
+        <label>Sample rate
+          <select name="sample_rate" required>
+            {% for rate in helper_sample_rates %}
+            <option value="{{ rate }}" {% if rate == selected_sample_rate %}selected{% endif %}>{{ rate }} Hz</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>Channels <input name="channels" type="number" min="1" value="{{ run.mac_helper.planned_channels if run.mac_helper.planned_channels is not none else (run.mac_helper.channels if run.mac_helper.channels is not none else 1) }}"></label>
+        <label>Gain <input name="gain" type="number" min="0" max="1" step="0.01" value="{{ run.mac_helper.planned_gain if run.mac_helper.planned_gain is not none else (run.mac_helper.gain if run.mac_helper.gain is not none else 1.0) }}"></label>
+        <label>Delay ms <input name="delay_ms" type="number" min="0" value="{{ run.mac_helper.planned_delay_ms if run.mac_helper.planned_delay_ms is not none else (run.mac_helper.delay_ms if run.mac_helper.delay_ms is not none else 500) }}"></label>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-outline" formaction="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/validate-playback">Validate Playback</button>
+          <button type="submit" class="btn btn-primary" formaction="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/play">Play</button>
+          <button type="submit" class="btn btn-outline" formaction="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/play-and-capture-daq">Play & Capture DAQ</button>
+          <button type="submit" class="btn btn-primary" formaction="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/play-and-record-daq">Play & Record DAQ</button>
+          {% if enable_dev_mock_ui %}
+          <button type="submit" class="btn btn-outline" formaction="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/play-and-capture-mock">Play & Dev Capture</button>
+          <button type="submit" class="btn btn-outline" formaction="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/play-and-record-mock">Play & Dev Record</button>
+          {% endif %}
+        </div>
+      </form>
+      <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/stop" class="form live-stop-form">
+        <div class="form-actions"><button type="submit" class="btn btn-outline">Stop Playback</button></div>
+      </form>
+    </div>
     <div class="live-console-grid">
       <div class="panel live-plot-panel">
         <div class="card-title"><h3>Waveform</h3><span id="live-clipping" class="badge">unknown</span></div>
@@ -223,64 +283,6 @@
       <tr><th>Playback duration</th><td>{{ run.mac_helper.playback_duration_s if run.mac_helper.playback_duration_s is not none else "unknown" }}</td></tr>
     </tbody>
   </table>
-  <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/validate-playback" class="form grid-form">
-    <label>WAV file on Mac <input name="file" value="{{ run.mac_helper.planned_file or '' }}" placeholder="jamming_sound/25khz_1hr.wav"></label>
-    <label>Device ID <input name="device_id" type="number" value="{{ run.mac_helper.planned_device_id if run.mac_helper.planned_device_id is not none else 0 }}"></label>
-    <label>Sample rate <input name="sample_rate" type="number" value="{{ run.mac_helper.planned_sample_rate if run.mac_helper.planned_sample_rate is not none else 192000 }}"></label>
-    <label>Channels <input name="channels" type="number" value="{{ run.mac_helper.planned_channels if run.mac_helper.planned_channels is not none else 1 }}"></label>
-    <label>Gain <input name="gain" type="number" step="0.1" value="{{ run.mac_helper.planned_gain if run.mac_helper.planned_gain is not none else 1.0 }}"></label>
-    <div class="form-actions"><button type="submit" class="btn btn-outline">Validate Playback</button></div>
-  </form>
-  <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/play" class="form grid-form">
-    <label>WAV file on Mac <input name="file" value="{{ run.mac_helper.planned_file or run.mac_helper.file or '' }}" placeholder="jamming_sound/25khz_1hr.wav"></label>
-    <label>Device ID <input name="device_id" type="number" value="{{ run.mac_helper.planned_device_id if run.mac_helper.planned_device_id is not none else (run.mac_helper.device_id if run.mac_helper.device_id is not none else 0) }}"></label>
-    <label>Sample rate <input name="sample_rate" type="number" value="{{ run.mac_helper.planned_sample_rate if run.mac_helper.planned_sample_rate is not none else (run.mac_helper.requested_sample_rate if run.mac_helper.requested_sample_rate is not none else 192000) }}"></label>
-    <label>Channels <input name="channels" type="number" value="{{ run.mac_helper.planned_channels if run.mac_helper.planned_channels is not none else (run.mac_helper.channels if run.mac_helper.channels is not none else 1) }}"></label>
-    <label>Gain <input name="gain" type="number" step="0.1" value="{{ run.mac_helper.planned_gain if run.mac_helper.planned_gain is not none else (run.mac_helper.gain if run.mac_helper.gain is not none else 1.0) }}"></label>
-    <label>Delay ms <input name="delay_ms" type="number" value="{{ run.mac_helper.planned_delay_ms if run.mac_helper.planned_delay_ms is not none else (run.mac_helper.delay_ms if run.mac_helper.delay_ms is not none else 0) }}"></label>
-    <div class="form-actions"><button type="submit" class="btn btn-primary">Play</button></div>
-  </form>
-  <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/stop" class="form">
-    <div class="form-actions"><button type="submit" class="btn btn-outline">Stop Playback</button></div>
-  </form>
-  {% if enable_dev_mock_ui %}
-  <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/play-and-record-mock" class="form grid-form">
-    <label>WAV file on Mac <input name="file" value="{{ run.mac_helper.planned_file or '' }}" placeholder="jamming_sound/25khz_1hr.wav"></label>
-    <label>Device ID <input name="device_id" type="number" value="{{ run.mac_helper.planned_device_id if run.mac_helper.planned_device_id is not none else 0 }}"></label>
-    <label>Sample rate <input name="sample_rate" type="number" value="{{ run.mac_helper.planned_sample_rate if run.mac_helper.planned_sample_rate is not none else 192000 }}"></label>
-    <label>Channels <input name="channels" type="number" value="{{ run.mac_helper.planned_channels if run.mac_helper.planned_channels is not none else 1 }}"></label>
-    <label>Gain <input name="gain" type="number" step="0.1" value="{{ run.mac_helper.planned_gain if run.mac_helper.planned_gain is not none else 1.0 }}"></label>
-    <label>Delay ms <input name="delay_ms" type="number" value="{{ run.mac_helper.planned_delay_ms if run.mac_helper.planned_delay_ms is not none else 500 }}"></label>
-    <div class="form-actions"><button type="submit" class="btn btn-outline">Play & Dev Record</button></div>
-  </form>
-  <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/play-and-capture-mock" class="form grid-form">
-    <label>WAV file on Mac <input name="file" value="{{ run.mac_helper.planned_file or '' }}" placeholder="jamming_sound/25khz_1hr.wav"></label>
-    <label>Device ID <input name="device_id" type="number" value="{{ run.mac_helper.planned_device_id if run.mac_helper.planned_device_id is not none else 0 }}"></label>
-    <label>Sample rate <input name="sample_rate" type="number" value="{{ run.mac_helper.planned_sample_rate if run.mac_helper.planned_sample_rate is not none else 192000 }}"></label>
-    <label>Channels <input name="channels" type="number" value="{{ run.mac_helper.planned_channels if run.mac_helper.planned_channels is not none else 1 }}"></label>
-    <label>Gain <input name="gain" type="number" step="0.1" value="{{ run.mac_helper.planned_gain if run.mac_helper.planned_gain is not none else 1.0 }}"></label>
-    <label>Delay ms <input name="delay_ms" type="number" value="{{ run.mac_helper.planned_delay_ms if run.mac_helper.planned_delay_ms is not none else 500 }}"></label>
-    <div class="form-actions"><button type="submit" class="btn btn-outline">Play & Dev Capture</button></div>
-  </form>
-  {% endif %}
-  <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/play-and-record-daq" class="form grid-form">
-    <label>WAV file on Mac <input name="file" value="{{ run.mac_helper.planned_file or '' }}" placeholder="jamming_sound/25khz_1hr.wav"></label>
-    <label>Device ID <input name="device_id" type="number" value="{{ run.mac_helper.planned_device_id if run.mac_helper.planned_device_id is not none else 0 }}"></label>
-    <label>Sample rate <input name="sample_rate" type="number" value="{{ run.mac_helper.planned_sample_rate if run.mac_helper.planned_sample_rate is not none else 192000 }}"></label>
-    <label>Channels <input name="channels" type="number" value="{{ run.mac_helper.planned_channels if run.mac_helper.planned_channels is not none else 1 }}"></label>
-    <label>Gain <input name="gain" type="number" step="0.1" value="{{ run.mac_helper.planned_gain if run.mac_helper.planned_gain is not none else 1.0 }}"></label>
-    <label>Delay ms <input name="delay_ms" type="number" value="{{ run.mac_helper.planned_delay_ms if run.mac_helper.planned_delay_ms is not none else 500 }}"></label>
-    <div class="form-actions"><button type="submit" class="btn btn-primary">Play & Record DAQ</button></div>
-  </form>
-  <form method="post" action="/mac-helper/sessions/{{ session_id }}/runs/{{ run.run_id }}/play-and-capture-daq" class="form grid-form">
-    <label>WAV file on Mac <input name="file" value="{{ run.mac_helper.planned_file or '' }}" placeholder="jamming_sound/25khz_1hr.wav"></label>
-    <label>Device ID <input name="device_id" type="number" value="{{ run.mac_helper.planned_device_id if run.mac_helper.planned_device_id is not none else 0 }}"></label>
-    <label>Sample rate <input name="sample_rate" type="number" value="{{ run.mac_helper.planned_sample_rate if run.mac_helper.planned_sample_rate is not none else 192000 }}"></label>
-    <label>Channels <input name="channels" type="number" value="{{ run.mac_helper.planned_channels if run.mac_helper.planned_channels is not none else 1 }}"></label>
-    <label>Gain <input name="gain" type="number" step="0.1" value="{{ run.mac_helper.planned_gain if run.mac_helper.planned_gain is not none else 1.0 }}"></label>
-    <label>Delay ms <input name="delay_ms" type="number" value="{{ run.mac_helper.planned_delay_ms if run.mac_helper.planned_delay_ms is not none else 500 }}"></label>
-    <div class="form-actions"><button type="submit" class="btn btn-outline">Play & Capture DAQ</button></div>
-  </form>
   </div>
 </section>
 <section class="card">

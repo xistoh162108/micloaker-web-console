@@ -8,6 +8,7 @@ from fastapi import APIRouter, File, Form, HTTPException, Query, Request, Upload
 from fastapi.responses import FileResponse, RedirectResponse
 
 from ..services.daq import DaqNotConfiguredError, DaqUnavailableError, daq_health
+from ..services.mac_helper_client import MacHelperClient
 from ..services.metadata import create_run_metadata, load_run, load_runs, load_sessions
 from ..services.recorder import RecordingBusyError, import_bin_and_finalize, record_daq_and_finalize, record_mock_and_finalize, validate_raw_bin_source
 from ..services.text_store import read_json, read_json_or_default, safe_name, session_dir
@@ -276,6 +277,11 @@ def run_detail(request: Request, session_id: str, run_id: str):
     log_text = log_path.read_text(encoding="utf-8") if log_path.exists() else ""
     files = sorted(str(p.relative_to(base)) for p in base.glob("**/*") if p.is_file() and _path_inside(base, p) and run_id in p.name)
     file_set = set(files)
+    config = read_json_or_default(workspace / ".micloaker" / "config.json", {"mac_helper_url": "", "mac_helper_token": ""})
+    mac_client = MacHelperClient(config.get("mac_helper_url", ""), config.get("mac_helper_token", ""))
+    mac_status = mac_client.health()
+    helper_files_response = mac_client.files() if mac_status.get("connected") else {"ok": False, "files": []}
+    helper_devices_response = mac_client.devices() if mac_status.get("connected") else {"ok": False, "output_devices": []}
     return request.app.state.templates.TemplateResponse(
         name="run_detail.html",
         request=request,
@@ -289,6 +295,10 @@ def run_detail(request: Request, session_id: str, run_id: str):
             "artifacts": _run_artifacts(run, file_set),
             "log_text": log_text,
             "daq_status": daq_health(),
+            "mac_status": mac_status,
+            "helper_files": helper_files_response.get("files", []) if helper_files_response.get("ok") else [],
+            "helper_devices": helper_devices_response.get("output_devices", []) if helper_devices_response.get("ok") else [],
+            "helper_sample_rates": [44100, 48000, 96000, 192000, 384000],
             "enable_dev_mock_ui": request.app.state.settings.enable_dev_mock_ui,
         },
     )

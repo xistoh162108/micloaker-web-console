@@ -289,6 +289,20 @@ button, .btn-primary, .button.primary, .actions a {
 .live-console-grid .card-title,
 .live-console-grid h3 { margin-bottom: 6px; }
 .live-console-grid .chart-readout { margin-top: 4px; }
+.live-playback-panel {
+  margin-top: 10px;
+  padding: 12px;
+}
+.live-playback-form {
+  margin-top: 8px;
+  gap: 10px;
+}
+.live-stop-form {
+  margin-top: 8px;
+}
+.live-playback-panel .form-actions {
+  align-items: stretch;
+}
 .live-monitor-grid {
   gap: 10px;
   align-items: start;
