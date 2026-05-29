@@ -38,6 +38,8 @@ Linux connects through a Tailscale IP/hostname, e.g.:
 http://100.x.y.z:5050
 ```
 
+If the operator enters only a bare Tailnet address such as `100.x.y.z` in the Linux Console, the console normalizes it to `http://100.x.y.z:5050` before calling Helper APIs.
+
 ## 4. Configuration
 
 Example `config.json`:

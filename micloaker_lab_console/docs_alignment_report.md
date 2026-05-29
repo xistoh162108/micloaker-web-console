@@ -20,7 +20,7 @@ done
 
 Most recent observed results:
 
-- Full test suite: `144 passed`
+- Full test suite: `145 passed`
 - Acceptance audit: `PASS`
 - Validation routes: all listed routes returned `200`
 
@@ -62,7 +62,7 @@ Most recent observed results:
 | Mac Helper path safety | Proven | Relative-only `wav_root` validation, traversal rejection, symlink-outside exclusion, optional bearer token tests. |
 | Mac Helper explicit device use | Proven in code/test | Playback validation checks the selected device, playback uses `sd.play(..., device=req.device_id, ...)`, and tests guard against mutating `sounddevice.default`. Physical output routing still needs Mac lab verification. |
 | Linux Helper integration | Proven | Manual URL config, health/files/devices/actions, validate-before-play-and-record, disconnected-safe behavior, run JSON/log persistence. |
-| Tailscale discovery | Proven as best-effort optional | `app/services/tailscale.py` and UI route handle absent/unexpected Tailscale without breaking manual connection. |
+| Tailscale discovery | Proven as best-effort optional | `app/services/tailscale.py` and UI route handle absent/unexpected Tailscale without breaking manual connection; bare Tailnet Helper addresses normalize to `http://<address>:5050` before Helper API calls. |
 | README and dependency files | Proven | `README.md`, `requirements.txt`, `requirements-mac-helper.txt`, `mac_helper/README.md`. |
 | Hardware validation protocol | Proven as documented protocol | `../docs/HARDWARE_VALIDATION_PROTOCOL.md` defines the DAQ validation capture, Mac Helper playback validation, play-and-record trial, attenuation pair check, and pass/fail evidence. Physical execution remains lab work. |
 | Safe start/stop operation | Proven for local controls | `scripts/console_control.py`, `/ops`, Linux desktop launcher installer, and Mac Helper control scripts provide explicit start/status/stop flows. |

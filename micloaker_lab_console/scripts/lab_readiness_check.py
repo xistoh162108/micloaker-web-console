@@ -32,6 +32,7 @@ from app.services.lab_validation import (  # noqa: E402
     validation_summary,
 )
 from app.services.mac_helper_client import MacHelperClient  # noqa: E402
+from app.services.mac_helper_client import normalize_helper_url  # noqa: E402
 from app.services.readiness import write_readiness_artifacts  # noqa: E402
 from app.services.text_store import atomic_write_text, read_json_or_default  # noqa: E402
 
@@ -270,7 +271,7 @@ def _check_daq(findings: list[tuple[str, str, str]]) -> None:
 def _check_helper_config(findings: list[tuple[str, str, str]], workspace: Path) -> dict[str, Any]:
     config_path = workspace / ".micloaker" / "config.json"
     config = read_json_or_default(config_path, {})
-    helper_url = str(config.get("mac_helper_url") or "").strip()
+    helper_url = normalize_helper_url(str(config.get("mac_helper_url") or ""))
     helper_token = str(config.get("mac_helper_token") or "").strip()
     if helper_url:
         token_note = "token configured" if helper_token else "no token configured"

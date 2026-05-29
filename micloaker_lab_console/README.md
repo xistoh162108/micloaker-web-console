@@ -288,6 +288,8 @@ The Helper lists and plays only WAV files under `wav_root`, rejects path travers
 http://100.x.y.z:5050
 ```
 
+Bare Tailnet addresses such as `100.x.y.z` are also accepted; the console normalizes them to `http://100.x.y.z:5050`.
+
 6. Save and run Health, Devices, Files.
 7. Select WAV file, device ID, sample rate, channels, and gain.
 8. Run Validate Playback before Play or Play & Record.

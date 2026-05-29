@@ -16,7 +16,7 @@ Run from `micloaker_lab_console/`:
 
 Expected automated state as of this audit:
 
-- Full test suite: `144 passed`
+- Full test suite: `145 passed`
 - Acceptance audit: `PASS`
 - Tailscale lab console validation route: `http://100.88.179.43:8000` returns HTTP 200 when started explicitly with `--tailscale`
 - Default configured bind remains `127.0.0.1`
@@ -66,7 +66,7 @@ Expected automated state as of this audit:
 | Helper validates file/device/sample-rate/channels before play | Proven in offline developer validation | Helper validation tests. |
 | Helper uses explicit `device_id` without changing system default output | Code proven, lab verification required | Tests prove `sd.play(..., device=req.device_id, ...)` and no mutation of `sounddevice.default`; physical output routing still needs Mac validation. |
 | Helper status/playback info stored in run JSON/log files | Proven | Linux Helper integration and play-and-record tests, including best-effort Helper stop logging when playback starts but Linux recording fails before capture. |
-| Manual Helper URL first, Tailscale discovery optional | Proven | Mac Helper UI/config and best-effort discovery tests. |
+| Manual Helper URL first, Tailscale discovery optional | Proven | Mac Helper UI/config and best-effort discovery tests; bare Tailnet Helper addresses normalize to `http://<address>:5050` before Helper API calls. |
 | Hardware validation records with workflow navigation | Proven for text persistence | `/ops` and `scripts/lab_readiness_check.py --record-gate ...` record operator-entered validation evidence, `hardware_validation_plan.txt` is persisted under `.micloaker`, `--validation-plan` and `/ops/validation/plan` provide ordered lab gate instructions, `--write-evidence-template` and `/ops/validation/templates/<gate>` provide fillable gate evidence notes, run detail pages provide DAQ, Mac playback, and play-and-record evidence drafts from saved run metadata/Helper status/metrics/log/plot state, Compare pages provide attenuation-pair evidence drafts from saved comparison JSON/CSV/plot state, `scripts/lab_readiness_check.py --write-evidence-draft ...` writes the same artifact-based drafts for terminal-only operators, readiness Markdown includes record commands, `--record-evidence-file` supports longer terminal evidence notes, gate-specific evidence hints are exposed, the Use checklist draft helper fills fields, evidence completeness records present/missing checklist labels only when non-empty `label: value` evidence is provided, Next action links route to DAQ run creation/Mac Helper/Compare/file review, and exports include JSONL/Markdown evidence. |
 | CLI server/static asset validation evidence | Proven | `scripts/lab_readiness_check.py --check-server` checks core routes plus required `app.css` and `live.js` content; `--write-report` persists CLI findings such as `CLI Server Routes` into readiness JSON/Markdown evidence. |
 | README, requirements files, tests, clear run commands | Proven | `README.md`, `requirements.txt`, `requirements-mac-helper.txt`, test suite, and acceptance audit. |

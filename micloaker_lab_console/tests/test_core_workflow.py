@@ -30,7 +30,7 @@ from app.services.lab_validation import (
     record_lab_validation,
     validation_evidence_completeness,
 )
-from app.services.mac_helper_client import MacHelperClient
+from app.services.mac_helper_client import MacHelperClient, normalize_helper_url
 from app.services.metadata import create_run_metadata, create_session, load_run, load_runs, rebuild_indexes, regenerate_summary, save_run
 from app.services.recorder import RecordingBusyError, _recording_lock, finalize_run, import_bin_and_finalize, record_daq_and_finalize, record_mock_and_finalize, record_mock_capture_only, recording_status, validate_raw_bin_source
 from app.services.readiness import write_readiness_artifacts
@@ -1027,6 +1027,24 @@ def test_mac_helper_disconnected_behavior():
     result = MacHelperClient("").health()
     assert result["connected"] is False
     assert result["error_code"] == "HELPER_DISCONNECTED"
+
+
+def test_mac_helper_client_normalizes_bare_tailnet_urls(monkeypatch: pytest.MonkeyPatch):
+    assert normalize_helper_url("100.64.0.10") == "http://100.64.0.10:5050"
+    assert normalize_helper_url("100.64.0.10:6060") == "http://100.64.0.10:6060"
+    assert normalize_helper_url("https://helper.example") == "https://helper.example:5050"
+
+    seen = {}
+
+    def fake_get(url, headers, timeout):
+        seen["url"] = url
+        request = httpx.Request("GET", url)
+        return httpx.Response(200, json={"ok": True}, request=request)
+
+    monkeypatch.setattr("app.services.mac_helper_client.httpx.get", fake_get)
+    result = MacHelperClient("100.64.0.10").status()
+    assert result["ok"] is True
+    assert seen["url"] == "http://100.64.0.10:5050/status"
 
 
 def test_mac_helper_client_preserves_structured_helper_errors(monkeypatch: pytest.MonkeyPatch):
@@ -3088,6 +3106,16 @@ def test_malformed_mac_helper_config_falls_back_to_disconnected_state(tmp_path: 
     saved = read_json(tmp_path / ".micloaker" / "config.json")
     assert saved["mac_helper_url"] == "http://100.64.0.10:5050"
     assert saved["mac_helper_token"] == "secret-token"
+
+    bare_response = client.post("/mac-helper/config", data={"mac_helper_url": "100.64.0.11", "mac_helper_token": ""}, follow_redirects=False)
+    assert bare_response.status_code == 303
+    saved = read_json(tmp_path / ".micloaker" / "config.json")
+    assert saved["mac_helper_url"] == "http://100.64.0.11:5050"
+
+    atomic_write_json(tmp_path / ".micloaker" / "config.json", {"mac_helper_url": "100.64.0.12", "mac_helper_token": ""})
+    page = client.get("/mac-helper")
+    assert page.status_code == 200
+    assert "http://100.64.0.12:5050" in page.text
 
 
 def test_mac_helper_run_actions_validate_session_and_run_targets(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):

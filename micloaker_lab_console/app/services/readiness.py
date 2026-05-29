@@ -6,7 +6,7 @@ from typing import Any
 from ..config import DEFAULT_HOST, Settings
 from .daq import daq_health
 from .lab_validation import validation_summary
-from .mac_helper_client import MacHelperClient
+from .mac_helper_client import MacHelperClient, normalize_helper_url
 from .recorder import recording_status
 from .text_store import atomic_write_json, atomic_write_text, now_iso, read_json_or_default
 
@@ -28,7 +28,7 @@ def lab_readiness(settings: Settings, *, extra_checks: list[dict[str, Any]] | No
     """
     workspace = settings.workspace
     config = read_json_or_default(workspace / ".micloaker" / "config.json", {})
-    mac_helper_url = str(config.get("mac_helper_url") or "").strip()
+    mac_helper_url = normalize_helper_url(str(config.get("mac_helper_url") or ""))
     mac_helper_token = str(config.get("mac_helper_token") or "").strip()
     daq = daq_health()
     recording = recording_status()

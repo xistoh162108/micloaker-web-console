@@ -6,7 +6,7 @@ from fastapi import APIRouter, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
 from ..services.daq import DaqNotConfiguredError, DaqUnavailableError
-from ..services.mac_helper_client import MacHelperClient
+from ..services.mac_helper_client import MacHelperClient, normalize_helper_url
 from ..services.metadata import load_run, save_run
 from ..services.recorder import RecordingBusyError, record_daq_and_finalize, record_daq_capture_only, record_mock_and_finalize, record_mock_capture_only
 from ..services.tailscale import discover_helpers
@@ -27,7 +27,7 @@ def mac_helper_page(request: Request):
 def save_config(request: Request, mac_helper_url: str = Form(""), mac_helper_token: str = Form("")):
     config_path = request.app.state.settings.workspace / ".micloaker" / "config.json"
     config = _read_helper_config(request.app.state.settings.workspace)
-    config["mac_helper_url"] = mac_helper_url.strip()
+    config["mac_helper_url"] = normalize_helper_url(mac_helper_url)
     config["mac_helper_token"] = mac_helper_token.strip()
     atomic_write_json(config_path, config)
     return RedirectResponse("/mac-helper", status_code=303)
@@ -420,7 +420,9 @@ def _normalize_jamming_name(file: str) -> str:
 
 
 def _read_helper_config(workspace) -> dict:
-    return read_json_or_default(workspace / ".micloaker" / "config.json", {"mac_helper_url": "", "mac_helper_token": ""})
+    config = read_json_or_default(workspace / ".micloaker" / "config.json", {"mac_helper_url": "", "mac_helper_token": ""})
+    config["mac_helper_url"] = normalize_helper_url(str(config.get("mac_helper_url") or ""))
+    return config
 
 
 def _recording_busy_error(message: str) -> dict[str, str]:

@@ -60,6 +60,7 @@
 ## 6. Linux + Mac Helper integration tests
 
 - Manual Helper URL can be saved in config JSON.
+- Bare Tailnet Helper addresses are normalized to `http://<address>:5050` before Helper API calls.
 - Health check success displays Connected.
 - Health check failure displays Disconnected without breaking Linux features.
 - Devices/files can populate dropdowns when Helper is available.
