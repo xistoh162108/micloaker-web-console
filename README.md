@@ -17,6 +17,7 @@ Mac Helper manual:
 Requirements and design docs:
 
 - [Project docs](docs/)
+- [Operator UI and deployment requirements](docs/OPERATOR_UI_DEPLOYMENT_REQUIREMENTS.md)
 - [Docs alignment report](micloaker_lab_console/docs_alignment_report.md)
 
 ## Recommended Lab Setup

@@ -3722,16 +3722,15 @@ def test_dashboard_shows_lab_status_cards_and_shortcuts(tmp_path: Path, monkeypa
     page = client.get("/")
     assert page.status_code == 200
     for text in [
-        "Current Workspace",
-        "Active Session",
-        "DAQ Status",
-        "Mac Helper Status",
+        "Experiment Command Center",
+        "Session",
+        "Acquisition",
+        "Mac Playback",
         "Recording State",
-        "Last Run",
-        "Last Comparison",
-        "Export Shortcuts",
-        "DAQ unavailable - mock mode and file upload are available.",
-        "Mac Helper disconnected - Linux-only recording and analysis are available.",
+        "Latest Run",
+        "Latest Comparison",
+        "Session Export",
+        "preview only",
         "Export active session ZIP",
     ]:
         assert text in page.text

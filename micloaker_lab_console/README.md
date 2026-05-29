@@ -4,6 +4,8 @@ MiCloaker Lab Console is a temporary local web console for acoustic/DAQ experime
 
 MiCloaker Lab Console은 음향/DAQ 실험용 임시 로컬 웹 콘솔입니다. Linux 기록 컴퓨터에서 실행하고, 모든 실험 상태를 일반 파일로 저장하며, 필요하면 Tailscale을 통해 별도 macOS 재생 Helper를 제어합니다.
 
+The UI standard is DaisyUI component vocabulary implemented locally in vanilla CSS, so the app keeps the no-build-step FastAPI/Jinja2 deployment model while using consistent `btn`, `card`, `tabs`, `stats`, and `badge` patterns.
+
 ## What This App Does
 
 - Create experiment sessions and runs.
